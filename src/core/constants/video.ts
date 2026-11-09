@@ -1,7 +1,8 @@
 /**
  * On-device video compression (react-native-compressor) and the limits around it.
- * The server (functions/src/video/policy.ts) skips its own re-encode for files that
- * are within 1080p and SKIP_MAX_KBPS, so keep VIDEO_COMPRESS_BITRATE below 5 Mbps.
+ * The server (functions/src/video/policy.ts) only remuxes (no re-encode) files that are
+ * h264/AAC, within 1080p and at or under SKIP_MAX_KBPS (5000), so every preset's bitrate
+ * must stay below 5 Mbps — otherwise compressVideo re-encodes and the send gets slow.
  */
 
 /** Longest side after compression, px. The library's own default is 640, so always pass this. */
@@ -9,6 +10,23 @@ export const VIDEO_COMPRESS_MAX_SIZE = 1920;
 
 /** Target video bitrate, bits/s. 3 minutes at this rate is about 90 MB (storage rule cap: 300 MB). */
 export const VIDEO_COMPRESS_BITRATE = 4_000_000;
+
+/** What the on-device compressor aims for. */
+export type VideoPreset = {
+  /** Longest side after compression, px. */
+  maxSize: number;
+  /** Target video bitrate, bits/s. */
+  bitrate: number;
+};
+
+/** Portfolio (and the default): what the app has always used. */
+export const PORTFOLIO_VIDEO: VideoPreset = {
+  maxSize: VIDEO_COMPRESS_MAX_SIZE,
+  bitrate: VIDEO_COMPRESS_BITRATE,
+};
+
+/** Chat: seen on a phone screen and sent often, so smaller and faster to upload. */
+export const CHAT_VIDEO: VideoPreset = { maxSize: 1280, bitrate: 2_000_000 };
 
 /**
  * A source already this small is uploaded as-is: manual mode would otherwise raise a

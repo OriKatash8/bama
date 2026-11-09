@@ -4,7 +4,7 @@ import { onSnapshot, doc } from 'firebase/firestore';
 import { db } from '@core/firebase/config';
 import { uploadFile } from '@core/firebase/storage';
 import { startVideoCompression, CompressionCancelled } from '@core/video/compressForUpload';
-import { VIDEO_PROCESSING_TIMEOUT_MS } from '@core/constants/video';
+import { VIDEO_PROCESSING_TIMEOUT_MS, type VideoPreset } from '@core/constants/video';
 import { callFunction } from '@core/firebase/functions';
 
 /**
@@ -54,7 +54,9 @@ export type UseVideoUploadResult = {
   uploadVideo: (
     destination: 'portfolio' | 'chat-videos' | 'courses',
     userId: string,
-    asset?: ImagePicker.ImagePickerAsset
+    asset?: ImagePicker.ImagePickerAsset,
+    /** Compression target; portfolio's 1920 / 4 Mbps when omitted. */
+    preset?: VideoPreset
   ) => Promise<string | null>;
 };
 
@@ -120,7 +122,8 @@ export function useVideoUpload(): UseVideoUploadResult {
   async function uploadVideo(
     destination: 'portfolio' | 'chat-videos' | 'courses',
     userId: string,
-    asset?: ImagePicker.ImagePickerAsset
+    asset?: ImagePicker.ImagePickerAsset,
+    preset?: VideoPreset
   ): Promise<string | null> {
     stopListening();
     outcomeRef.current = null;
@@ -156,7 +159,7 @@ export function useVideoUpload(): UseVideoUploadResult {
       setStage('compressing');
       const compression = startVideoCompression(picked.uri, picked, (p) => {
         if (live()) setProgress(p);
-      });
+      }, preset);
       cancelRef.current = compression.cancel;
       blobUri = await compression.promise;
 

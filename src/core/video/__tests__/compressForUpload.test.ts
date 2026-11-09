@@ -5,6 +5,7 @@ jest.mock('react-native-compressor', () => ({
 }));
 
 import { Platform } from 'react-native';
+import { CHAT_VIDEO } from '@core/constants/video';
 import { CompressionCancelled, isAlreadySmall, startVideoCompression } from '../compressForUpload';
 
 const BIG = { width: 3840, height: 2160, duration: 60_000, fileSize: 400_000_000 };
@@ -60,6 +61,17 @@ describe('startVideoCompression', () => {
       expect.any(Function),
     );
     expect(progress.mock.calls.map((c) => c[0])).toEqual([0.5, 1]);
+  });
+
+  it('compresses to the chat preset when given one', async () => {
+    mockCompress.mockResolvedValue('file:///out.mp4');
+    const { promise } = startVideoCompression('file:///in.mov', BIG, undefined, CHAT_VIDEO);
+    await promise;
+    expect(mockCompress).toHaveBeenCalledWith(
+      'file:///in.mov',
+      expect.objectContaining({ maxSize: 1280, bitrate: 2_000_000 }),
+      expect.any(Function),
+    );
   });
 
   it('skips on web', async () => {

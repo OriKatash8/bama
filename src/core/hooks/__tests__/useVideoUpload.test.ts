@@ -279,3 +279,11 @@ it('picks the original asset (Current), leaving compression to startVideoCompres
     expect.objectContaining({ preferredAssetRepresentationMode: 'current', shouldDownloadFromNetwork: true }),
   );
 });
+
+it('hands the preset to the compressor', async () => {
+  const preset = { maxSize: 1280, bitrate: 2_000_000 };
+  const { result } = renderHook(() => useVideoUpload());
+  act(() => { result.current.uploadVideo('chat-videos', 'u1', ASSET, preset); });
+  await flush();
+  expect(mockStart.mock.calls[0][3]).toBe(preset);
+});

@@ -1,8 +1,8 @@
 import { Platform } from 'react-native';
 import {
-  VIDEO_COMPRESS_BITRATE,
-  VIDEO_COMPRESS_MAX_SIZE,
+  PORTFOLIO_VIDEO,
   VIDEO_SKIP_COMPRESS_MAX_BPS,
+  type VideoPreset,
 } from '@core/constants/video';
 
 /** The bits of an ImagePickerAsset that decide whether compressing is worthwhile. */
@@ -33,14 +33,14 @@ export class CompressionCancelled extends Error {
  * record HEVC by default, and a small HEVC clip must still be turned into H.264 here
  * rather than re-encoded on the server. Unknown codec/size/duration => compress.
  */
-export function isAlreadySmall(info: VideoSourceInfo): boolean {
+export function isAlreadySmall(info: VideoSourceInfo, preset: VideoPreset = PORTFOLIO_VIDEO): boolean {
   const { width, height, duration, fileSize, codec } = info;
   if (!/^(h\.?264|avc1?)$/i.test(codec ?? '')) return false;
   if (!width || !height || !duration || !fileSize) return false;
   const fits =
-    Math.max(width, height) <= VIDEO_COMPRESS_MAX_SIZE && Math.min(width, height) <= 1080;
+    Math.max(width, height) <= preset.maxSize && Math.min(width, height) <= 1080;
   const bps = (fileSize * 8) / (duration / 1000);
-  return fits && bps <= VIDEO_SKIP_COMPRESS_MAX_BPS;
+  return fits && bps <= Math.min(VIDEO_SKIP_COMPRESS_MAX_BPS, preset.bitrate);
 }
 
 export type VideoCompression = {
@@ -54,7 +54,7 @@ export type VideoCompression = {
 };
 
 /**
- * Compress `uri` to at most 1080p at VIDEO_COMPRESS_BITRATE. Native only; on web the
+ * Compress `uri` to the preset's size and bitrate (portfolio's 1920 / 4 Mbps by default). Native only; on web the
  * original is returned untouched. Any failure falls back to the original so a
  * compressor problem never blocks an upload.
  */
@@ -62,13 +62,14 @@ export function startVideoCompression(
   uri: string,
   info: VideoSourceInfo = {},
   onProgress?: (fraction: number) => void,
+  preset: VideoPreset = PORTFOLIO_VIDEO,
 ): VideoCompression {
   let cancelled = false;
   let cancellationId: string | null = null;
   let Video: typeof import('react-native-compressor').Video | null = null;
 
   const promise = (async () => {
-    if (Platform.OS === 'web' || isAlreadySmall(info)) return uri;
+    if (Platform.OS === 'web' || isAlreadySmall(info, preset)) return uri;
     try {
       // Lazy: the module has no web build, and a missing native module must not crash import.
       Video = require('react-native-compressor').Video;
@@ -76,8 +77,8 @@ export function startVideoCompression(
         uri,
         {
           compressionMethod: 'manual',
-          maxSize: VIDEO_COMPRESS_MAX_SIZE,
-          bitrate: VIDEO_COMPRESS_BITRATE,
+          maxSize: preset.maxSize,
+          bitrate: preset.bitrate,
           getCancellationId: (id: string) => {
             cancellationId = id;
             if (cancelled) Video?.cancelCompression(id);

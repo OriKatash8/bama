@@ -81,7 +81,7 @@ import { confirmDialog } from '@utils/confirmDialog';
 import { VideoUploadStatus } from '@components/ui/VideoUploadStatus';
 import { ensureVideoWithinLimit } from '@core/video/duration';
 import { prepareImageForUpload, CHAT_IMAGE } from '@core/media/prepareImageForUpload';
-import { MAX_CHAT_VIDEO_SECONDS } from '@core/constants/video';
+import { MAX_CHAT_VIDEO_SECONDS, CHAT_VIDEO } from '@core/constants/video';
 import { listenToProjectFee } from '@features/pricing/services/feesService';
 import { showsOnBalance } from '@features/pricing/utils/balance';
 import type { ProjectFee } from '@core/types/project';
@@ -1616,7 +1616,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   async function uploadVideoWithRetry(asset: ImagePicker.ImagePickerAsset): Promise<string | null> {
     if (!currentUserId) return null;
     for (;;) {
-      const url = await uploadVideo('chat-videos', currentUserId, asset);
+      const url = await uploadVideo('chat-videos', currentUserId, asset, CHAT_VIDEO);
       if (url) return url;
       if (getOutcome() !== 'failed') return null;
       const retry = await confirmDialog(t('chats.error'), t('chats.video_send_failed'), {
