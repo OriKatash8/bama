@@ -378,11 +378,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
                     <AppText weight="semiBold" numberOfLines={1} ellipsizeMode="tail" style={[styles.cardName, { textAlign: rtl ? 'right' : 'left', flexShrink: 1 }]}>
                       {c.name}
                     </AppText>
-                    {isMember ? (
-                      <View style={[styles.statusBadge, { backgroundColor: '#E9F5EC' }]}>
-                        <AppText weight="semiBold" style={[styles.statusBadgeText, { color: '#2F7A45' }]}>{rtl ? 'חבר' : 'Member'}</AppText>
-                      </View>
-                    ) : isPending ? (
+                    {isPending ? (
                       <View style={[styles.statusBadge, { backgroundColor: '#FBEFD9' }]}>
                         <AppText weight="semiBold" style={[styles.statusBadgeText, { color: '#9A5B0E' }]}>{rtl ? 'ממתין' : 'Pending'}</AppText>
                       </View>
