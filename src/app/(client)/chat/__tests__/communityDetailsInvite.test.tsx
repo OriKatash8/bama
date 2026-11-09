@@ -1,6 +1,8 @@
 import React from 'react';
 import { render, fireEvent, act } from '@testing-library/react-native';
 import CommunityDetailsScreen from '../community-details';
+
+jest.mock('@features/profile/components/PortfolioViewer', () => ({ PortfolioViewer: () => null }));
 import { getDocument } from '@core/firebase/firestore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';

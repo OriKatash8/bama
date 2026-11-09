@@ -29,6 +29,8 @@ import { AppText } from '@components/ui/AppText';
 import { ToggleSwitch } from '@components/ui/ToggleSwitch';
 import { communityCategoryLabel } from '@features/crew/data/categories';
 import { CommunityAvatar } from '@features/chat/components/CommunityDiscoveryTab';
+import { PortfolioViewer } from '@features/profile/components/PortfolioViewer';
+import type { MediaAsset } from '@core/types/media';
 import {
   muteChat,
   setCommunityJoinMode,
@@ -95,6 +97,7 @@ export default function CommunityDetailsScreen() {
   const [memberUsers, setMemberUsers] = useState<Record<string, MemberInfo>>({});
   const [muted, setMuted] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
   const [membersExpanded, setMembersExpanded] = useState(false);
   // Above the early returns below: hooks must run on every render.
   const showToast = useUiStore((s) => s.showToast);
@@ -345,7 +348,33 @@ export default function CommunityDetailsScreen() {
         {/* Identity card — photo, name, and under the name: the owner's manage
             button, or the category for everyone else. */}
         <View style={styles.identityCard}>
-          <CommunityAvatar community={community} size={96} />
+          {community.photoURL ? (
+            <Pressable
+              testID="community-photo-open"
+              onPress={() => setPhotoOpen(true)}
+              accessibilityRole="imagebutton"
+              accessibilityLabel={community.name ?? undefined}
+            >
+              <CommunityAvatar community={community} size={96} />
+            </Pressable>
+          ) : (
+            <CommunityAvatar community={community} size={96} />
+          )}
+          {community.photoURL ? (
+            <PortfolioViewer
+              visible={photoOpen}
+              initialIndex={0}
+              onClose={() => setPhotoOpen(false)}
+              assets={[{
+                id: community.id,
+                url: community.photoURL,
+                thumbnailUrl: null,
+                type: 'image',
+                caption: null,
+                uploadedAt: { seconds: 0, nanoseconds: 0 } as MediaAsset['uploadedAt'],
+              }]}
+            />
+          ) : null}
           {isOwner && editingName ? (
             <View style={styles.nameEditBlock}>
               <TextInput
@@ -454,6 +483,16 @@ export default function CommunityDetailsScreen() {
           </View>
         )}
 
+        {/* Bio */}
+        {community.description ? (
+          <View style={styles.descriptionCard}>
+            <AppText weight="semiBold" style={[styles.cardLabel, { textAlign: align }]}>{t('community_details.about')}</AppText>
+            <AppText weight="regular" style={[styles.descriptionText, { textAlign: align }]}>
+              {community.description}
+            </AppText>
+          </View>
+        ) : null}
+
         {/* Search in chat — members only: nobody else can read the messages. */}
         {members.includes(currentUserId) && (
           <TouchableOpacity
@@ -492,16 +531,6 @@ export default function CommunityDetailsScreen() {
             </AppText>
           </TouchableOpacity>
         )}
-
-        {/* Bio */}
-        {community.description ? (
-          <View style={styles.descriptionCard}>
-            <AppText weight="semiBold" style={[styles.cardLabel, { textAlign: align }]}>{t('community_details.about')}</AppText>
-            <AppText weight="regular" style={[styles.descriptionText, { textAlign: align }]}>
-              {community.description}
-            </AppText>
-          </View>
-        ) : null}
 
         {/* Members — one card; the header row folds the list open in place. */}
         <View style={styles.membersCard}>

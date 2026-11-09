@@ -3,6 +3,8 @@ import { StyleSheet } from 'react-native';
 import { render, fireEvent, act } from '@testing-library/react-native';
 import { Bell, BellOff, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import CommunityDetailsScreen from '../community-details';
+
+jest.mock('@features/profile/components/PortfolioViewer', () => ({ PortfolioViewer: () => null }));
 import { getDocument } from '@core/firebase/firestore';
 import { muteChat, unmuteChat } from '@features/chat/services/chatService';
 import en from '@core/i18n/translations/en.json';
