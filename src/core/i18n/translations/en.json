@@ -1489,6 +1489,9 @@
     "no_discover_subtitle": "Join an existing community or create a new one",
     "uploading_photo": "Uploading photo...",
     "category_label": "Category",
+    "categories_label": "Categories",
+    "categories_hint": "Pick every field it covers. At least one.",
+    "category_required": "Pick at least one category",
     "select_category": "Select category"
   },
   "courses": {
@@ -1605,6 +1608,10 @@
     "open_note_open": "Anyone can join right away, with no approval needed.",
     "open_note_private": "Private: people send a request and you approve who joins.",
     "join_mode_failed": "Couldn't change who can join. Please try again.",
+    "categories_label": "Categories",
+    "categories_note": "Pick every field this community covers. At least one.",
+    "categories_min": "A community needs at least one category",
+    "categories_failed": "Couldn't update the categories. Please try again.",
     "header": "Community details",
     "manage": "Manage community",
     "about": "About",

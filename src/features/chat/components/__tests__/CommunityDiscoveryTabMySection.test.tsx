@@ -116,3 +116,43 @@ it('names the Discover category filters in the plural — a community is a group
   expect(r.getByText('Videographers')).toBeTruthy();
   expect(r.queryByText('Editor')).toBeNull();
 });
+
+describe('communities with several categories', () => {
+  const discover = [
+    { id: 'd1', type: 'community', name: 'Cutting Room', members: [], category: 'Editor' },
+    { id: 'd2', type: 'community', name: 'Sony shooters', members: [],
+      categories: ['Video Photographer', 'Still Photographer'], category: 'Video Photographer' },
+    { id: 'd3', type: 'community', name: 'Old Docs', members: [], category: 'Still Photographer' },
+  ];
+
+  it('a community appears under EACH of its categories', () => {
+    const r = renderWith([], undefined, discover);
+    fireEvent.press(r.getByText('Stills Photographers'));
+    expect(r.getByText('Sony shooters')).toBeTruthy();
+    expect(r.getByText('Old Docs')).toBeTruthy(); // legacy single category still matches
+    expect(r.queryByText('Cutting Room')).toBeNull();
+
+    fireEvent.press(r.getByText('Stills Photographers')); // toggles off
+    fireEvent.press(r.getByText('Videographers'));
+    expect(r.getByText('Sony shooters')).toBeTruthy();
+    expect(r.queryByText('Old Docs')).toBeNull();
+  });
+
+  it('lists the filter chips in a stable role order, not first-seen order', () => {
+    // First-seen would be Still Photographer, Editor, Video Photographer.
+    const r = renderWith([], undefined, [
+      { id: 'a', type: 'community', name: 'A', members: [], category: 'Still Photographer' },
+      { id: 'b', type: 'community', name: 'B', members: [], category: 'Editor' },
+      { id: 'c', type: 'community', name: 'C', members: [], category: 'Video Photographer' },
+    ]);
+    const order = ['Videographers', 'Stills Photographers', 'Editors']
+      .map((label) => ({ label, at: r.toJSON() && JSON.stringify(r.toJSON()).indexOf(label) }));
+    expect(order.map((o) => o.at)).toEqual([...order.map((o) => o.at)].sort((x, y) => (x as number) - (y as number)));
+    expect(order.every((o) => (o.at as number) > -1)).toBe(true);
+  });
+
+  it('shows one chip per category even when many communities share it', () => {
+    const r = renderWith([], undefined, discover);
+    expect(r.getAllByText('Stills Photographers')).toHaveLength(1);
+  });
+});

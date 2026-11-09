@@ -16,7 +16,7 @@ import he from '@core/i18n/translations/he.json';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { PortfolioViewer } from '@features/profile/components/PortfolioViewer';
 import type { MediaAsset } from '@core/types/media';
-import { communityCategoryLabel } from '@features/crew/data/categories';
+import { communityCategoryLabel, getCommunityCategories, ROLE_CATEGORIES } from '@features/crew/data/categories';
 import { TAB_BAR_CONTENT_GAP, FAB_SIZE, useModeAccent } from '@core/navigation/floatingTabBar';
 import { shadow } from '@core/theme/shadow';
 
@@ -158,13 +158,19 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
 
   // Filter chips reflect the categories that actually exist among the communities.
   const availableCategories = useMemo(
-    () => [...new Set(discover.map((c) => c.category).filter((cat): cat is string => !!cat))],
+    // Stable ROLE_CATEGORIES order, so the chips don't reshuffle as communities load.
+    // Anything outside ROLE_CATEGORIES (a hand-written doc) follows, so it stays filterable.
+    () => {
+      const present = new Set(discover.flatMap((c) => getCommunityCategories(c)));
+      const known = ROLE_CATEGORIES.filter((cat) => present.has(cat));
+      return [...known, ...[...present].filter((cat) => !ROLE_CATEGORIES.includes(cat))];
+    },
     [discover],
   );
 
   const q = search.trim().toLowerCase();
   const filteredDiscover = discover.filter((c) => {
-    const matchCat = !filterCategory || c.category === filterCategory;
+    const matchCat = !filterCategory || getCommunityCategories(c).includes(filterCategory);
     const matchText =
       !q ||
       (c.name ?? '').toLowerCase().includes(q) ||

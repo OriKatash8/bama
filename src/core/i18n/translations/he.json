@@ -1489,6 +1489,9 @@
     "no_discover_subtitle": "הצטרף לקהילה קיימת או צור אחת חדשה",
     "uploading_photo": "מעלה תמונה...",
     "category_label": "קטגוריה",
+    "categories_label": "קטגוריות",
+    "categories_hint": "בחרו את כל התחומים שהקהילה מכסה. לפחות אחד.",
+    "category_required": "בחרו לפחות קטגוריה אחת",
     "select_category": "בחר קטגוריה"
   },
   "courses": {
@@ -1605,6 +1608,10 @@
     "open_note_open": "כל אחד יכול להצטרף מיד, ללא אישור.",
     "open_note_private": "פרטית: אנשים שולחים בקשה ואתם מאשרים מי מצטרף.",
     "join_mode_failed": "לא ניתן היה לשנות מי יכול להצטרף. נסו שוב.",
+    "categories_label": "קטגוריות",
+    "categories_note": "בחרו את כל התחומים שהקהילה מכסה. לפחות אחד.",
+    "categories_min": "לקהילה חייבת להיות לפחות קטגוריה אחת",
+    "categories_failed": "לא ניתן היה לעדכן את הקטגוריות. נסו שוב.",
     "header": "פרטי הקהילה",
     "manage": "ניהול הקהילה",
     "about": "אודות",

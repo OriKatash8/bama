@@ -14,7 +14,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { Bell, BellOff, ChevronDown, ChevronRight, ChevronUp, LayoutDashboard, LogOut, Pencil, Search, Share2, Users } from 'lucide-react-native';
+import { Bell, BellOff, ChevronDown, ChevronRight, ChevronUp, LayoutDashboard, LogOut, Pencil, Search, Share2, Tag, Users } from 'lucide-react-native';
 import { confirmDialog } from '@utils/confirmDialog';
 import { db } from '@core/firebase/config';
 import { getDocument } from '@core/firebase/firestore';
@@ -27,7 +27,8 @@ import { chatGroupOf } from '@features/chat/utils/chatGroup';
 import { ChatMediaSection } from '@features/chat/components/ChatMediaSection';
 import { AppText } from '@components/ui/AppText';
 import { ToggleSwitch } from '@components/ui/ToggleSwitch';
-import { communityCategoryLabel } from '@features/crew/data/categories';
+import { communityCategoryLabel, getCommunityCategories } from '@features/crew/data/categories';
+import { CategoryChips } from '@features/chat/components/CategoryChips';
 import { CommunityAvatar } from '@features/chat/components/CommunityDiscoveryTab';
 import { PortfolioViewer } from '@features/profile/components/PortfolioViewer';
 import type { MediaAsset } from '@core/types/media';
@@ -36,6 +37,7 @@ import {
   setCommunityJoinMode,
   unmuteChat,
   updateCommunityName,
+  updateCommunityCategories,
 } from '@features/chat/services/chatService';
 import { leaveCommunity } from '@features/chat/services/communityMembership';
 import {
@@ -98,6 +100,7 @@ export default function CommunityDetailsScreen() {
   const [muted, setMuted] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [photoOpen, setPhotoOpen] = useState(false);
+  const [savingCategories, setSavingCategories] = useState(false);
   const [membersExpanded, setMembersExpanded] = useState(false);
   // Above the early returns below: hooks must run on every render.
   const showToast = useUiStore((s) => s.showToast);
@@ -195,6 +198,7 @@ export default function CommunityDetailsScreen() {
   }
 
   const members = community.members ?? [];
+  const categories = getCommunityCategories(community);
   const isOwner = currentUserId === community.ownerId;
 
   /** Owner: create (or reuse) the community's invite link and hand it to the OS share sheet. */
@@ -252,6 +256,26 @@ export default function CommunityDetailsScreen() {
       showToast(t('community_details.name_failed'), 'error');
     } finally {
       setSavingName(false);
+    }
+  }
+
+  // Owner only. Every tap saves, like the join-mode toggle; the last category can't be removed.
+  async function handleToggleCategory(cat: string) {
+    if (!chatId || !community || savingCategories) return;
+    const current = getCommunityCategories(community);
+    const next = current.includes(cat) ? current.filter((c) => c !== cat) : [...current, cat];
+    if (next.length < 1) {
+      showToast(t('community_details.categories_min'), 'error');
+      return;
+    }
+    setSavingCategories(true);
+    try {
+      await updateCommunityCategories(chatId, next);
+    } catch (err) {
+      console.error('[community-details] categories change failed:', err);
+      showToast(t('community_details.categories_failed'), 'error');
+    } finally {
+      setSavingCategories(false);
     }
   }
 
@@ -441,11 +465,15 @@ export default function CommunityDetailsScreen() {
                 {t('community_admin.open_dashboard')}
               </AppText>
             </TouchableOpacity>
-          ) : community.category ? (
-            <View style={styles.categoryChip}>
-              <AppText weight="semiBold" style={styles.categoryChipText}>
-                {communityCategoryLabel(community.category, lang)}
-              </AppText>
+          ) : categories.length > 0 ? (
+            <View testID="community-categories" style={[styles.categoryChips, { flexDirection: rowDir }]}>
+              {categories.map((cat) => (
+                <View key={cat} style={styles.categoryChip}>
+                  <AppText weight="semiBold" style={styles.categoryChipText}>
+                    {communityCategoryLabel(cat, lang)}
+                  </AppText>
+                </View>
+              ))}
             </View>
           ) : null}
         </View>
@@ -633,6 +661,29 @@ export default function CommunityDetailsScreen() {
           </View>
         )}
 
+        {/* Categories — the owner only. One or more; every change saves at once. */}
+        {isOwner && (
+          <View style={styles.settingCard} testID="community-categories-card">
+            <View style={[styles.settingRow, { flexDirection: rowDir }]}>
+              <Tag size={18} color={colors.primary} strokeWidth={1.8} />
+              <AppText weight="semiBold" style={[styles.settingLabel, { textAlign: align }]}>
+                {t('community_details.categories_label')}
+              </AppText>
+            </View>
+            <CategoryChips
+              selected={categories}
+              onToggle={handleToggleCategory}
+              lang={lang}
+              accent={colors.primary}
+              disabled={savingCategories}
+              testIDPrefix="owner-category"
+            />
+            <AppText weight="regular" style={[styles.settingNote, { textAlign: align }]}>
+              {t('community_details.categories_note')}
+            </AppText>
+          </View>
+        )}
+
         {/* Notifications */}
         <View style={styles.settingCard}>
           <View style={[styles.settingRow, { flexDirection: rowDir }]}>
@@ -741,6 +792,7 @@ const styles = StyleSheet.create({
   nameCancelBtn: { paddingHorizontal: 12, paddingVertical: 8 },
   nameCancelText: { fontSize: 14, color: '#6B6880' },
   communityName: { fontSize: 20, color: '#1e4fa3', textAlign: 'center', lineHeight: 26 },
+  categoryChips: { flexWrap: 'wrap', justifyContent: 'center', gap: 6 },
   categoryChip: {
     backgroundColor: 'rgba(30,79,163,0.08)',
     borderRadius: 10,

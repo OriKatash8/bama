@@ -105,7 +105,11 @@ export interface Chat {
   /** Communities only: uid → channelId → unread in that channel. Written by
    *  onNewCommunityMessage; each reader zeroes their own entry. */
   channelUnread?: Record<string, Record<string, number>>;
+  /** Legacy single category; always `categories[0]` on docs written since multi-category,
+   *  so 1.0.x clients still show one. Read through getCommunityCategories. */
   category?: string;
+  /** Communities only: one or more legacy category strings (ROLE_CATEGORIES vocabulary). */
+  categories?: string[];
   /** Communities only. 'open': anyone taps Join and is in. 'approval' (also when
    *  absent): the owner approves each request. Owner-written. */
   joinMode?: 'open' | 'approval';

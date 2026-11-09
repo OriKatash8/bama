@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent, act } from '@testing-library/react-native';
+import { render, fireEvent, act, within } from '@testing-library/react-native';
 import CommunityDetailsScreen from '../community-details';
 
 jest.mock('@features/profile/components/PortfolioViewer', () => ({ PortfolioViewer: () => null }));
@@ -89,7 +89,7 @@ it('owner: "Dashboard" replaces the category under the name, and there is no Man
   const r = await renderAs('owner-1');
   expect(r.getByRole('button', { name: he.community_admin.open_dashboard })).toBeTruthy();
   expect(r.queryByRole('button', { name: he.community_details.manage })).toBeNull();
-  expect(r.queryByText('עורכים')).toBeNull(); // the category label (communityCategoryLabel he, plural)
+  expect(r.queryByTestId('community-categories')).toBeNull(); // no chips under the name (the owner edits them in their own card)
 });
 
 it('owner: Dashboard opens the community dashboard', async () => {
@@ -101,7 +101,7 @@ it('owner: Dashboard opens the community dashboard', async () => {
 
 it('member: sees the category and no dashboard button', async () => {
   const r = await renderAs('u2');
-  expect(r.getByText('עורכים')).toBeTruthy();
+  expect(within(r.getByTestId('community-categories')).getByText('עורכים')).toBeTruthy();
   expect(r.queryByRole('button', { name: he.community_admin.open_dashboard })).toBeNull();
 });
 

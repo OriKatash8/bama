@@ -209,3 +209,21 @@ export function communityCategoryLabel(category: string, lang: 'he' | 'en'): str
 
 /** Ordered legacy category strings for role pickers/filters (one per role, in ROLES order). */
 export const ROLE_CATEGORIES: string[] = ROLES.map((r) => ROLE_TO_LEGACY_CATEGORY[r.id]).filter(Boolean);
+
+/**
+ * A community's categories, newest shape first. Communities created before multi-category
+ * carry only the legacy single `category`; both forms read the same here. Always the
+ * legacy strings (what ROLE_CATEGORIES holds), so callers can compare against it directly.
+ */
+export function getCommunityCategories(c: { categories?: string[] | null; category?: string | null }): string[] {
+  if (Array.isArray(c.categories) && c.categories.length > 0) return c.categories;
+  return c.category ? [c.category] : [];
+}
+
+/** Dedupes and orders a selection by ROLE_CATEGORIES, so writes are canonical and
+ *  `categories[0]` (mirrored into the legacy `category`) is stable. Unknown strings
+ *  are dropped. */
+export function normalizeCommunityCategories(selected: readonly string[]): string[] {
+  return ROLE_CATEGORIES.filter((cat) => selected.includes(cat));
+}
+

@@ -61,6 +61,10 @@ jest.mock('firebase/firestore', () => ({
 
 const REQUESTS = [
   { id: 'r1', name: 'Gaffers Guild', description: 'Lighting crews', requesterId: 'q1', requesterName: 'Rona', status: 'pending', createdAt: null },
+  // A multi-category request, and a 1.0.x one that carries only the legacy `category`.
+  { id: 'r2', name: 'Sony shooters', description: 'Sony users', requesterId: 'q2', requesterName: 'Dan', status: 'pending', createdAt: null,
+    categories: ['Video Photographer', 'Still Photographer'], category: 'Video Photographer' },
+  { id: 'r3', name: 'Old client', description: 'From 1.0.x', requesterId: 'q3', requesterName: 'Lee', status: 'pending', createdAt: null, category: 'Editor' },
 ];
 const COMMUNITIES = [
   { id: 'c1', name: 'Sound Crew', description: '', ownerId: 'o1', members: ['m1', 'm2'], createdAt: null, status: 'active' },
@@ -122,7 +126,7 @@ it('renders the requests and communities, with owner names, and the stat tiles',
   expect(within(r.getByTestId('community-c1')).getByText(/Olive Owner/)).toBeTruthy();
   expect(within(r.getByTestId('community-c2')).getByText(en.admin_users.status_suspended)).toBeTruthy();
   const val = (id: string) => r.getByTestId(`${id}-value`).props.accessibilityLabel;
-  expect(val('tile-requests')).toBe('1');
+  expect(val('tile-requests')).toBe('3');
   expect(val('tile-communities')).toBe('2');
   expect(val('tile-suspended')).toBe('1');
   expect(val('tile-members')).toBe('3');
@@ -154,7 +158,7 @@ it('approves and rejects a creation request', async () => {
   await act(async () => {
     fireEvent.press(r.getByTestId('approve-r1'));
   });
-  expect(createCommunityChat).toHaveBeenCalledWith('Gaffers Guild', 'Lighting crews', 'q1', undefined, undefined);
+  expect(createCommunityChat).toHaveBeenCalledWith('Gaffers Guild', 'Lighting crews', 'q1', undefined, []);
   expect(updateDoc).toHaveBeenCalledWith('communityRequests/r1', { status: 'approved' });
   await act(async () => {
     fireEvent.press(r.getByTestId('reject-r1'));
@@ -263,4 +267,26 @@ it('says so when suspending is refused', async () => {
   const r = await renderPage();
   await act(async () => { fireEvent.press(r.getByTestId('suspend-c1')); });
   expect(mockToast).toHaveBeenCalledWith(en.admin_communities.suspend_failed, 'error');
+});
+
+it('shows every category on a request, and approval passes them all through', async () => {
+  const r = await renderPage();
+  const text = r.getByTestId('request-categories-r2');
+  expect(text.props.children).toBe('Videographers · Stills Photographers');
+  expect(r.queryByTestId('request-categories-r1')).toBeNull(); // no category at all: no line
+  await act(async () => {
+    fireEvent.press(r.getByTestId('approve-r2'));
+  });
+  expect(createCommunityChat).toHaveBeenCalledWith(
+    'Sony shooters', 'Sony users', 'q2', undefined, ['Video Photographer', 'Still Photographer'],
+  );
+});
+
+it('a 1.0.x request with only `category` still shows and approves as one category', async () => {
+  const r = await renderPage();
+  expect(r.getByTestId('request-categories-r3').props.children).toBe('Editors');
+  await act(async () => {
+    fireEvent.press(r.getByTestId('approve-r3'));
+  });
+  expect(createCommunityChat).toHaveBeenCalledWith('Old client', 'From 1.0.x', 'q3', undefined, ['Editor']);
 });

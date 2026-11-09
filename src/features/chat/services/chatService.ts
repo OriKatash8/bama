@@ -21,6 +21,7 @@ import {
 import { db } from '../../../core/firebase/config';
 import type { Chat, Message } from '../types';
 import { logOwnerJoin, withEvents } from './communityMembership';
+import { normalizeCommunityCategories } from '@features/crew/data/categories';
 
 function docToMessage(doc: QueryDocumentSnapshot<DocumentData>): Message {
   const data = doc.data();
@@ -201,8 +202,9 @@ export async function createCommunityChat(
   description: string,
   ownerId: string,
   photoURL?: string,
-  category?: string,
+  categories?: string[],
 ): Promise<string> {
+  const cats = normalizeCommunityCategories(categories ?? []);
   // One batch with the owner's 'join', so the dashboard's member log starts at
   // creation — best-effort, like every membership event (see withEvents).
   const ref = doc(collection(db, 'chats'));
@@ -217,7 +219,8 @@ export async function createCommunityChat(
       lastMessage: null,
       createdAt: serverTimestamp(),
       ...(photoURL ? { photoURL } : {}),
-      ...(category ? { category } : {}),
+      // `category` mirrors categories[0] so 1.0.x clients still show one.
+      ...(cats.length ? { categories: cats, category: cats[0] } : {}),
     });
     if (events) logOwnerJoin(batch, ref.id, ownerId);
     await batch.commit();
@@ -364,6 +367,14 @@ export async function updateCommunityName(chatId: string, name: string): Promise
   const trimmed = name.trim();
   if (trimmed.length < 1 || trimmed.length > 60) throw new Error('invalid community name');
   await updateDoc(doc(db, 'chats', chatId), { name: trimmed });
+}
+
+/** Owner only (the rules enforce it). 1+ categories; writes the legacy `category` in the same
+ *  update so the two never drift (the rules require it). */
+export async function updateCommunityCategories(chatId: string, categories: string[]): Promise<void> {
+  const cats = normalizeCommunityCategories(categories);
+  if (cats.length < 1) throw new Error('a community needs at least one category');
+  await updateDoc(doc(db, 'chats', chatId), { categories: cats, category: cats[0] });
 }
 
 /** Owner only (the rules enforce it). 'open' = anyone can join; 'approval' = owner approves. */

@@ -10,6 +10,8 @@ import { useRouter } from 'expo-router';
 import { db } from '@core/firebase/config';
 import { createCommunityChat } from '@features/chat/services/chatService';
 import { useUiStore } from '@core/stores/uiStore';
+import { useSettingsStore } from '@core/stores/settingsStore';
+import { communityCategoryLabel, getCommunityCategories } from '@features/crew/data/categories';
 import { callFunction } from '@core/firebase/functions';
 import { confirmDialog } from '@utils/confirmDialog';
 import { HEEBO ,
@@ -42,7 +44,9 @@ type CommunityRequest = {
   status: 'pending' | 'approved' | 'rejected';
   createdAt: Timestamp | null;
   photoURL?: string;
+  /** 1.0.x requests carry only `category`; read both through getCommunityCategories. */
   category?: string;
+  categories?: string[];
 };
 
 type Community = {
@@ -52,6 +56,8 @@ type Community = {
   ownerId: string;
   members: string[];
   createdAt: Timestamp | null;
+  category?: string;
+  categories?: string[];
   /** Absent on communities created without it — read as active (isActive). */
   status?: 'active' | 'suspended';
 };
@@ -102,6 +108,9 @@ export default function CommunitiesAdmin() {
   const { k, tp, rowDir, textAlign } = usePageT();
   const router = useRouter();
   const { showToast } = useUiStore();
+  const lang = useSettingsStore((st) => st.language) === 'he' ? 'he' : 'en';
+  const categoriesText = (c: { category?: string; categories?: string[] }) =>
+    getCommunityCategories(c).map((cat) => communityCategoryLabel(cat, lang)).join(' · ');
 
   const [requests, setRequests] = useState<CommunityRequest[]>([]);
   const [communities, setCommunities] = useState<Community[]>([]);
@@ -141,7 +150,7 @@ export default function CommunitiesAdmin() {
   }, []);
 
   async function handleApprove(req: CommunityRequest) {
-    await createCommunityChat(req.name, req.description, req.requesterId, req.photoURL, req.category);
+    await createCommunityChat(req.name, req.description, req.requesterId, req.photoURL, getCommunityCategories(req));
     await updateDoc(doc(db, 'communityRequests', req.id), { status: 'approved' });
     showToast(tp('toast_approved'), 'success');
   }
@@ -269,6 +278,11 @@ export default function CommunitiesAdmin() {
                     {req.description}
                   </AdminText>
                 )}
+                {getCommunityCategories(req).length > 0 && (
+                  <AdminText testID={`request-categories-${req.id}`} numberOfLines={2} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
+                    {categoriesText(req)}
+                  </AdminText>
+                )}
                 <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
                   {`${k.users('by')} ${req.requesterName}`}
                 </AdminText>
@@ -326,7 +340,7 @@ export default function CommunitiesAdmin() {
                     <InitialsAvatar name={c.name} />
                     <WhoBlock
                       name={c.name}
-                      meta={`${k.details('owner')}: ${ownerNames[c.ownerId] ?? c.ownerId} · ${k.ca('members_count', { n: count })}`}
+                      meta={`${k.details('owner')}: ${ownerNames[c.ownerId] ?? c.ownerId} · ${k.ca('members_count', { n: count })}${getCommunityCategories(c).length ? ` · ${categoriesText(c)}` : ''}`}
                       textAlign={textAlign}
                     />
                     <StatusPill active={active} label={k.users(active ? 'status_active' : 'status_suspended')} testID={`status-${c.id}`} />
