@@ -59,7 +59,7 @@ import {
 } from 'firebase/firestore';
 import { Stack, useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { useActiveChatStore } from '@core/stores/activeChatStore';
-import { Plus, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, ChevronRight, Users, UserMinus, Search, MoreVertical } from 'lucide-react-native';
+import { Plus, Crop, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, ChevronRight, Users, UserMinus, Search, MoreVertical } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -79,6 +79,7 @@ import { channelDocToMessage, listenToMessages, sendMessage, hideChatForUser } f
 import { confirmDialog } from '@utils/confirmDialog';
 import { ensurePhotoLibraryAccess } from '@core/media/ensurePhotoLibraryAccess';
 import { startPickTiming } from '@core/media/pickTiming';
+import { CropEditor } from '@components/media/CropEditor';
 import { PendingMediaBubble } from '../components/PendingMediaBubble';
 import { useChatMediaSend, pendingHasLanded } from '../hooks/useChatMediaSend';
 import { useLeaveGuard } from '../hooks/useLeaveGuard';
@@ -887,6 +888,9 @@ export function ChatRoomScreen({ chatId }: Props) {
     asset: ImagePicker.ImagePickerAsset;
   } | null>(null);
   const [pendingCaption, setPendingCaption] = useState('');
+  // The crop editor opens inside the preview Modal (not a second Modal); the caption stays mounted.
+  const [cropping, setCropping] = useState(false);
+  useEffect(() => { if (!pendingMedia) setCropping(false); }, [pendingMedia]);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [purchaseListing, setPurchaseListing] = useState<MarketplaceListing | null>(null);
   const [showPurchaseNotice, setShowPurchaseNotice] = useState(false);
@@ -2607,16 +2611,32 @@ export function ChatRoomScreen({ chatId }: Props) {
       visible={pendingMedia !== null}
       transparent
       animationType="fade"
-      onRequestClose={() => { setPendingMedia(null); setPendingCaption(''); }}
+      onRequestClose={() => {
+        if (cropping) { setCropping(false); return; }
+        setPendingMedia(null); setPendingCaption('');
+      }}
     >
       <KeyboardAvoidingView
         style={previewStyles.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={[previewStyles.topBar, { paddingTop: TOP_INSET + 12 }]}>
+        <View style={[previewStyles.topBar, { paddingTop: TOP_INSET + 12, justifyContent: 'space-between' }]}>
           <TouchableOpacity onPress={() => { setPendingMedia(null); setPendingCaption(''); }} activeOpacity={0.7}>
             <X size={26} color="#fff" strokeWidth={2} />
           </TouchableOpacity>
+          {pendingMedia?.type === 'image' && (
+            <TouchableOpacity
+              testID="media-crop-button"
+              onPress={() => setCropping(true)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={t('chats.crop')}
+              style={previewStyles.editBtn}
+            >
+              <Crop size={22} color="#fff" strokeWidth={2} />
+              <AppText weight="semiBold" style={previewStyles.editBtnText}>{t('chats.crop')}</AppText>
+            </TouchableOpacity>
+          )}
         </View>
         <View style={previewStyles.previewArea}>
           {pendingMedia?.type === 'video' ? (
@@ -2642,6 +2662,22 @@ export function ChatRoomScreen({ chatId }: Props) {
             <AppText weight="bold" style={previewStyles.sendBtnText}>{t('chats.record_send')}</AppText>
           </TouchableOpacity>
         </View>
+        {cropping && pendingMedia?.type === 'image' && (
+          <CropEditor
+            uri={pendingMedia.uri}
+            accent={modeAccent}
+            rtl={rtl}
+            t={t}
+            topInset={TOP_INSET}
+            bottomInset={BOTTOM_INSET}
+            onCancel={() => setCropping(false)}
+            onDone={(r) => {
+              // The edited file is what gets sent; prepareImageForUpload still runs at Send.
+              setPendingMedia((p) => p && { ...p, uri: r.uri, asset: { ...p.asset, uri: r.uri, width: r.width, height: r.height } });
+              setCropping(false);
+            }}
+          />
+        )}
       </KeyboardAvoidingView>
     </Modal>
 
@@ -3435,4 +3471,6 @@ const previewStyles = StyleSheet.create({
     paddingVertical: 10,
   },
   sendBtnText: { color: '#fff', fontSize: 15 },
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  editBtnText: { color: '#fff', fontSize: 15 },
 });

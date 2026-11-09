@@ -238,7 +238,13 @@
     "leave_sending_video": "הסרטון עדיין נשלח. לעזוב ולבטל את השליחה?",
     "leave_sending_image": "התמונה עדיין נשלחת. לעזוב ולבטל את השליחה?",
     "leave_sending_leave": "לעזוב",
-    "leave_sending_stay": "להישאר"
+    "leave_sending_stay": "להישאר",
+    "crop": "חיתוך",
+    "crop_free": "חופשי",
+    "crop_reset": "איפוס",
+    "crop_done": "סיום",
+    "crop_rotate": "סיבוב",
+    "crop_failed": "לא ניתן לפתוח את התמונה לחיתוך"
   },
   "mentions": {
     "loading": "טוען חברים…",

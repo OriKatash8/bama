@@ -29,7 +29,7 @@ it('renders the bubble as the list footer, for its own chat and channel only', (
 it('has the strings in both languages', () => {
   const en = JSON.parse(readFileSync(join(__dirname, '../../../../core/i18n/translations/en.json'), 'utf8'));
   const he = JSON.parse(readFileSync(join(__dirname, '../../../../core/i18n/translations/he.json'), 'utf8'));
-  for (const k of ['media_send_in_progress', 'media_preparing', 'leave_sending_title', 'leave_sending_video', 'leave_sending_image', 'leave_sending_leave', 'leave_sending_stay']) {
+  for (const k of ['crop', 'crop_free', 'crop_reset', 'crop_done', 'crop_rotate', 'crop_failed', 'media_send_in_progress', 'media_preparing', 'leave_sending_title', 'leave_sending_video', 'leave_sending_image', 'leave_sending_leave', 'leave_sending_stay']) {
     expect(en.chats[k]).toBeTruthy();
     expect(he.chats[k]).toBeTruthy();
   }
@@ -41,4 +41,21 @@ it('checks photo-library access just before opening the media picker, and times 
   expect(fn.indexOf('await ensurePhotoLibraryAccess()')).toBeGreaterThan(-1);
   expect(fn.indexOf('await ensurePhotoLibraryAccess()')).toBeLessThan(fn.indexOf('launchImageLibraryAsync'));
   expect(fn).toMatch(/timing\.mark\('preview shown'\)/);
+});
+
+describe('crop in the preview', () => {
+  it('offers Crop for photos only, and opens the editor inside the same Modal', () => {
+    expect(SRC).toMatch(/pendingMedia\?\.type === 'image' && \(\s*<TouchableOpacity\s+testID="media-crop-button"/);
+    expect(SRC).toMatch(/\{cropping && pendingMedia\?\.type === 'image' && \(\s*<CropEditor/);
+    expect(SRC.indexOf('<CropEditor')).toBeLessThan(SRC.indexOf('{/* Fullscreen media viewer'));
+    expect(SRC.indexOf('<CropEditor')).toBeGreaterThan(SRC.indexOf('visible={pendingMedia !== null}'));
+  });
+  it('keeps the caption: the edit swaps uri/asset, never the caption state', () => {
+    const done = SRC.slice(SRC.indexOf('onDone={(r) =>'), SRC.indexOf('onDone={(r) =>') + 400);
+    expect(done).toMatch(/setPendingMedia\(\(p\) => p && \{ \.\.\.p, uri: r\.uri, asset: \{ \.\.\.p\.asset, uri: r\.uri/);
+    expect(done).not.toMatch(/setPendingCaption/);
+  });
+  it('Android back closes the editor first, not the whole preview', () => {
+    expect(SRC).toMatch(/onRequestClose=\{\(\) => \{\s*if \(cropping\) \{ setCropping\(false\); return; \}/);
+  });
 });

@@ -238,7 +238,13 @@
     "leave_sending_video": "The video is still sending. Leave and cancel the send?",
     "leave_sending_image": "The photo is still sending. Leave and cancel the send?",
     "leave_sending_leave": "Leave",
-    "leave_sending_stay": "Stay"
+    "leave_sending_stay": "Stay",
+    "crop": "Crop",
+    "crop_free": "Free",
+    "crop_reset": "Reset",
+    "crop_done": "Done",
+    "crop_rotate": "Rotate",
+    "crop_failed": "Couldn't open this photo for cropping"
   },
   "mentions": {
     "loading": "Loading members…",
