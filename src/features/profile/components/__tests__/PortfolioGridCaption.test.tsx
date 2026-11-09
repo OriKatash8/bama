@@ -19,6 +19,8 @@ import he from '@core/i18n/translations/he.json';
 
 jest.mock('expo-image-picker', () => ({
   launchImageLibraryAsync: jest.fn(),
+  getMediaLibraryPermissionsAsync: jest.fn(async () => ({ status: 'granted' })),
+  requestMediaLibraryPermissionsAsync: jest.fn(async () => ({ status: 'granted' })),
   UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible', Current: 'current' },
 }));
 jest.mock('expo-video', () => ({
@@ -309,4 +311,35 @@ it('asks the picker for the original asset, not a transcoded copy', async () => 
   expect(pick).toHaveBeenCalledWith(
     expect.objectContaining({ preferredAssetRepresentationMode: 'current', shouldDownloadFromNetwork: true }),
   );
+});
+
+describe('photo-library permission before the picker', () => {
+  const getPerm = ImagePicker.getMediaLibraryPermissionsAsync as jest.Mock;
+  const reqPerm = ImagePicker.requestMediaLibraryPermissionsAsync as jest.Mock;
+
+  it('undetermined: asks once, then opens the picker', async () => {
+    getPerm.mockResolvedValueOnce({ status: 'undetermined' });
+    const order: string[] = [];
+    reqPerm.mockImplementationOnce(async () => { order.push('request'); return { status: 'granted' }; });
+    pick.mockImplementationOnce(async () => { order.push('picker'); return pickedPhoto; });
+    const { r } = setup();
+    await pressAdd(r);
+    expect(order).toEqual(['request', 'picker']);
+  });
+
+  it('denied: does not ask again and the picker still opens', async () => {
+    getPerm.mockResolvedValueOnce({ status: 'denied' });
+    reqPerm.mockClear();
+    const { r } = setup();
+    await pressAdd(r);
+    expect(reqPerm).not.toHaveBeenCalled();
+    expect(pick).toHaveBeenCalledTimes(1);
+  });
+
+  it('the prompt failing does not stop the picker', async () => {
+    getPerm.mockRejectedValueOnce(new Error('boom'));
+    const { r } = setup();
+    await pressAdd(r);
+    expect(pick).toHaveBeenCalledTimes(1);
+  });
 });

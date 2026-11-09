@@ -16,6 +16,8 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { useKeyboardHeight } from '@core/hooks/useKeyboardHeight';
 import { useVideoUpload } from '@core/hooks/useVideoUpload';
 import { ensureVideoWithinLimit } from '@core/video/duration';
+import { ensurePhotoLibraryAccess } from '@core/media/ensurePhotoLibraryAccess';
+import { startPickTiming } from '@core/media/pickTiming';
 import { MAX_PORTFOLIO_VIDEO_SECONDS } from '@core/constants/video';
 import { UploadingTile } from './UploadingTile';
 import type { PhotoUploadOptions } from '@features/profile/hooks/usePortfolio';
@@ -137,7 +139,10 @@ export function PortfolioGrid({
     console.log('[PortfolioGrid] Add Media pressed — userId:', user.id);
 
     let result: ImagePicker.ImagePickerResult;
+    const timing = startPickTiming('portfolio');
     try {
+      await ensurePhotoLibraryAccess();
+      timing.mark('permission checked, opening picker');
       result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images', 'videos'] as const,
         allowsEditing: false,
@@ -160,6 +165,7 @@ export function PortfolioGrid({
       onError?.((e instanceof Error ? e.message : null) ?? t('media.video_pick_error'));
       return;
     }
+    timing.mark('picker resolved');
     if (result.canceled) return;
 
     // Hold the pick and ask for a caption first — this is the only moment the
@@ -168,6 +174,7 @@ export function PortfolioGrid({
     if (asset.type === 'video' && !(await ensureVideoWithinLimit(asset, MAX_PORTFOLIO_VIDEO_SECONDS, t))) return;
     setCaption('');
     setPending({ asset, isVideo: asset.type === 'video' });
+    timing.mark('preview shown');
   }
 
   /** Save / Skip: close the sheet now and carry on uploading on the grid tile. */

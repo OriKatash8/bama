@@ -77,6 +77,8 @@ import { uploadFile } from '@core/firebase/storage';
 import { auth, db } from '@core/firebase/config';
 import { channelDocToMessage, listenToMessages, sendMessage, hideChatForUser } from '../services/chatService';
 import { confirmDialog } from '@utils/confirmDialog';
+import { ensurePhotoLibraryAccess } from '@core/media/ensurePhotoLibraryAccess';
+import { startPickTiming } from '@core/media/pickTiming';
 import { PendingMediaBubble } from '../components/PendingMediaBubble';
 import { useChatMediaSend, pendingHasLanded } from '../hooks/useChatMediaSend';
 import { useLeaveGuard } from '../hooks/useLeaveGuard';
@@ -1618,7 +1620,10 @@ export function ChatRoomScreen({ chatId }: Props) {
     if (!currentUserId || !mediaSend.canStartNew()) return;
     // Spinner on the + button from the tap until the preview opens (iCloud download etc.).
     setPickingMedia(true);
+    const timing = startPickTiming('chat');
     try {
+      await ensurePhotoLibraryAccess();
+      timing.mark('permission checked, opening picker');
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images', 'videos'] as const,
         allowsEditing: false,
@@ -1631,10 +1636,12 @@ export function ChatRoomScreen({ chatId }: Props) {
           ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Current,
         shouldDownloadFromNetwork: true,
       });
+      timing.mark('picker resolved');
       if (result.canceled) return;
       const asset = result.assets[0];
       if (asset.type === 'video' && !(await ensureVideoWithinLimit(asset, MAX_CHAT_VIDEO_SECONDS, t))) return;
       setPendingMedia({ uri: asset.uri, type: asset.type === 'video' ? 'video' : 'image', asset });
+      timing.mark('preview shown');
     } catch {
       Alert.alert(t('chats.error'), t('chats.media_load_failed'));
     } finally {

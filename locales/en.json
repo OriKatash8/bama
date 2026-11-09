@@ -1,6 +1,6 @@
 {
   "ios": {
-    "NSPhotoLibraryUsageDescription": "BAMA uses your photo library so you can choose photos and videos for your profile, portfolio, chats and marketplace listings.",
+    "NSPhotoLibraryUsageDescription": "BAMA uses your photo library so you can choose photos and videos for your profile, portfolio, chats and marketplace listings, and to load the videos you pick faster.",
     "NSCameraUsageDescription": "BAMA uses the camera so you can take a photo and send it in a chat.",
     "NSMicrophoneUsageDescription": "BAMA uses the microphone to record voice messages in chats.",
     "NSCalendarsUsageDescription": "BAMA adds project meetings to your calendar when you ask it to.",

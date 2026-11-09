@@ -34,3 +34,11 @@ it('has the strings in both languages', () => {
     expect(he.chats[k]).toBeTruthy();
   }
 });
+
+it('checks photo-library access just before opening the media picker, and times the pick', () => {
+  const body = SRC.slice(SRC.indexOf('async function handleAttachMedia()'));
+  const fn = body.slice(0, body.indexOf('\n  }\n'));
+  expect(fn.indexOf('await ensurePhotoLibraryAccess()')).toBeGreaterThan(-1);
+  expect(fn.indexOf('await ensurePhotoLibraryAccess()')).toBeLessThan(fn.indexOf('launchImageLibraryAsync'));
+  expect(fn).toMatch(/timing\.mark\('preview shown'\)/);
+});
