@@ -1,0 +1,107 @@
+diff --git a/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/widgets/VideoTrimmerView.kt b/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/widgets/VideoTrimmerView.kt
+index ec686fc..65492fc 100644
+--- a/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/widgets/VideoTrimmerView.kt
++++ b/node_modules/react-native-video-trim/android/src/main/java/com/videotrim/widgets/VideoTrimmerView.kt
+@@ -233,6 +233,8 @@ class VideoTrimmerView(
+     mContext = context
+ 
+     context.currentActivity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
++    // The timeline maths is absolute (left = earlier): never mirror it for an RTL device.
++    layoutDirection = View.LAYOUT_DIRECTION_LTR
+     LayoutInflater.from(context).inflate(R.layout.video_trimmer_view, this, true)
+     vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+ 
+diff --git a/node_modules/react-native-video-trim/ios/VideoTrimmer.swift b/node_modules/react-native-video-trim/ios/VideoTrimmer.swift
+index 2542575..8fe3696 100644
+--- a/node_modules/react-native-video-trim/ios/VideoTrimmer.swift
++++ b/node_modules/react-native-video-trim/ios/VideoTrimmer.swift
+@@ -352,6 +352,8 @@ import AVFoundation
+     }
+     
+     private func setup() {
++        // Time <-> x maths below is absolute (left = earlier); never mirror it for RTL devices.
++        semanticContentAttribute = .forceLeftToRight
+         addSubview(thumbnailClipView)
+         thumbnailClipView.addSubview(thumbnailWrapperView)
+         thumbnailWrapperView.addSubview(leadingThumbRest)
+diff --git a/node_modules/react-native-video-trim/ios/VideoTrimmerThumb.swift b/node_modules/react-native-video-trim/ios/VideoTrimmerThumb.swift
+index 937bd93..6493757 100644
+--- a/node_modules/react-native-video-trim/ios/VideoTrimmerThumb.swift
++++ b/node_modules/react-native-video-trim/ios/VideoTrimmerThumb.swift
+@@ -80,6 +80,33 @@ class VideoTrimmerThumb: UIView {
+     let chevronWidth: CGFloat = 16
+     let edgeHeight: CGFloat = 4
+     
++    // Touch targets: the chevrons are only 16 pt wide, so a touch that lands a little off a handle
++    // used to fall through to the range-drag gesture. Each grabber also answers touches this much
++    // beyond its edges (more on the outer side, less on the inner side so the two handles do not
++    // fight over a short selection).
++    private let grabberOuterSlop: CGFloat = 12
++    private let grabberInnerSlop: CGFloat = 6
++
++    override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
++        return bounds.insetBy(dx: -grabberOuterSlop, dy: 0).contains(point)
++    }
++
++    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
++        guard isUserInteractionEnabled, !isHidden, alpha > 0.01 else { return nil }
++        let lead = leadingGrabber.convert(leadingGrabber.bounds, to: self)
++            .inset(by: UIEdgeInsets(top: 0, left: -grabberOuterSlop, bottom: 0, right: -grabberInnerSlop))
++        let trail = trailingGrabber.convert(trailingGrabber.bounds, to: self)
++            .inset(by: UIEdgeInsets(top: 0, left: -grabberInnerSlop, bottom: 0, right: -grabberOuterSlop))
++        let inLead = lead.contains(point)
++        let inTrail = trail.contains(point)
++        if inLead && inTrail {
++            return abs(point.x - lead.midX) <= abs(point.x - trail.midX) ? leadingGrabber : trailingGrabber
++        }
++        if inLead { return leadingGrabber }
++        if inTrail { return trailingGrabber }
++        return super.hitTest(point, with: event)
++    }
++
+     override init(frame: CGRect) {
+         super.init(frame: frame)
+         setup()
+@@ -91,6 +118,9 @@ class VideoTrimmerThumb: UIView {
+     }
+     
+     private func setup() {
++        // The trimmer maps time to absolute x, so it must lay out left-to-right even on an RTL
++        // device; otherwise the "leading" (start) handle is drawn on the right and the handles swap.
++        semanticContentAttribute = .forceLeftToRight
+         leadingView.addSubview(leadingChevronImageView)
+         trailingView.addSubview(trailingChevronView)
+         
+diff --git a/node_modules/react-native-video-trim/ios/VideoTrimmerViewController.swift b/node_modules/react-native-video-trim/ios/VideoTrimmerViewController.swift
+index bd301a0..eeade28 100644
+--- a/node_modules/react-native-video-trim/ios/VideoTrimmerViewController.swift
++++ b/node_modules/react-native-video-trim/ios/VideoTrimmerViewController.swift
+@@ -235,6 +235,15 @@ class VideoTrimmerViewController: UIViewController {
+         NotificationCenter.default.addObserver(self, selector: #selector(appWillResignActive), name: UIApplication.willResignActiveNotification, object: nil)
+     }
+     
++    // The whole editor is left-to-right regardless of the device language: the timeline maths is
++    // absolute, so a mirrored layout swaps the start and end handles. Subviews are added after
++    // viewDidLoad (the trimmer, player, tool buttons), so this runs on every layout pass; it only
++    // writes where a view is not yet forced, so it settles after the first pass.
++    override func viewDidLayoutSubviews() {
++        super.viewDidLayoutSubviews()
++        view.forceLeftToRight()
++    }
++
+     @objc private func appWillResignActive() {
+         guard asset != nil else { return }
+         player.pause()
+@@ -1173,3 +1182,12 @@ private extension UILabel {
+         return label
+     }
+ }
++
++private extension UIView {
++    func forceLeftToRight() {
++        if semanticContentAttribute != .forceLeftToRight {
++            semanticContentAttribute = .forceLeftToRight
++        }
++        for sub in subviews { sub.forceLeftToRight() }
++    }
++}

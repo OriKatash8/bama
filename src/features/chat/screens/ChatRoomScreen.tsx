@@ -78,7 +78,7 @@ import { auth, db } from '@core/firebase/config';
 import { channelDocToMessage, listenToMessages, sendMessage, hideChatForUser } from '../services/chatService';
 import { confirmDialog } from '@utils/confirmDialog';
 import { ensurePhotoLibraryAccess } from '@core/media/ensurePhotoLibraryAccess';
-import { startPickTiming } from '@core/media/pickTiming';
+import { createDevTimer, startPickTiming } from '@core/media/pickTiming';
 import { CropEditor } from '@components/media/CropEditor';
 import { PendingMediaBubble } from '../components/PendingMediaBubble';
 import { useChatMediaSend, pendingHasLanded } from '../hooks/useChatMediaSend';
@@ -1637,10 +1637,14 @@ export function ChatRoomScreen({ chatId }: Props) {
    * while the native editor is up, and given time to finish dismissing first.
    */
   async function trimAsset(asset: ImagePicker.ImagePickerAsset): Promise<ImagePicker.ImagePickerAsset | null> {
+    const timer = createDevTimer('trim');
+    timer.mark(pendingMedia ? 'Trim tapped' : 'requested (picked video is too long)');
     setTrimming(true);
     try {
       if (pendingMedia) await new Promise((r) => setTimeout(r, 400)); // let the Modal finish closing
+      timer.mark('preview modal closed');
       const out = await openVideoTrimmer(asset.uri, {
+        timer,
         maxDurationMs: MAX_CHAT_VIDEO_SECONDS * 1000,
         accent: modeAccent,
         labels: {
@@ -1653,6 +1657,7 @@ export function ChatRoomScreen({ chatId }: Props) {
         },
       });
       if (!out) return null;
+      timer.mark('trimmer returned');
       trimmedRef.current = true;
       const next = { ...asset, uri: out.uri, duration: out.durationMs, fileSize: undefined } as ImagePicker.ImagePickerAsset;
       // The cut is frame-accurate, so this only fires if something is badly off.
@@ -1665,7 +1670,11 @@ export function ChatRoomScreen({ chatId }: Props) {
   async function handleTrimPending() {
     if (!pendingMedia || pendingMedia.type !== 'video') return;
     const next = await trimAsset(pendingMedia.asset);
-    if (next) setPendingMedia((p) => p && { ...p, uri: next.uri, asset: next });
+    if (next) {
+      setPendingMedia((p) => p && { ...p, uri: next.uri, asset: next });
+      // Rendered on the next frame; the preview Modal then fades back in.
+      requestAnimationFrame(() => console.log('[trim] back in preview (state set)'));
+    }
   }
 
   async function handleAttachMedia() {

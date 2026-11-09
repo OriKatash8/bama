@@ -1,5 +1,6 @@
 import { Platform, TurboModuleRegistry } from 'react-native';
 import { VIDEO_TRIM_ENABLED } from '@core/constants/video';
+import { createDevTimer } from '@core/media/pickTiming';
 
 export type TrimLabels = {
   /** Editor's confirm button ("Done"). */
@@ -64,8 +65,9 @@ const FINISH_FALLBACK_MS = 1500; // after "finished"/"cancel", if "hidden" never
  */
 export function openVideoTrimmer(
   uri: string,
-  opts: { maxDurationMs?: number; labels: TrimLabels; accent: string },
+  opts: { maxDurationMs?: number; labels: TrimLabels; accent: string; timer?: { mark: (step: string) => void } },
 ): Promise<TrimmedVideo | null> {
+  const log = opts.timer ?? createDevTimer('trim');
   return new Promise((resolve) => {
     let VideoTrim: ReturnType<typeof lib>;
     try {
@@ -92,15 +94,36 @@ export function openVideoTrimmer(
 
     subs.push(
       VideoTrim.default.onFinishTrimming(({ outputPath, duration }) => {
+        log.mark(`finished (${Math.round(duration)}ms of video) ${outputPath}`);
         result = { uri: toFileUri(outputPath), durationMs: duration };
         settleSoon(FINISH_FALLBACK_MS);
       }),
-      VideoTrim.default.onCancel(() => settleSoon(FINISH_FALLBACK_MS)),
-      VideoTrim.default.onError(() => settleSoon(FINISH_FALLBACK_MS)),
-      VideoTrim.default.onHide(() => settleSoon(HIDE_GRACE_MS)),
+      VideoTrim.default.onCancel(() => { log.mark('cancelled'); settleSoon(FINISH_FALLBACK_MS); }),
+      VideoTrim.default.onError((e) => { log.mark(`error ${e?.errorCode}: ${e?.message}`); settleSoon(FINISH_FALLBACK_MS); }),
+      VideoTrim.default.onHide(() => { log.mark('editor hidden'); settleSoon(HIDE_GRACE_MS); }),
     );
+    if (__DEV__) {
+      // Timing only: when the editor is visible, the file is loaded, and "Done" starts the cut.
+      let lastStats = 0;
+      subs.push(
+        VideoTrim.default.onShow(() => log.mark('editor visible')),
+        VideoTrim.default.onLoad((e) => log.mark(`media loaded (${Math.round(e?.duration ?? 0)}ms)`)),
+        VideoTrim.default.onStartTrimming(() => log.mark('Done tapped, trimming started')),
+        // The exact ffmpeg command, once, and the encode speed every ~2 s.
+        VideoTrim.default.onLog((e) => {
+          if (/^Command:/.test(e?.message ?? '')) console.log(`[trim] ffmpeg ${e.message}`);
+        }),
+        VideoTrim.default.onStatistics((e) => {
+          const now = Date.now();
+          if (now - lastStats < 2000) return;
+          lastStats = now;
+          console.log(`[trim] encoding: speed=${e.speed}x fps=${e.videoFps} bitrate=${Math.round(e.bitrate)} t=${Math.round(e.time)}ms`);
+        }),
+      );
+    }
 
     try {
+      log.mark('showEditor called');
       VideoTrim.showEditor(uri, {
         type: 'video',
         outputExt: 'mp4',

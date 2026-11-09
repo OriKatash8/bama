@@ -1,16 +1,21 @@
 /**
- * Dev-only timing for "tap → picker open → picker resolved → preview shown", to see where
- * the wait is. Does nothing in a release build.
+ * Dev-only step timer: logs `[prefix] step +Xms (total Yms)` to the console. Does nothing in a
+ * release build. Used to see where a slow media flow spends its time.
  */
-export function startPickTiming(label: string) {
+export function createDevTimer(prefix: string) {
   if (!__DEV__) return { mark: (_step: string) => {} };
   const t0 = Date.now();
   let last = t0;
   return {
     mark(step: string) {
       const now = Date.now();
-      console.log(`[pick:${label}] ${step} +${now - last}ms (total ${now - t0}ms)`);
+      console.log(`[${prefix}] ${step} +${now - last}ms (total ${now - t0}ms)`);
       last = now;
     },
   };
+}
+
+/** "tap → picker open → picker resolved → preview shown" for the media pickers. */
+export function startPickTiming(label: string) {
+  return createDevTimer(`pick:${label}`);
 }

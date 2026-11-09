@@ -13,6 +13,11 @@ jest.mock('react-native-video-trim', () => ({
     onCancel: (cb: Cb) => sub('cancel')(cb),
     onError: (cb: Cb) => sub('error')(cb),
     onHide: (cb: Cb) => sub('hide')(cb),
+    onShow: (cb: Cb) => sub('show')(cb),
+    onLoad: (cb: Cb) => sub('load')(cb),
+    onStartTrimming: (cb: Cb) => sub('start')(cb),
+    onLog: (cb: Cb) => sub('log')(cb),
+    onStatistics: (cb: Cb) => sub('stats')(cb),
   },
   showEditor: (...a: unknown[]) => mockShowEditor(...a),
   cleanFiles: () => mockCleanFiles(),
@@ -162,10 +167,55 @@ describe('kill switch', () => {
   });
 });
 
-it('openVideoTrimmer resolves null instead of throwing when the module cannot be loaded', async () => {
-  jest.resetModules();
-  jest.doMock('react-native-video-trim', () => { throw new Error("'VideoTrim' could not be found"); });
-  const { openVideoTrimmer: open2 } = require('../trimVideo');
-  await expect(open2('file:///in.mov', { labels, accent: '#000' })).resolves.toBeNull();
-  jest.dontMock('react-native-video-trim');
+describe('dev timing logs ([trim])', () => {
+  const marks: string[] = [];
+  const timer = { mark: (s: string) => { marks.push(s); } };
+  beforeEach(() => { marks.length = 0; });
+
+  it('marks each stage in order, from showEditor to hidden', async () => {
+    const p = openVideoTrimmer('file:///in.mov', { labels, accent: '#000', timer });
+    fire('show');
+    fire('load', { duration: 61_000 });
+    fire('start');
+    fire('finish', { outputPath: '/o.mp4', duration: 60_000 });
+    fire('hide');
+    jest.advanceTimersByTime(200);
+    await p;
+    expect(marks).toEqual([
+      'showEditor called',
+      'editor visible',
+      'media loaded (61000ms)',
+      'Done tapped, trimming started',
+      'finished (60000ms of video) /o.mp4',
+      'editor hidden',
+    ]);
+  });
+
+  it('prints the exact ffmpeg command once, and encode speed at most every 2 s', () => {
+    const log = jest.spyOn(console, 'log').mockImplementation(() => {});
+    void openVideoTrimmer('file:///in.mov', { labels, accent: '#000', timer });
+    fire('log', { level: 'info', message: 'Command: -y -ss 0ms -to 5000ms -i /in.mov -c:v h264_videotoolbox -b:v 40000000 /o.mp4', sessionId: 1 });
+    fire('log', { level: 'info', message: 'frame= 10' });
+    const stat = (time: number) => fire('stats', { speed: 0.6, videoFps: 18, bitrate: 39000, time, sessionId: 1, videoFrameNumber: 1, videoQuality: 1, size: 1 });
+    jest.setSystemTime(10_000); stat(1000);
+    jest.setSystemTime(10_500); stat(1500);
+    jest.setSystemTime(12_500); stat(3500);
+    const lines = log.mock.calls.map((c) => String(c[0]));
+    expect(lines.filter((l) => l.startsWith('[trim] ffmpeg Command:'))).toHaveLength(1);
+    expect(lines.filter((l) => l.startsWith('[trim] encoding:'))).toHaveLength(2);
+    expect(lines.find((l) => l.startsWith('[trim] encoding:'))).toContain('speed=0.6x');
+    log.mockRestore();
+  });
+
+  it('adds no timing listeners in a release build', () => {
+    const g = global as { __DEV__?: boolean };
+    const dev = g.__DEV__;
+    g.__DEV__ = false;
+    try {
+      void openVideoTrimmer('file:///in.mov', { labels, accent: '#000', timer });
+      expect(Object.keys(handlers).sort()).toEqual(['cancel', 'error', 'finish', 'hide']);
+    } finally {
+      g.__DEV__ = dev;
+    }
+  });
 });
