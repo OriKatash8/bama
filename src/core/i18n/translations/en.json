@@ -232,7 +232,14 @@
     "closed_title": "The project has ended — team contacts",
     "cancelled_title": "The project was cancelled — team contacts",
     "closing_client": "Client",
-    "closing_contact": "For questions:"
+    "closing_contact": "For questions:",
+    "media_send_in_progress": "Wait for the current upload to finish",
+    "media_preparing": "Preparing…",
+    "leave_sending_title": "Still sending",
+    "leave_sending_video": "The video is still sending. Leave and cancel the send?",
+    "leave_sending_image": "The photo is still sending. Leave and cancel the send?",
+    "leave_sending_leave": "Leave",
+    "leave_sending_stay": "Stay"
   },
   "mentions": {
     "loading": "Loading members…",

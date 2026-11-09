@@ -72,16 +72,16 @@ import { unblockUser } from '@features/blocking/services/blockService';
 import { hiddenSenders, isHiddenByBlock } from '@features/blocking/utils/hidden';
 import { ContentActionSheet } from '@features/moderation/components/ContentActionSheet';
 import { ReportDialog, type ReportTarget } from '@features/moderation/components/ReportDialog';
-import { useVideoUpload } from '@core/hooks/useVideoUpload';
 import { VideoPlayer } from '@components/ui/VideoPlayer';
 import { uploadFile } from '@core/firebase/storage';
 import { auth, db } from '@core/firebase/config';
 import { channelDocToMessage, listenToMessages, sendMessage, hideChatForUser } from '../services/chatService';
 import { confirmDialog } from '@utils/confirmDialog';
-import { VideoUploadStatus } from '@components/ui/VideoUploadStatus';
+import { PendingMediaBubble } from '../components/PendingMediaBubble';
+import { useChatMediaSend, pendingHasLanded } from '../hooks/useChatMediaSend';
+import { useLeaveGuard } from '../hooks/useLeaveGuard';
 import { ensureVideoWithinLimit } from '@core/video/duration';
-import { prepareImageForUpload, CHAT_IMAGE } from '@core/media/prepareImageForUpload';
-import { MAX_CHAT_VIDEO_SECONDS, CHAT_VIDEO } from '@core/constants/video';
+import { MAX_CHAT_VIDEO_SECONDS } from '@core/constants/video';
 import { listenToProjectFee } from '@features/pricing/services/feesService';
 import { showsOnBalance } from '@features/pricing/utils/balance';
 import type { ProjectFee } from '@core/types/project';
@@ -877,11 +877,7 @@ export function ChatRoomScreen({ chatId }: Props) {
    * programmatic selection scrolls the field.
    */
   const [pendingSelection, setPendingSelection] = useState<{ start: number; end: number } | undefined>();
-  const { stage: videoStage, progress: videoProgress, slow: videoSlow, cancel: cancelVideo, getOutcome, uploadVideo } = useVideoUpload();
-  const videoActive = videoStage !== 'idle';
-  const [imageUploading, setImageUploading] = useState(false);
   const [pickingMedia, setPickingMedia] = useState(false);
-  const mediaActive = videoActive || imageUploading;
   const [viewingMedia, setViewingMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
   const [pendingMedia, setPendingMedia] = useState<{
     uri: string;
@@ -903,6 +899,43 @@ export function ChatRoomScreen({ chatId }: Props) {
   // ── Market channel: post one of my own listings ──
   const currentUserName = useAuthStore((s) => s.user?.displayName) ?? '';
   const { showToast } = useUiStore();
+  const mediaSend = useChatMediaSend({ chatId, chatType, activeChannelId, currentUserId, t });
+  // Leaving mid-send asks first. Leave = cancel (and the server drops the file); Stay = nothing.
+  useLeaveGuard(
+    mediaSend.inFlight,
+    {
+      title: t('chats.leave_sending_title'),
+      message: t(mediaSend.pending?.type === 'image' ? 'chats.leave_sending_image' : 'chats.leave_sending_video'),
+      leave: t('chats.leave_sending_leave'),
+      stay: t('chats.leave_sending_stay'),
+    },
+    mediaSend.cancel,
+  );
+
+  // The send in flight, only in the chat/channel it was sent to, and only until the real
+  // message (same file URL) shows up in the list — then it simply isn't rendered any more.
+  const pendingBubble = (() => {
+    const p = mediaSend.pending;
+    if (!p || p.chatId !== chatId) return null;
+    if (p.channelId !== (chatType === 'community' ? activeChannelId : '')) return null;
+    if (pendingHasLanded(p, messages)) return null;
+    return (
+      <View style={[styles.bubbleWrapper, { justifyContent: bubbleSide(true, rtl) }]}>
+        <View style={[styles.mediaBubble, { backgroundColor: modeAccent }]}>
+          <PendingMediaBubble
+            type={p.type}
+            uri={p.uri}
+            stage={mediaSend.stage}
+            progress={mediaSend.progress}
+            failed={p.failed}
+            onCancel={mediaSend.cancel}
+            onRetry={mediaSend.retry}
+            t={t}
+          />
+        </View>
+      </View>
+    );
+  })();
   const { listings: shListings } = useMarketplaceListings('secondhand');
   const { listings: rtListings } = useMarketplaceListings('rental');
   const myListings = useMemo(
@@ -1582,7 +1615,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   }
 
   async function handleAttachMedia() {
-    if (!currentUserId) return;
+    if (!currentUserId || !mediaSend.canStartNew()) return;
     // Spinner on the + button from the tap until the preview opens (iCloud download etc.).
     setPickingMedia(true);
     try {
@@ -1609,72 +1642,18 @@ export function ChatRoomScreen({ chatId }: Props) {
     }
   }
 
-  /**
-   * Upload a chat video. A user Cancel ends quietly (null); a failure offers "try again"
-   * and runs the whole upload once more on yes.
-   */
-  async function uploadVideoWithRetry(asset: ImagePicker.ImagePickerAsset): Promise<string | null> {
-    if (!currentUserId) return null;
-    for (;;) {
-      const url = await uploadVideo('chat-videos', currentUserId, asset, CHAT_VIDEO);
-      if (url) return url;
-      if (getOutcome() !== 'failed') return null;
-      const retry = await confirmDialog(t('chats.error'), t('chats.video_send_failed'), {
-        confirm: t('media.video_retry'),
-        cancel: t('media.video_cancel'),
-        destructive: false,
-      });
-      if (!retry) return null;
-    }
-  }
-
-  async function handleSendPendingMedia() {
+  /** Send tapped in the preview: close it and let the pending bubble carry the upload. */
+  function handleSendPendingMedia() {
     if (!pendingMedia || !currentUserId) return;
     const { asset, type } = pendingMedia;
     const caption = pendingCaption.trim();
     setPendingMedia(null);
     setPendingCaption('');
-
-    if (chatType === 'community' && activeChannelId) {
-      const msgRef = collection(db, 'chats', chatId, 'channels', activeChannelId, 'messages');
-      if (type === 'video') {
-        const url = await uploadVideoWithRetry(asset);
-        if (url) {
-          await addDoc(msgRef, { senderId: currentUserId, text: caption, timestamp: serverTimestamp(), readBy: [currentUserId], videoUrl: url });
-        }
-      } else {
-        setImageUploading(true);
-        try {
-          const blob = await fetch(await prepareImageForUpload(asset.uri, CHAT_IMAGE)).then((r) => r.blob());
-          const path = `chat-images/${chatId}/${Date.now()}.jpg`;
-          const imageURL = await uploadFile(path, blob);
-          await addDoc(msgRef, { senderId: currentUserId, text: caption, timestamp: serverTimestamp(), readBy: [currentUserId], imageURL });
-        } finally {
-          setImageUploading(false);
-        }
-      }
-    } else {
-      if (type === 'video') {
-        const url = await uploadVideoWithRetry(asset);
-        if (url) {
-          await sendMessage(chatId, currentUserId, caption, { videoUrl: url });
-        }
-      } else {
-        setImageUploading(true);
-        try {
-          const blob = await fetch(await prepareImageForUpload(asset.uri, CHAT_IMAGE)).then((r) => r.blob());
-          const path = `chat-images/${chatId}/${Date.now()}.jpg`;
-          const imageURL = await uploadFile(path, blob);
-          await sendMessage(chatId, currentUserId, caption, { imageURL });
-        } finally {
-          setImageUploading(false);
-        }
-      }
-    }
+    mediaSend.start(asset, type, caption);
   }
 
   async function handleAttachCamera() {
-    if (!currentUserId) return;
+    if (!currentUserId || !mediaSend.canStartNew()) return;
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') return;
     const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'] as const, quality: 1 });
@@ -2091,6 +2070,7 @@ export function ChatRoomScreen({ chatId }: Props) {
           data={listItems}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
+          ListFooterComponent={pendingBubble}
           scrollEventThrottle={16}
           onScroll={(e) => {
             const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
@@ -2475,29 +2455,6 @@ export function ChatRoomScreen({ chatId }: Props) {
           }}
         />
         <View style={[styles.inputRow, { borderTopColor: colors.border, backgroundColor: 'transparent', paddingBottom: keyboardVisible ? 18 : BOTTOM_INSET + 10 }]}>
-          {mediaActive ? (
-            videoActive ? (
-              <View style={{ flex: 1 }}>
-                <VideoUploadStatus
-                  stage={videoStage}
-                  progress={videoProgress}
-                  slow={videoSlow}
-                  onCancel={cancelVideo}
-                  accent={modeAccent}
-                  rtl={rtl}
-                  t={t}
-                  color={colors.textMuted}
-                />
-              </View>
-            ) : (
-            <View style={styles.mediaSendingRow}>
-              <ActivityIndicator size="small" color={modeAccent} />
-              <AppText weight="regular" style={[styles.mediaSendingText, { color: colors.textMuted }]}>
-                {t('chats.sending_image')}
-              </AppText>
-            </View>
-            )
-          ) : (
             <>
               <TouchableOpacity style={styles.attachBtn} onPress={menuOpen ? closeMenu : openMenu} disabled={pickingMedia} activeOpacity={0.7}>
                 {pickingMedia ? (
@@ -2554,7 +2511,6 @@ export function ChatRoomScreen({ chatId }: Props) {
                 </TouchableOpacity>
               )}
             </>
-          )}
         </View>
         </View>
       )}
@@ -3218,17 +3174,6 @@ const styles = StyleSheet.create({
     width: MEDIA_BUBBLE_WIDTH,
     borderRadius: 18,
     overflow: 'hidden',
-  },
-  mediaSendingRow: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 10,
-  },
-  mediaSendingText: {
-    fontSize: 14,
   },
   dateSepRow: {
     alignItems: 'center',

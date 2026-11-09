@@ -232,7 +232,14 @@
     "closed_title": "הפרויקט הסתיים — פרטי הקשר של הצוות",
     "cancelled_title": "הפרויקט בוטל — פרטי הקשר של הצוות",
     "closing_client": "לקוח",
-    "closing_contact": "לפניות:"
+    "closing_contact": "לפניות:",
+    "media_send_in_progress": "המתן לסיום ההעלאה הנוכחית",
+    "media_preparing": "מכין…",
+    "leave_sending_title": "עדיין שולח",
+    "leave_sending_video": "הסרטון עדיין נשלח. לעזוב ולבטל את השליחה?",
+    "leave_sending_image": "התמונה עדיין נשלחת. לעזוב ולבטל את השליחה?",
+    "leave_sending_leave": "לעזוב",
+    "leave_sending_stay": "להישאר"
   },
   "mentions": {
     "loading": "טוען חברים…",
