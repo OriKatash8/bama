@@ -14,6 +14,8 @@ import type { Chat } from '../types';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { PortfolioViewer } from '@features/profile/components/PortfolioViewer';
+import type { MediaAsset } from '@core/types/media';
 import { communityCategoryLabel } from '@features/crew/data/categories';
 import { TAB_BAR_CONTENT_GAP, FAB_SIZE, useModeAccent } from '@core/navigation/floatingTabBar';
 import { shadow } from '@core/theme/shadow';
@@ -105,6 +107,8 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
   const segments = useSegments();
   const modeSegment = segments[0];
   const user = useAuthStore((s) => s.user);
+  // The Discover card whose photo is open full screen.
+  const [zoomed, setZoomed] = useState<Chat | null>(null);
   const language = useSettingsStore((s) => s.language);
   // The search magnifier takes the mode colour: purple client, blue pro.
   const { accent: searchIconColor } = useModeAccent();
@@ -371,7 +375,19 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
                 <View style={[styles.separator, rtl ? { marginRight: SEPARATOR_INSET } : { marginLeft: SEPARATOR_INSET }]} />
               )}
               <View style={[styles.cardRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-                <CommunityAvatar community={c} size={46} />
+                {c.photoURL ? (
+                  <TouchableOpacity
+                    testID={`community-photo-${c.id}`}
+                    onPress={() => setZoomed(c)}
+                    activeOpacity={0.8}
+                    accessibilityRole="imagebutton"
+                    accessibilityLabel={c.name ?? undefined}
+                  >
+                    <CommunityAvatar community={c} size={46} />
+                  </TouchableOpacity>
+                ) : (
+                  <CommunityAvatar community={c} size={46} />
+                )}
 
                 <View style={styles.textGroup}>
                   <View style={[styles.nameRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
@@ -419,6 +435,22 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
         })}
         </View>
       )}
+
+      {zoomed?.photoURL ? (
+        <PortfolioViewer
+          visible
+          initialIndex={0}
+          onClose={() => setZoomed(null)}
+          assets={[{
+            id: zoomed.id,
+            url: zoomed.photoURL,
+            thumbnailUrl: null,
+            type: 'image',
+            caption: null,
+            uploadedAt: { seconds: 0, nanoseconds: 0 } as MediaAsset['uploadedAt'],
+          }]}
+        />
+      ) : null}
 
       {/* Clears the + button: it sits 110 up and is 56 tall. */}
       {/* Room for the + button floating above the tab bar; the host page

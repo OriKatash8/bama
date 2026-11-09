@@ -17,6 +17,7 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn() }),
   useSegments: () => ['(professional)'],
 }));
+jest.mock('@features/profile/components/PortfolioViewer', () => ({ PortfolioViewer: () => null }));
 jest.mock('expo-image', () => ({ Image: 'Image' }));
 jest.mock('expo-linear-gradient', () => ({
   LinearGradient: ({ children }: { children: React.ReactNode }) => children,
