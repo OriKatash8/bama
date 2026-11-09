@@ -3,7 +3,7 @@ import { renderHook, act } from '@testing-library/react-native';
 let mockActive: boolean | null = null;
 let mockCallback: ((o: { data: { action: unknown } }) => void) | null = null;
 const mockDispatch = jest.fn();
-jest.mock('expo-router/build/react-navigation/native', () => ({
+jest.mock('expo-router/react-navigation', () => ({
   usePreventRemove: (active: boolean, cb: typeof mockCallback) => { mockActive = active; mockCallback = cb; },
 }));
 jest.mock('expo-router', () => ({ useNavigation: () => ({ dispatch: mockDispatch }) }));

@@ -1,5 +1,5 @@
 import { useNavigation } from 'expo-router';
-import { usePreventRemove } from 'expo-router/build/react-navigation/native';
+import { usePreventRemove } from 'expo-router/react-navigation';
 import { confirmDialog } from '@utils/confirmDialog';
 
 type Labels = { title: string; message: string; leave: string; stay: string };

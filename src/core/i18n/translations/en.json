@@ -142,7 +142,6 @@
   },
   "chats": {
     "status_open": "Open",
-    "sending_image": "Sending image...",
     "status_in_progress": "In Progress",
     "status_completed": "Completed",
     "status_cancelled": "Cancelled",

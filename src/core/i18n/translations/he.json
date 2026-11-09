@@ -142,7 +142,6 @@
   },
   "chats": {
     "status_open": "פתוח",
-    "sending_image": "שולח תמונה...",
     "status_in_progress": "בתהליך",
     "status_completed": "הושלם",
     "status_cancelled": "בוטל",
