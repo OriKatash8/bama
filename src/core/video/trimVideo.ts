@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Platform, TurboModuleRegistry } from 'react-native';
 import { VIDEO_TRIM_ENABLED } from '@core/constants/video';
 
 export type TrimLabels = {
@@ -20,9 +20,22 @@ export type TrimmedVideo = {
   durationMs: number;
 };
 
-/** True when the Trim button / trimmer should be offered. */
+/** Is the native module in this binary? A JS-only update on an older dev client has no VideoTrim. */
+function nativeModulePresent(): boolean {
+  try {
+    return TurboModuleRegistry.get('VideoTrim') != null;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * True when the Trim button / trimmer should be offered: the flag is on, we are native, and the
+ * binary actually contains the module (otherwise the app falls back to the old "too long"
+ * dialog instead of crashing on a build made before the module was added).
+ */
 export function canTrimVideo(): boolean {
-  return VIDEO_TRIM_ENABLED && Platform.OS !== 'web';
+  return VIDEO_TRIM_ENABLED && Platform.OS !== 'web' && nativeModulePresent();
 }
 
 function lib() {
@@ -54,7 +67,13 @@ export function openVideoTrimmer(
   opts: { maxDurationMs?: number; labels: TrimLabels; accent: string },
 ): Promise<TrimmedVideo | null> {
   return new Promise((resolve) => {
-    const VideoTrim = lib();
+    let VideoTrim: ReturnType<typeof lib>;
+    try {
+      VideoTrim = lib();
+    } catch {
+      resolve(null); // module missing in this binary: nothing to open
+      return;
+    }
     const subs: { remove: () => void }[] = [];
     let settled = false;
     let result: TrimmedVideo | null = null;

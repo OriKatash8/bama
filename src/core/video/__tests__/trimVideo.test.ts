@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Platform, TurboModuleRegistry } from 'react-native';
 
 type Cb = (p?: never) => void;
 const handlers: Record<string, Cb> = {};
@@ -29,7 +29,10 @@ const labels = { done: 'Done', cancel: 'Cancel', working: 'Trimming…', failedT
 const open = (maxDurationMs?: number) => openVideoTrimmer('file:///in.mov', { maxDurationMs, labels, accent: '#004aad' });
 const fire = (name: string, payload?: unknown) => (handlers[name] as unknown as (p?: unknown) => void)(payload);
 
+let mockNative: object | null = {};
 beforeEach(() => {
+  jest.spyOn(TurboModuleRegistry, 'get').mockImplementation((() => mockNative) as never);
+  mockNative = {};
   jest.useFakeTimers();
   jest.clearAllMocks();
   for (const k of Object.keys(handlers)) delete handlers[k];
@@ -134,6 +137,14 @@ describe('kill switch', () => {
     mockEnabled = false;
     expect(canTrimVideo()).toBe(false);
   });
+  it('is off when this binary has no VideoTrim module (JS updated, native not rebuilt)', () => {
+    mockNative = null;
+    expect(canTrimVideo()).toBe(false);
+  });
+  it('is off if asking the registry throws', () => {
+    (TurboModuleRegistry.get as jest.Mock).mockImplementation(() => { throw new Error('x'); });
+    expect(canTrimVideo()).toBe(false);
+  });
   it('is off on web whatever the flag says', () => {
     (Platform as { OS: string }).OS = 'web';
     expect(canTrimVideo()).toBe(false);
@@ -149,4 +160,12 @@ describe('kill switch', () => {
     mockCleanFiles.mockRejectedValueOnce(new Error('x'));
     expect(() => cleanTrimmedFiles()).not.toThrow();
   });
+});
+
+it('openVideoTrimmer resolves null instead of throwing when the module cannot be loaded', async () => {
+  jest.resetModules();
+  jest.doMock('react-native-video-trim', () => { throw new Error("'VideoTrim' could not be found"); });
+  const { openVideoTrimmer: open2 } = require('../trimVideo');
+  await expect(open2('file:///in.mov', { labels, accent: '#000' })).resolves.toBeNull();
+  jest.dontMock('react-native-video-trim');
 });
