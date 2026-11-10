@@ -22,7 +22,7 @@ jest.mock('../../services/marketplaceService', () => ({
   startNegotiation: jest.fn(), shareListingToCommunities: jest.fn(), deleteListing: jest.fn(),
 }));
 jest.mock('@utils/confirmDialog', () => ({ confirmDialog: jest.fn() }));
-jest.mock('@core/stores/uiStore', () => ({ useUiStore: () => ({ showToast: jest.fn() }) }));
+jest.mock('@core/stores/uiStore', () => ({ useUiStore: (sel?: (s: object) => unknown) => { const st = { showToast: jest.fn() }; return sel ? sel(st) : st; } }));
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: 'en' }),
 }));

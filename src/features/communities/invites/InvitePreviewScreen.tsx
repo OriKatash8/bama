@@ -48,7 +48,7 @@ export function InvitePreviewScreen({ tokenOrCode }: { tokenOrCode: string }) {
   const t = makeT(rtl ? he : en);
   const activeMode = useAuthStore((s) => s.activeMode);
   const user = useAuthStore((s) => s.user);
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const [load, setLoad] = useState<Load>({ status: 'loading' });
   const [joining, setJoining] = useState(false);
   // Read from the chat doc (readable by any signed-in user) so no Functions

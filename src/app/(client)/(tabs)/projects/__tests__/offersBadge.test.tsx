@@ -30,7 +30,7 @@ jest.mock('@features/offers/hooks/useBundleOffers', () => ({ useBundleOffers: ()
 jest.mock('@features/offers/hooks/useAcceptOffer', () => ({ useAcceptOffer: () => ({ accept: jest.fn(), reject: jest.fn(), isAccepting: false }) }));
 jest.mock('@features/offers/hooks/useAcceptBundleOffer', () => ({ useAcceptBundleOffer: () => ({ acceptBundle: jest.fn(), rejectBundle: jest.fn(), isAccepting: false }) }));
 jest.mock('@core/firebase/firestore', () => ({ getDocument: jest.fn(() => Promise.resolve(null)) }));
-jest.mock('@core/stores/uiStore', () => ({ useUiStore: () => ({ showToast: jest.fn() }) }));
+jest.mock('@core/stores/uiStore', () => ({ useUiStore: (sel?: (s: object) => unknown) => { const st = { showToast: jest.fn() }; return sel ? sel(st) : st; } }));
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: 'en' }),
 }));

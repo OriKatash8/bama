@@ -21,8 +21,8 @@ type AppleSignInState = {
 export function useAppleSignIn(): AppleSignInState {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { setUser } = useAuthStore();
-  const { showToast } = useUiStore();
+  const setUser = useAuthStore((s) => s.setUser);
+  const showToast = useUiStore((s) => s.showToast);
   const router = useRouter();
 
   async function signInWithApple(opts?: { consented?: boolean }) {

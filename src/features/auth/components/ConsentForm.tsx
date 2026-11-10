@@ -50,7 +50,7 @@ export function ConsentForm() {
   const rtl = language === 'he';
   const t = makeT(rtl ? he : en);
   const textAlign = rtl ? 'right' : 'left';
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const setUser = useAuthStore((s) => s.setUser);
   const pending = usePendingSignupStore((s) => s.pending);
 

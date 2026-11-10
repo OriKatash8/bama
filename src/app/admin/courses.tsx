@@ -73,7 +73,7 @@ const asField = (n?: number) => (n ? String(n) : '');
 export default function CoursesAdmin() {
   const p = useAdminPalette();
   const router = useRouter();
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const { t, rowDir, textAlign } = useScopedT('courses');
   const { t: tOps } = useScopedT('admin_operations');
   const { t: tDash } = useScopedT('admin_dashboard');

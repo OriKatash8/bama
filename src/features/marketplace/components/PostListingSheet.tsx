@@ -192,7 +192,7 @@ export function PostListingSheet({ visible, initialType, lockedType = false, edi
   const isEditing = !!editListing;
   const isSubmitting = isCreating || isUpdating;
 
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const language = useSettingsStore((s) => s.language);
   const font = useAppFont();
   const t = makeT(language === 'he' ? he : en);

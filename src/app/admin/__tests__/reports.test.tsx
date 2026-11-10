@@ -29,7 +29,7 @@ jest.mock('@core/stores/authStore', () => ({
 }));
 jest.mock('@core/firebase/config', () => ({ db: {} }));
 jest.mock('@core/firebase/functions', () => ({ callFunction: () => (...a: unknown[]) => mockModerate(...(a as [])) }));
-jest.mock('@core/stores/uiStore', () => ({ useUiStore: () => ({ showToast: mockToast }) }));
+jest.mock('@core/stores/uiStore', () => ({ useUiStore: (sel?: (s: object) => unknown) => { const st = { showToast: mockToast }; return sel ? sel(st) : st; } }));
 jest.mock('firebase/firestore', () => ({
   // Refs carry their collection name, so onSnapshot can answer per collection.
   collection: jest.fn((_db, name: string) => name), query: jest.fn((c: string) => c), orderBy: jest.fn(), where: jest.fn(),

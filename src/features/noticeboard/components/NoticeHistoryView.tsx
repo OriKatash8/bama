@@ -72,7 +72,7 @@ export function NoticeHistoryView({
   const lang: 'he' | 'en' = rtl ? 'he' : 'en';
   const rowDir = rtl ? 'row-reverse' : ('row' as const);
   const textAlign = rtl ? 'right' : 'left';
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
 
   // Open where the attention is: a pending offer (what the button's badge counts),
   // otherwise hidden notices if there are any.

@@ -26,7 +26,7 @@ jest.mock('@core/stores/authStore', () => ({
 jest.mock('@features/admin/useCancellationLog', () => ({ useCancellationLog: jest.fn() }));
 jest.mock('@features/admin/useLargeEngagements', () => ({ useLargeEngagements: jest.fn() }));
 const mockToast = jest.fn();
-jest.mock('@core/stores/uiStore', () => ({ useUiStore: () => ({ showToast: mockToast }) }));
+jest.mock('@core/stores/uiStore', () => ({ useUiStore: (sel?: (s: object) => unknown) => { const st = { showToast: mockToast }; return sel ? sel(st) : st; } }));
 const mockConfirm = jest.fn();
 jest.mock('@utils/confirmDialog', () => ({ confirmDialog: (...a: unknown[]) => mockConfirm(...a) }));
 

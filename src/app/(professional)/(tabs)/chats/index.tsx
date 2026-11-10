@@ -103,7 +103,7 @@ export default function ProfessionalChatsScreen() {
   const rtl = language === 'he';
   const user = useAuthStore((s) => s.user);
   const proProfileCompleted = useAuthStore((s) => s.proProfileCompleted);
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const router = useRouter();
   const { height: windowHeight } = useWindowDimensions();
   const { chats: userChats, loading: chatsLoading } = useUserChats();

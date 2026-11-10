@@ -107,7 +107,7 @@ export default function CommunitiesAdmin() {
   const p = useAdminPalette();
   const { k, tp, rowDir, textAlign } = usePageT();
   const router = useRouter();
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const lang = useSettingsStore((st) => st.language) === 'he' ? 'he' : 'en';
   const categoriesText = (c: { category?: string; categories?: string[] }) =>
     getCommunityCategories(c).map((cat) => communityCategoryLabel(cat, lang)).join(' · ');

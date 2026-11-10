@@ -29,7 +29,9 @@ export function ModerationGate() {
   const language = useSettingsStore((s) => s.language);
   const rtl = language === 'he';
   const t = makeT(rtl ? he : en);
-  const { notice, clearNotice, acknowledge } = useModerationStore();
+  const notice = useModerationStore((s) => s.notice);
+  const clearNotice = useModerationStore((s) => s.clearNotice);
+  const acknowledge = useModerationStore((s) => s.acknowledge);
 
   if (!notice) return null;
 

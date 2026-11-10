@@ -74,7 +74,7 @@ export function ProjectRequestCard({ request, offerCount = 0 }: Props) {
   const [menuX, setMenuX] = useState(0);
 
   const { team, isLoading: teamLoading, load } = useProjectTeam(request.id);
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';

@@ -85,7 +85,9 @@ export default function SummaryScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const { submit, updateProject } = useProjectRequests();
-  const { showToast, notifyProjectSubmitted, requestBuilderStep } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
+  const notifyProjectSubmitted = useUiStore((s) => s.notifyProjectSubmitted);
+  const requestBuilderStep = useUiStore((s) => s.requestBuilderStep);
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';

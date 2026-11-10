@@ -95,7 +95,7 @@ export function ProfileSetupForm({
   // Unknown (null) does not offer it.
   const needsPhone = useAuthStore((s) => s.hasPhone) === false;
   const setHasPhone = useAuthStore((s) => s.setHasPhone);
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';

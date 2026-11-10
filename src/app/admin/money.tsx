@@ -53,7 +53,7 @@ export default function MoneyAdmin() {
   const [showHidden, setShowHidden] = useState(false);
   const viewingHidden = showHidden && hiddenEntries.length > 0;
   const large = useLargeEngagements();
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const { t: tCommon } = useScopedT('common');
   const [removing, setRemoving] = useState<Record<string, boolean>>({});
 

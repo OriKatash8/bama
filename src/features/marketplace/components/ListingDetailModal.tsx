@@ -64,7 +64,7 @@ type Props = {
 };
 
 export function ListingDetailModal({ listing, onClose, onEdit, readOnly }: Props) {
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const currentUserId = useAuthStore((s) => s.user?.id);
   const currentUserName = useAuthStore((s) => s.user?.displayName) ?? '';
   const language = useSettingsStore((s) => s.language);

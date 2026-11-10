@@ -17,17 +17,22 @@ let launchRouted = false;
 export function resetLaunchRouted() { launchRouted = false; }
 
 export default function Index() {
-  const { user, activeMode, isLoading, needsEmailVerification, proProfileCompleted } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const activeMode = useAuthStore((s) => s.activeMode);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const needsEmailVerification = useAuthStore((s) => s.needsEmailVerification);
+  const proProfileCompleted = useAuthStore((s) => s.proProfileCompleted);
   const gatePending = useGatePending();
-  const launch = useLaunchIntentStore();
-  const ready = !isLoading && launch.checked && !!user && !gatePending;
+  const launchChecked = useLaunchIntentStore((s) => s.checked);
+  const launchHasPending = useLaunchIntentStore((s) => s.hasPending);
+  const ready = !isLoading && launchChecked && !!user && !gatePending;
   useEffect(() => {
     if (ready) launchRouted = true;
   }, [ready]);
 
   // isLoading covers the restored mode too (useAuth reads it before loading ends),
   // so mode-select never flashes up for a user who is about to go to their home.
-  if (isLoading || !launch.checked) {
+  if (isLoading || !launchChecked) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator />
@@ -42,7 +47,7 @@ export default function Index() {
   const next = nextAuthRoute({ user, needsEmailVerification, activeMode, proProfileCompleted });
   // Opened by tapping a notification: its target beats the mode's home, and
   // useNotificationRouting navigates there. A gate (or mode-select) still goes first.
-  if (launch.hasPending && activeMode !== null && !next.startsWith('/(auth)')) return null;
+  if (launchHasPending && activeMode !== null && !next.startsWith('/(auth)')) return null;
   // Opening the app asks which mode to enter, rather than resuming the last one.
   if (!launchRouted && !next.startsWith('/(auth)')) return <Redirect href="/(auth)/mode-select" />;
   return <Redirect href={next as never} />;

@@ -33,7 +33,7 @@ jest.mock('@core/stores/settingsStore', () => ({
 jest.mock('@core/stores/authStore', () => ({
   useAuthStore: (s: (x: { user: { displayName: string } }) => unknown) => s({ user: { displayName: 'Dana Admin' } }),
 }));
-jest.mock('@core/stores/uiStore', () => ({ useUiStore: () => ({ showToast: mockToast }) }));
+jest.mock('@core/stores/uiStore', () => ({ useUiStore: (sel?: (s: object) => unknown) => { const st = { showToast: mockToast }; return sel ? sel(st) : st; } }));
 jest.mock('@core/firebase/config', () => ({ db: {} }));
 const mockDeleteCommunity = jest.fn((_data: unknown) => Promise.resolve({ ok: true }));
 const mockCommunityAction = jest.fn((_data: unknown) => Promise.resolve({ ok: true }));

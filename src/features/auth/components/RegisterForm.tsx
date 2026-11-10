@@ -57,7 +57,7 @@ export function RegisterForm() {
   const [passwordFocused, setPasswordFocused] = useState(false);
 
   const { isLoading, register } = useRegister();
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const router = useRouter();
   const colors = useTheme();
   const language = useSettingsStore((s) => s.language);

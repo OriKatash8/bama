@@ -63,7 +63,15 @@ async function restoreLastMode(uid: string): Promise<void> {
 }
 
 export function useAuth() {
-  const { user, activeMode, isLoading, setUser, setLoading, clear } = useAuthStore();
+  // Per-field selectors, not the whole store: this runs in the root AppShell, so a
+  // whole-store subscription re-rendered the entire app shell on every auth-store
+  // write (proProfileCompleted, hasPhone, needsEmailVerification, ...).
+  const user = useAuthStore((s) => s.user);
+  const activeMode = useAuthStore((s) => s.activeMode);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const setUser = useAuthStore((s) => s.setUser);
+  const setLoading = useAuthStore((s) => s.setLoading);
+  const clear = useAuthStore((s) => s.clear);
 
   // The email-verification gate follows the ID token, not the auth state:
   // verifying and pressing "check again" refreshes the token (reload +

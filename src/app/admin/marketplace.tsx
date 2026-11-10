@@ -53,7 +53,7 @@ function StatusChip({ status, label }: { status: ListingStatus; label: string })
 export default function MarketplaceAdmin() {
   const p = useAdminPalette();
   const router = useRouter();
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const { t, rowDir, textAlign } = useScopedT('marketplace');
   const { t: tAdm } = useScopedT('admin_marketplace');
 

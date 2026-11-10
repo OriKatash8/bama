@@ -23,7 +23,7 @@ jest.mock('@features/marketplace/services/marketplaceService', () => ({
 jest.mock('@features/rentals/rentalsService', () => ({ trackRentalClick: jest.fn(() => Promise.resolve({ counted: true })) }));
 jest.mock('@utils/confirmDialog', () => ({ confirmDialog: jest.fn() }));
 const mockToast = jest.fn();
-jest.mock('@core/stores/uiStore', () => ({ useUiStore: () => ({ showToast: mockToast }) }));
+jest.mock('@core/stores/uiStore', () => ({ useUiStore: (sel?: (s: object) => unknown) => { const st = { showToast: mockToast }; return sel ? sel(st) : st; } }));
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: 'he' }),
 }));

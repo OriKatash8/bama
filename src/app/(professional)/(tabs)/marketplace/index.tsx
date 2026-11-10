@@ -153,7 +153,7 @@ export default function MarketplaceScreen() {
   // Deep-link: open a specific listing when arriving with ?listingId= (e.g. from a שוק card).
   const params = useLocalSearchParams<{ listingId?: string }>();
   const router = useRouter();
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const handledListingRef = useRef<string | null>(null);
   useEffect(() => {
     const id = typeof params.listingId === 'string' ? params.listingId : '';

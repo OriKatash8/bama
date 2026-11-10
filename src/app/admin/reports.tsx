@@ -96,7 +96,7 @@ function ModChip({ suspended, label }: { suspended: boolean; label: string }) {
 
 export default function ReportsAdmin() {
   const p = useAdminPalette();
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const { t, rowDir, textAlign } = useScopedT('admin_reports');
 
   const [reports, setReports] = useState<Report[]>([]);

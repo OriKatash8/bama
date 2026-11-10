@@ -20,8 +20,8 @@ export function useRegister(): RegisterState {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const { setUser } = useAuthStore();
-  const { showToast } = useUiStore();
+  const setUser = useAuthStore((s) => s.setUser);
+  const showToast = useUiStore((s) => s.showToast);
 
   async function register(fullName: string, email: string, password: string, terms: TermsConsent, phone: string | null) {
     setError(null);

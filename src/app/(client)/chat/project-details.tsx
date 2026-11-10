@@ -174,7 +174,7 @@ export default function ProjectDetailsScreen() {
   const { accent: modeAccent, tint: modeTint } = useModeAccent();
   const font = useAppFont();
   const language = useSettingsStore((s) => s.language);
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const rowDirection: 'row' | 'row-reverse' = rtl ? 'row-reverse' : 'row';

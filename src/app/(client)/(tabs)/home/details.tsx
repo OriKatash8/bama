@@ -15,7 +15,7 @@ export default function DetailsScreen() {
     // malformed param — fall back to empty basket
   }
   const { submit } = useProjectRequests();
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(details: {

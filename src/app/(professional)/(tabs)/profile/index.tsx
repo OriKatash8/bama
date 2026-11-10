@@ -55,7 +55,7 @@ function makeT(translations: Translations) {
 export default function ProfessionalProfileScreen() {
   const { user, profile, reviews, isLoading, isSaving, save, updateAvailability } = useProfile();
   const { assets, upload, addVideoUrl, remove } = usePortfolio();
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const setProfileEditing = useUiStore((s) => s.setProfileEditing);
   const language = useSettingsStore((s) => s.language);
   const tabBarClearance = useTabBarClearance();

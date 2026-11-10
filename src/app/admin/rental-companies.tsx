@@ -35,7 +35,7 @@ function callableError(e: unknown): { code: string; reason?: string; message: st
 export default function RentalCompaniesAdmin() {
   const router = useRouter();
   const p = useAdminPalette();
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const { t, textAlign } = useScopedT('admin_rental_companies');
   const { companies, loading, error } = useAdminRentalCompanies();
   const [selectedId, setSelectedId] = useState<string | null>(null);

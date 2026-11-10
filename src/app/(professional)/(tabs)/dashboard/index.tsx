@@ -281,7 +281,7 @@ export default function DashboardScreen() {
     [roleSkills],
   );
 
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
 
   const [selected, setSelected] = useState<ProjectRequest | null>(null);
   const [selectedView, setSelectedView] = useState<'details' | 'bid'>('details');

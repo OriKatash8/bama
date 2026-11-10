@@ -87,7 +87,7 @@ jest.mock('@core/stores/settingsStore', () => ({
 }));
 jest.mock('@core/stores/uiStore', () => ({
   // Called bare, not with a selector.
-  useUiStore: () => ({ showToast: jest.fn() }),
+  useUiStore: (sel?: (s: object) => unknown) => { const st = { showToast: jest.fn() }; return sel ? sel(st) : st; },
 }));
 
 const project = {

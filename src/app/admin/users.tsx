@@ -70,7 +70,7 @@ const webNoOutline = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object
 export default function UsersAdmin() {
   const p = useAdminPalette();
   const { t, rtl, rowDir, textAlign } = useScopedT('admin_users');
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const router = useRouter();
 
   const [users, setUsers] = useState<ListedUser[]>([]);

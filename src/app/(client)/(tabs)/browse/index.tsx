@@ -99,7 +99,7 @@ export default function SearchScreen() {
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
   const font = useAppFont();
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   /** White on the band. PageTitle is shared, so the overrides ride its style
    *  prop; 800 has no useAppFont entry, so Hebrew names the ExtraBold face. */
   const titleType = {

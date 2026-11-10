@@ -17,7 +17,7 @@ jest.mock('@features/offers/hooks/useProjectTeam', () => ({
   useProjectTeam: () => ({ team: [], isLoading: false, load: jest.fn() }),
 }));
 jest.mock('@features/crew/services/projectCancellation', () => ({ cancelProject: jest.fn() }));
-jest.mock('@core/stores/uiStore', () => ({ useUiStore: () => ({ showToast: jest.fn() }) }));
+jest.mock('@core/stores/uiStore', () => ({ useUiStore: (sel?: (s: object) => unknown) => { const st = { showToast: jest.fn() }; return sel ? sel(st) : st; } }));
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: 'en' }),
 }));

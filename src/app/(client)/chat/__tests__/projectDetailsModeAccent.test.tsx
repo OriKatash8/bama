@@ -91,7 +91,7 @@ jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (selector: (s: { language: string }) => unknown) => selector({ language: 'en' }),
 }));
 jest.mock('@core/stores/uiStore', () => ({
-  useUiStore: () => ({ showToast: jest.fn() }),
+  useUiStore: (sel?: (s: object) => unknown) => { const st = { showToast: jest.fn() }; return sel ? sel(st) : st; },
 }));
 
 const PROS = ['pro-1', 'pro-2'];

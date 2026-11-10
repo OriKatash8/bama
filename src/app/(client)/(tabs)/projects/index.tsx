@@ -67,7 +67,7 @@ export default function ProjectsPage() {
   const router = useRouter();
   const segments = useSegments();
   const modeSegment = segments[0];
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const language = useSettingsStore((s) => s.language);
   const tabBarClearance = useTabBarClearance();
   const t = makeT(language === 'he' ? he : en);

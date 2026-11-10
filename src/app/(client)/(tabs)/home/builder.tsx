@@ -63,7 +63,7 @@ const gradientStyle = {
 export default function BuilderScreen() {
   const { slots, totalCount, totalForCategory, addUnit, removeUnit, loadSlots } = useCrewBuilder();
   const { submit, updateProject } = useProjectRequests();
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const colors = useTheme();
   const { user } = useAuth();
   const language = useSettingsStore((s) => s.language);

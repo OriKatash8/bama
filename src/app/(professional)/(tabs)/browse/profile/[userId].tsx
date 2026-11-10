@@ -65,7 +65,7 @@ export default function PublicProfileScreen() {
   const language = useSettingsStore((s) => s.language);
   const tabBarClearance = useTabBarClearance();
   const font = useAppFont();
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const currentUserId = useAuthStore((s) => s.user?.id ?? '');
   // A demo account (App Review) and a real user are never shown each other's
   // profile — it renders as not found, with Block and Report still available.

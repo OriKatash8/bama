@@ -949,7 +949,7 @@ export function ChatRoomScreen({ chatId }: Props) {
 
   // ── Market channel: post one of my own listings ──
   const currentUserName = useAuthStore((s) => s.user?.displayName) ?? '';
-  const { showToast } = useUiStore();
+  const showToast = useUiStore((s) => s.showToast);
   const mediaSend = useChatMediaSend({ chatId, chatType, activeChannelId, currentUserId, t });
   // Leaving mid-send asks first. Leave = cancel (and the server drops the file); Stay = nothing.
   useLeaveGuard(

@@ -17,7 +17,7 @@ jest.mock('../CityPickerModal', () => ({ CityPickerModal: () => null }));
 jest.mock('expo-image', () => ({ Image: 'Image' }));
 const mockPick = jest.fn((_options: unknown) => Promise.resolve({ canceled: true }));
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: (o: unknown) => mockPick(o) }));
-jest.mock('@core/stores/uiStore', () => ({ useUiStore: () => ({ showToast: mockToast }) }));
+jest.mock('@core/stores/uiStore', () => ({ useUiStore: (sel?: (s: object) => unknown) => { const st = { showToast: mockToast }; return sel ? sel(st) : st; } }));
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: 'en' }),
 }));

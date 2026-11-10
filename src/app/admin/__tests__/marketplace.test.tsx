@@ -35,7 +35,7 @@ jest.mock('@core/stores/authStore', () => ({
   useAuthStore: (s: (x: { user: { displayName: string } }) => unknown) => s({ user: { displayName: 'Dana Admin' } }),
 }));
 jest.mock('@core/firebase/config', () => ({ db: {} }));
-jest.mock('@core/stores/uiStore', () => ({ useUiStore: () => ({ showToast: mockToast }) }));
+jest.mock('@core/stores/uiStore', () => ({ useUiStore: (sel?: (s: object) => unknown) => { const st = { showToast: mockToast }; return sel ? sel(st) : st; } }));
 jest.mock('@features/marketplace/services/marketplaceService', () => ({ deleteListing: jest.fn(() => Promise.resolve()) }));
 // The app's own add-listing popup; its form has its own tests. Here: what the page opens it with.
 const mockSheet = jest.fn();

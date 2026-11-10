@@ -23,7 +23,7 @@ jest.mock('@core/stores/authStore', () => ({
 }));
 jest.mock('@core/firebase/config', () => ({ db: {} }));
 jest.mock('@core/firebase/functions', () => ({ callFunction: () => jest.fn() }));
-jest.mock('@core/stores/uiStore', () => ({ useUiStore: () => ({ showToast: jest.fn() }) }));
+jest.mock('@core/stores/uiStore', () => ({ useUiStore: (sel?: (s: object) => unknown) => { const st = { showToast: jest.fn() }; return sel ? sel(st) : st; } }));
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: 'en' }),
 }));

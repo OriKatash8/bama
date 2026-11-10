@@ -33,7 +33,7 @@ jest.mock('../../services/marketplaceService', () => ({
 }));
 jest.mock('@utils/confirmDialog', () => ({ confirmDialog: jest.fn() }));
 const mockShowToast = jest.fn();
-jest.mock('@core/stores/uiStore', () => ({ useUiStore: () => ({ showToast: mockShowToast }) }));
+jest.mock('@core/stores/uiStore', () => ({ useUiStore: (sel?: (s: object) => unknown) => { const st = { showToast: mockShowToast }; return sel ? sel(st) : st; } }));
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: 'en' }),
 }));
