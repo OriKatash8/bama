@@ -226,6 +226,20 @@ service cloud.firestore {
             && request.resource.data.replyTo.snippet.size() <= 100);
     }
 
+    // Read receipts (project `group` and marketplace `purchase` chats only): each member
+    // keeps ONE watermark doc, chats/{chatId}/readState/{uid} = { lastReadAt }, "had this
+    // chat open at this moment". Your own doc only, members only, and the value must be
+    // the server's clock, so it can be neither backdated nor set into the future. Used by
+    // BOTH create and update; they differ only in how "no other field" is checked.
+    function readStateWriteOk(chatId, uid) {
+      let chat = chatDoc(chatId);
+      return isAuth()
+        && uid == request.auth.uid
+        && request.auth.uid in chat.members
+        && chat.get('type', '') in ['group', 'purchase']
+        && request.resource.data.get('lastReadAt', null) == request.time;
+    }
+
     /**
      * Everything a client-written message must satisfy, in BOTH collections.
      *
@@ -891,6 +905,19 @@ service cloud.firestore {
         allow create: if messageCreateOk(chatDoc(chatId))
           && !request.resource.data.keys().hasAny(['mentionsEveryone']);
         allow update, delete: if false;
+      }
+
+      // read receipts — see readStateWriteOk
+      match /readState/{uid} {
+        allow read: if isAuth() && request.auth.uid in chatMembers(chatId);
+        // No existing doc on CREATE, so affectedKeys() has nothing to diff against:
+        // check the keys of the new doc itself.
+        allow create: if readStateWriteOk(chatId, uid)
+          && request.resource.data.keys().hasOnly(['lastReadAt']);
+        // UPDATE only: diff against the stored doc.
+        allow update: if readStateWriteOk(chatId, uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastReadAt']);
+        allow delete: if false;
       }
 
       // community sub-channels

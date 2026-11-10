@@ -23,7 +23,7 @@ import { initializeApp as initAdmin } from 'firebase-admin/app';
 import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 import { initializeApp } from 'firebase/app';
 import {
-  getFirestore, connectFirestoreEmulator, doc, updateDoc,
+  getFirestore, connectFirestoreEmulator, doc, updateDoc, getDoc, deleteDoc,
   arrayUnion, arrayRemove, increment, serverTimestamp, setDoc,
 } from 'firebase/firestore';
 import {
@@ -232,6 +232,61 @@ for (const r of catRows) {
   console.log(`  ${ok ? 'ok      ' : 'MISMATCH'} ${r.label.padEnd(58)} ${r.identity.padEnd(7)} expect ${r.expected ? 'ALLOW' : 'deny '}  got ${r.allowed ? 'ALLOW' : 'deny '}`);
 }
 console.log(`\n${mismatches === 0 ? 'ALL AS EXPECTED' : mismatches + ' MISMATCH(ES)'} (${catRows.length} checks)`);
+
+// ── Read receipts: chats/{chatId}/readState/{uid} ────────────────────────────
+// Expected verdicts, so a regression reads as MISMATCH. The doc-ID wildcard is the
+// uid, so "someone else's doc" is just a different path.
+const RS_SEEDS = {
+  group:     { type: 'group', name: 'Proj', projectId: 'p1', ownerId: OWNER, members: [OWNER, MEMBER, THIRD], lastMessage: null, createdAt: new Date() },
+  purchase:  { type: 'purchase', name: 'Item', purchaseListingId: 'l1', members: [OWNER, MEMBER], lastMessage: null, createdAt: new Date() },
+  dm:        { type: 'dm', members: [OWNER, MEMBER], lastMessage: null, createdAt: new Date() },
+  community: { type: 'community', name: 'Comm', ownerId: OWNER, members: [OWNER, MEMBER, THIRD], lastMessage: null, createdAt: new Date() },
+};
+async function rsAttempt({ type, as: who, uid, existing = false, op }) {
+  const chatId = `probe-rs-${type}`;
+  await adminDb.collection('chats').doc(chatId).set(RS_SEEDS[type]);
+  const ref = adminDb.collection('chats').doc(chatId).collection('readState').doc(uid);
+  await ref.delete();
+  if (existing) await ref.set({ lastReadAt: new Date(Date.now() - 60_000) });
+  await as(who);
+  try { await op(doc(db, 'chats', chatId, 'readState', uid)); return true; } catch { return false; }
+}
+const WRITE = (data) => (d) => setDoc(d, data);
+const RS_CASES = [
+  // [label, params, expected]
+  ['first-ever CREATE by a member, own doc, group',        { type: 'group', as: 'member', uid: MEMBER, op: WRITE({ lastReadAt: serverTimestamp() }) }, true],
+  ['first-ever CREATE by the owner, own doc, group',       { type: 'group', as: 'owner', uid: OWNER, op: WRITE({ lastReadAt: serverTimestamp() }) }, true],
+  ['UPDATE by a member, own doc, group',                   { type: 'group', as: 'member', uid: MEMBER, existing: true, op: WRITE({ lastReadAt: serverTimestamp() }) }, true],
+  ['first-ever CREATE by a member, purchase chat',         { type: 'purchase', as: 'member', uid: MEMBER, op: WRITE({ lastReadAt: serverTimestamp() }) }, true],
+  ['CREATE in a DM',                                       { type: 'dm', as: 'member', uid: MEMBER, op: WRITE({ lastReadAt: serverTimestamp() }) }, false],
+  ['CREATE in a community',                                { type: 'community', as: 'member', uid: MEMBER, op: WRITE({ lastReadAt: serverTimestamp() }) }, false],
+  ['CREATE by a NON-member, group',                        { type: 'group', as: 'outsider', uid: OUTSIDER, op: WRITE({ lastReadAt: serverTimestamp() }) }, false],
+  ['CREATE by a NON-member, purchase',                     { type: 'purchase', as: 'outsider', uid: OUTSIDER, op: WRITE({ lastReadAt: serverTimestamp() }) }, false],
+  ["CREATE into SOMEONE ELSE'S doc",                       { type: 'group', as: 'member', uid: THIRD, op: WRITE({ lastReadAt: serverTimestamp() }) }, false],
+  ["UPDATE of SOMEONE ELSE'S doc",                         { type: 'group', as: 'member', uid: THIRD, existing: true, op: WRITE({ lastReadAt: serverTimestamp() }) }, false],
+  ['CREATE with an extra field',                           { type: 'group', as: 'member', uid: MEMBER, op: WRITE({ lastReadAt: serverTimestamp(), note: 'x' }) }, false],
+  ['UPDATE with an extra field',                           { type: 'group', as: 'member', uid: MEMBER, existing: true, op: WRITE({ lastReadAt: serverTimestamp(), note: 'x' }) }, false],
+  ['CREATE with no lastReadAt',                            { type: 'group', as: 'member', uid: MEMBER, op: WRITE({}) }, false],
+  ['CREATE backdated (client clock)',                      { type: 'group', as: 'member', uid: MEMBER, op: WRITE({ lastReadAt: new Date(Date.now() - 3_600_000) }) }, false],
+  ['CREATE future-dated (client clock)',                   { type: 'group', as: 'member', uid: MEMBER, op: WRITE({ lastReadAt: new Date(Date.now() + 3_600_000) }) }, false],
+  ['UPDATE to a non-timestamp',                            { type: 'group', as: 'member', uid: MEMBER, existing: true, op: WRITE({ lastReadAt: 'now' }) }, false],
+  ['DELETE own doc',                                       { type: 'group', as: 'member', uid: MEMBER, existing: true, op: (d) => deleteDoc(d) }, false],
+  ['READ by a member (own)',                               { type: 'group', as: 'member', uid: MEMBER, existing: true, op: (d) => getDoc(d) }, true],
+  ["READ by a member (someone else's)",                    { type: 'group', as: 'member', uid: THIRD, existing: true, op: (d) => getDoc(d) }, true],
+  ['READ by a NON-member',                                 { type: 'group', as: 'outsider', uid: MEMBER, existing: true, op: (d) => getDoc(d) }, false],
+];
+const rsRows = [];
+for (const [label, params, expected] of RS_CASES) {
+  rsRows.push({ label, expected, allowed: await rsAttempt(params) });
+}
+console.log('\nREAD RECEIPTS readState (expected vs actual)');
+let rsMismatch = 0;
+for (const r of rsRows) {
+  const ok = r.expected === r.allowed;
+  if (!ok) rsMismatch++;
+  console.log(`  ${ok ? 'ok      ' : 'MISMATCH'} ${r.label.padEnd(54)} expect ${r.expected ? 'ALLOW' : 'deny '}  got ${r.allowed ? 'ALLOW' : 'deny '}`);
+}
+console.log(`\n${rsMismatch === 0 ? 'ALL AS EXPECTED' : rsMismatch + ' MISMATCH(ES)'} (${rsRows.length} checks)`);
 
 // ── Report ───────────────────────────────────────────────────────────────────
 function table(filter, title) {
