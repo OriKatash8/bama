@@ -14,7 +14,7 @@ import { Text } from '@components/ui/Text';
 import { Image } from 'expo-image';
 import { useModeAccent } from '@core/navigation/floatingTabBar';
 
-const BAMA_LOGO = require('../../../assets/images/bama-logo-2.png');
+import { HEADER_LOGO as BAMA_LOGO } from '@core/theme/androidPerfFlags';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';

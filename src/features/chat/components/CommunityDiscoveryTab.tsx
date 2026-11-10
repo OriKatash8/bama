@@ -19,6 +19,7 @@ import type { MediaAsset } from '@core/types/media';
 import { communityCategoryLabel, getCommunityCategories, ROLE_CATEGORIES } from '@features/crew/data/categories';
 import { TAB_BAR_CONTENT_GAP, FAB_SIZE, useModeAccent } from '@core/navigation/floatingTabBar';
 import { shadow } from '@core/theme/shadow';
+import { androidPhotoProps } from '@core/theme/androidPerfFlags';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -86,6 +87,7 @@ export function CommunityAvatar({ community, size = 46 }: { community: Chat; siz
         style={{ width: size, height: size, borderRadius: radius, ...marginStyle }}
         contentFit="cover"
         cachePolicy="memory-disk"
+        {...androidPhotoProps}
       />
     );
   }

@@ -3,6 +3,7 @@ import { SafeAreaView, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, V
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@core/hooks/useTheme';
+import { androidPerf } from '@core/theme/androidPerfFlags';
 
 export type ScreenEdge = 'top' | 'right' | 'bottom' | 'left';
 const ALL_EDGES: readonly ScreenEdge[] = ['top', 'right', 'bottom', 'left'];
@@ -49,8 +50,10 @@ export function Screen({ children, scrollable = true, style, backgroundColor, gr
     </KeyboardAvoidingView>
   );
 
-  return (
-    <LinearGradient colors={bg} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.safe}>
+  // Android A/B (androidPerfFlags.flattenOverlays): a full-screen gradient sits behind
+  // every tab screen's scrolling content. Flatten it to its first stop.
+  const inner = (
+    <>
       {/* React Native's SafeAreaView is iOS-only (a plain View elsewhere), so on
           Android the screen would draw under the status and navigation bars. Android
           therefore pads itself from the safe-area CONTEXT. Not the library's native
@@ -76,7 +79,13 @@ export function Screen({ children, scrollable = true, style, backgroundColor, gr
       ) : (
         <SafeAreaView style={styles.safe}>{body}</SafeAreaView>
       )}
-    </LinearGradient>
+    </>
+  );
+
+  return androidPerf.flattenOverlays ? (
+    <View style={[styles.safe, { backgroundColor: bg[0] }]}>{inner}</View>
+  ) : (
+    <LinearGradient colors={bg} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.safe}>{inner}</LinearGradient>
   );
 }
 

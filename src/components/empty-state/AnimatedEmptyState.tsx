@@ -24,6 +24,7 @@ import {
   scaleLeft, scaleTop, type MarketCategoryId, type Placement, type RoleId,
 } from './emptyStateLayout';
 import { shadow } from '@core/theme/shadow';
+import { androidPerf } from '@core/theme/androidPerfFlags';
 
 export type EmptyStateVariant = 'tiles' | 'bubbles' | 'board' | 'listings';
 
@@ -329,7 +330,7 @@ function Floating({ index, placement, width, reduced, testID, children }: {
     <Animated.View
       testID={testID}
       shouldRasterizeIOS
-      renderToHardwareTextureAndroid
+      renderToHardwareTextureAndroid={!androidPerf.flattenOverlays}
       style={[styles.floating, { left: scaleLeft(placement.left + CARD_SHIFT, width), top: placement.top }, style]}
     >
       {children}
@@ -540,7 +541,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowOffset: { width: 0, height: 12 },
     shadowRadius: 28,
-    elevation: 8,
+    elevation: androidPerf.disableShadows ? 0 : 8,
   },
   ctaTouch: { borderRadius: 28, overflow: 'hidden' },
   cta: { width: 260, height: 56, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },

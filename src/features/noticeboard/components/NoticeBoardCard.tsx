@@ -18,6 +18,7 @@ import { categoryLabel } from '@features/crew/data/categories';
 import { capabilityLabel } from '@features/noticeboard/matching';
 import { localizeLocation } from '@core/constants/israelLocations';
 import { shadow } from '@core/theme/shadow';
+import { androidPhotoProps } from '@core/theme/androidPerfFlags';
 
 type Translations = typeof en;
 
@@ -169,7 +170,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
         <View style={[styles.headerRow, { flexDirection: rowDir }]}>
           {/* Avatar — leading corner (right in RTL) */}
           {poster?.photoURL ? (
-            <Image source={{ uri: poster.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />
+            <Image source={{ uri: poster.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" {...androidPhotoProps} />
           ) : (
             <View style={[styles.avatar, styles.avatarFallback]}>
               <AppText weight="bold" style={styles.avatarInitial}>
@@ -344,7 +345,7 @@ export function NoticeBoardCard({ request, poster, onPress, onApply, onDismiss, 
       {poster && (
         <View style={styles.posterRow}>
           {poster.photoURL ? (
-            <Image source={{ uri: poster.photoURL }} style={styles.posterAvatar} contentFit="cover" cachePolicy="memory-disk" />
+            <Image source={{ uri: poster.photoURL }} style={styles.posterAvatar} contentFit="cover" cachePolicy="memory-disk" {...androidPhotoProps} />
           ) : (
             <View style={[styles.posterAvatar, styles.posterAvatarFallback]}>
               <AppText weight="bold" style={styles.posterInitial}>{poster.displayName.charAt(0).toUpperCase()}</AppText>

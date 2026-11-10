@@ -10,6 +10,7 @@ import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import type { ProfessionalResult } from '../hooks/useSearchProfessionals';
 import { shadow } from '@core/theme/shadow';
+import { androidPhotoProps } from '@core/theme/androidPerfFlags';
 
 type Translations = typeof en;
 
@@ -93,6 +94,7 @@ export function ProfessionalCard({ item, onMessage, onDirectProject, onViewProfi
             style={styles.avatar}
             contentFit="cover"
             cachePolicy="memory-disk"
+            {...androidPhotoProps}
             loading="lazy"
             transition={150}
           />

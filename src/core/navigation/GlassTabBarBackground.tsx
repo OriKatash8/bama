@@ -3,6 +3,7 @@ import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
 import { SlidingTabBackground } from './SlidingTabBackground';
+import { androidPerf } from '@core/theme/androidPerfFlags';
 import { TAB_BAR_CONTENT_HEIGHT, TAB_BAR_SIDE_MARGIN, TAB_BAR_CAPSULE_RADIUS } from './floatingTabBar';
 
 type Props = {
@@ -117,7 +118,9 @@ export function GlassTabBarBackground({ activeColor, isDark, tabNames }: Props) 
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       {/* Its own layer behind the material: the blur wrapper clips with
           overflow hidden, which would cut a shadow set on it. */}
-      <View testID="tabbar-shadow" style={[styles.capsule, { boxShadow: CAPSULE_SHADOW[scheme] }]} />
+      {!androidPerf.disableShadows && (
+        <View testID="tabbar-shadow" style={[styles.capsule, { boxShadow: CAPSULE_SHADOW[scheme] }]} />
+      )}
       {material}
       <SlidingTabBackground
         numTabs={tabNames.length}

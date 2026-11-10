@@ -10,6 +10,7 @@ import { localizeLocation } from '@core/constants/israelLocations';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { shadow } from '@core/theme/shadow';
+import { androidPhotoProps } from '@core/theme/androidPerfFlags';
 
 
 type Translations = typeof en;
@@ -36,7 +37,7 @@ export function RentalCard({ listing, onPress }: Props) {
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.imageWrap}>
         {listing.imageUrl ? (
-          <Image source={{ uri: listing.imageUrl }} style={styles.image} contentFit="cover" cachePolicy="memory-disk" />
+          <Image source={{ uri: listing.imageUrl }} style={styles.image} contentFit="cover" cachePolicy="memory-disk" {...androidPhotoProps} />
         ) : (
           <Text style={styles.placeholder}>🎬</Text>
         )}

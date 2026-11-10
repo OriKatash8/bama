@@ -25,6 +25,7 @@ import { useNotifPermissionPrompt } from '@features/notifications/hooks/useNotif
 import { NotifPermissionBanner } from '@features/notifications/components/NotifPermissionBanner';
 import { usePendingMentions } from '../hooks/usePendingMentions';
 import { localizedSystemPreview } from '../utils/systemMessages';
+import { androidPhotoProps } from '@core/theme/androidPerfFlags';
 
 type ProjectStatus = ProjectRequest['status'];
 type ProjectRoleInfo = {
@@ -318,7 +319,7 @@ export function ChatsScreen({
     if (item.type === 'purchase') {
       const productImage = purchaseImages[item.id];
       if (productImage) {
-        return <Image source={{ uri: productImage }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />;
+        return <Image source={{ uri: productImage }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" {...androidPhotoProps} />;
       }
       return (
         <View style={[styles.avatar, { backgroundColor: item.archived ? '#e5e7eb' : '#fff7ed' }]}>
@@ -335,7 +336,7 @@ export function ChatsScreen({
     }
     if (item.type === 'group') {
       if (item.photoURL) {
-        return <Image source={{ uri: item.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />;
+        return <Image source={{ uri: item.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" {...androidPhotoProps} />;
       }
       return (
         <View style={[styles.avatar, { backgroundColor: avatarTint }]}>
@@ -345,7 +346,7 @@ export function ChatsScreen({
     }
     const info = dmInfo[item.id];
     if (info?.photoURL) {
-      return <Image source={{ uri: info.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />;
+      return <Image source={{ uri: info.photoURL }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" {...androidPhotoProps} />;
     }
     const initial = info?.name?.charAt(0).toUpperCase() ?? '?';
     return (
