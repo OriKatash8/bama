@@ -22,9 +22,16 @@ type Props = {
   /** Optional line under the dates. Renders nothing when omitted, so callers
    *  that don't pass it are unchanged. */
   note?: string;
+  /**
+   * Draw over the surrounding view instead of in a Modal of its own. Pass it when the
+   * calendar opens from inside a Modal (a bottom sheet): a Modal presented over another
+   * Modal is fragile on iOS (the pair can be left half-dismissed, with an invisible layer
+   * still eating touches), so the caller puts this inline in the sheet's own Modal.
+   */
+  inline?: boolean;
 };
 
-export function MiniCalendar({ value, onSelect, onClose, showFlexible, isFlexible, onFlexible, flexibleLabel, minDate, maxDate, note }: Props) {
+export function MiniCalendar({ value, onSelect, onClose, showFlexible, isFlexible, onFlexible, flexibleLabel, minDate, maxDate, note, inline }: Props) {
   const today = new Date();
   const init = value
     ? new Date(value + 'T00:00:00')
@@ -76,8 +83,7 @@ export function MiniCalendar({ value, onSelect, onClose, showFlexible, isFlexibl
     onClose();
   }
 
-  return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+  const body = (
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
@@ -139,6 +145,14 @@ export function MiniCalendar({ value, onSelect, onClose, showFlexible, isFlexibl
           </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
+  );
+
+  if (inline) {
+    return <View testID="mini-calendar-inline" style={StyleSheet.absoluteFill}>{body}</View>;
+  }
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      {body}
     </Modal>
   );
 }

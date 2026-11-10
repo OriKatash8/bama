@@ -1064,6 +1064,20 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [showMeetingDatePicker, setShowMeetingDatePicker] = useState(false);
   const [isAddingMeeting, setIsAddingMeeting] = useState(false);
 
+  // ONE way to close each sheet, used by the backdrop, the dismiss button, Android Back and
+  // a successful add. It takes the keyboard down and drops the calendar with it, so no
+  // picker state survives a close and nothing is left on top of the chat.
+  const closeAddMission = useCallback(() => {
+    Keyboard.dismiss();
+    setShowDueDatePicker(false);
+    setShowAddMission(false);
+  }, []);
+  const closeAddMeeting = useCallback(() => {
+    Keyboard.dismiss();
+    setShowMeetingDatePicker(false);
+    setShowAddMeeting(false);
+  }, []);
+
   /** Text + caret move together when a mention is inserted. */
   const applyComposerChange = useCallback((next: string, nextCaret: number) => {
     setInputText(next);
@@ -1795,7 +1809,7 @@ export function ChatRoomScreen({ chatId }: Props) {
         dueDate: newMissionDueDate || undefined,
       });
       setNewMissionTitle(''); setNewMissionAssignedTo([]); setNewMissionDueDate('');
-      setShowAddMission(false);
+      closeAddMission();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       Alert.alert('Error', msg || t('project_details.error_add_mission'));
@@ -1814,7 +1828,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       });
       setNewMeetingTitle(''); setNewMeetingDate(''); setNewMeetingTime('');
       setNewMeetingLocation(''); setNewMeetingInvitedIds([]);
-      setShowAddMeeting(false);
+      closeAddMeeting();
     } catch {
       Alert.alert('Error', t('project_details.error_add_meeting'));
     } finally {
@@ -2845,7 +2859,21 @@ export function ChatRoomScreen({ chatId }: Props) {
     />
 
     {/* Add Mission Modal */}
-    <BottomSheet visible={showAddMission} onClose={() => setShowAddMission(false)}>
+    <BottomSheet
+      visible={showAddMission}
+      onClose={closeAddMission}
+      onOverlayBack={() => setShowDueDatePicker(false)}
+      overlay={showAddMission && showDueDatePicker ? (
+        <MiniCalendar
+          inline
+          value={newMissionDueDate}
+          onSelect={(iso) => { setNewMissionDueDate(iso); setShowDueDatePicker(false); }}
+          onClose={() => setShowDueDatePicker(false)}
+          minDate={todayISO}
+          maxDate={projectDeadline}
+        />
+      ) : null}
+    >
       <View style={[chatStyles.sheetHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
         <LinearGradient colors={SHEET_TILE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={chatStyles.sheetTile}>
           <CheckSquare size={20} color="#FFFFFF" strokeWidth={2} />
@@ -2929,7 +2957,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       </KeyboardSafeForm>
 
       <View style={[chatStyles.sheetActions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-        <TouchableOpacity style={chatStyles.sheetDismissBtn} onPress={() => setShowAddMission(false)} activeOpacity={0.8}>
+        <TouchableOpacity style={chatStyles.sheetDismissBtn} onPress={closeAddMission} activeOpacity={0.8}>
           <Text style={[chatStyles.sheetDismissText, { ...font.semiBold }]}>{t('project_details.cancel')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -2942,18 +2970,23 @@ export function ChatRoomScreen({ chatId }: Props) {
         </TouchableOpacity>
       </View>
     </BottomSheet>
-    {showDueDatePicker && (
-      <MiniCalendar
-        value={newMissionDueDate}
-        onSelect={(iso) => { setNewMissionDueDate(iso); setShowDueDatePicker(false); }}
-        onClose={() => setShowDueDatePicker(false)}
-        minDate={todayISO}
-        maxDate={projectDeadline}
-      />
-    )}
 
     {/* Add Meeting Modal */}
-    <BottomSheet visible={showAddMeeting} onClose={() => setShowAddMeeting(false)}>
+    <BottomSheet
+      visible={showAddMeeting}
+      onClose={closeAddMeeting}
+      onOverlayBack={() => setShowMeetingDatePicker(false)}
+      overlay={showAddMeeting && showMeetingDatePicker ? (
+        <MiniCalendar
+          inline
+          value={newMeetingDate}
+          onSelect={(iso) => { setNewMeetingDate(iso); setShowMeetingDatePicker(false); }}
+          onClose={() => setShowMeetingDatePicker(false)}
+          minDate={todayISO}
+          maxDate={projectDeadline}
+        />
+      ) : null}
+    >
       <View style={[chatStyles.sheetHeader, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
         <LinearGradient colors={SHEET_TILE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={chatStyles.sheetTile}>
           <Calendar size={20} color="#FFFFFF" strokeWidth={2} />
@@ -3064,7 +3097,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       </KeyboardSafeForm>
 
       <View style={[chatStyles.sheetActions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-        <TouchableOpacity style={chatStyles.sheetDismissBtn} onPress={() => setShowAddMeeting(false)} activeOpacity={0.8}>
+        <TouchableOpacity style={chatStyles.sheetDismissBtn} onPress={closeAddMeeting} activeOpacity={0.8}>
           <Text style={[chatStyles.sheetDismissText, { ...font.semiBold }]}>{t('project_details.cancel')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -3077,15 +3110,6 @@ export function ChatRoomScreen({ chatId }: Props) {
         </TouchableOpacity>
       </View>
     </BottomSheet>
-    {showMeetingDatePicker && (
-      <MiniCalendar
-        value={newMeetingDate}
-        onSelect={(iso) => { setNewMeetingDate(iso); setShowMeetingDatePicker(false); }}
-        onClose={() => setShowMeetingDatePicker(false)}
-        minDate={todayISO}
-        maxDate={projectDeadline}
-      />
-    )}
 
     </LinearGradient>
   );

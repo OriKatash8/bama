@@ -37,10 +37,19 @@ export const KEYBOARD_INPUT_MARGIN = 24;
 export type KeyboardSafeFormProps = ScrollViewProps & {
   /** Extra space kept between the focused input and the keyboard. */
   bottomOffset?: number;
+  /**
+   * How room for the keyboard is made. Default 'layout': a spacer at the end of the
+   * content, so the scroll view is an ordinary ScrollView. NOT the library's default
+   * 'insets', which on iOS grows `contentInset`, and since React Native 0.81 the
+   * contentInset area does not receive touches (facebook/react-native#54123): with the
+   * keyboard up, fields in the lower part of a form could not be tapped. 'insets' also
+   * wraps the scroll view in a native container that ignores the caller's flex style.
+   */
+  mode?: 'layout' | 'insets';
 };
 
 export const KeyboardSafeForm = forwardRef<ScrollView, KeyboardSafeFormProps>(function KeyboardSafeForm(
-  { bottomOffset = KEYBOARD_INPUT_MARGIN, keyboardShouldPersistTaps = 'handled', ...rest },
+  { bottomOffset = KEYBOARD_INPUT_MARGIN, keyboardShouldPersistTaps = 'handled', mode = 'layout', ...rest },
   ref,
 ) {
   if (Platform.OS === 'web') {
@@ -50,6 +59,7 @@ export const KeyboardSafeForm = forwardRef<ScrollView, KeyboardSafeFormProps>(fu
     <KeyboardAwareScrollView
       ref={ref as never}
       bottomOffset={bottomOffset}
+      mode={mode}
       keyboardShouldPersistTaps={keyboardShouldPersistTaps}
       {...rest}
     />

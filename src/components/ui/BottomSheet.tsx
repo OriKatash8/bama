@@ -8,6 +8,14 @@ type BottomSheetProps = {
   /** Tapping the scrim dismisses. The grabber is decorative — nothing drags yet. */
   onClose: () => void;
   children: React.ReactNode;
+  /**
+   * Something to draw over the whole sheet, inside this sheet's own Modal (a date
+   * calendar, say). Never open another Modal from inside a sheet: stacked Modals can be
+   * left half-dismissed on iOS, with an invisible layer still eating touches.
+   */
+  overlay?: React.ReactNode;
+  /** Android Back while an overlay is up: dismiss the overlay, not the sheet. */
+  onOverlayBack?: () => void;
 };
 
 /** The tabs layout zeroes the safe-area context, so read the real inset here. */
@@ -21,17 +29,18 @@ const BOTTOM_INSET = initialWindowMetrics?.insets.bottom ?? 0;
  * put and what scrolls — the sheet caps its own height, so a caller that wants
  * a pinned header puts the body in its own ScrollView inside.
  */
-export function BottomSheet({ visible, onClose, children }: BottomSheetProps) {
+export function BottomSheet({ visible, onClose, children, overlay, onOverlayBack }: BottomSheetProps) {
   return (
     // Edge to edge on Android so the keyboard can be measured; BOTTOM_INSET below already
     // keeps the content clear of the navigation bar.
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} {...KEYBOARD_MODAL_PROPS}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={overlay && onOverlayBack ? onOverlayBack : onClose} {...KEYBOARD_MODAL_PROPS}>
       <View style={styles.scrim}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" />
         <View style={styles.sheet}>
           <View style={styles.grabber} />
           {children}
         </View>
+        {overlay}
       </View>
     </Modal>
   );

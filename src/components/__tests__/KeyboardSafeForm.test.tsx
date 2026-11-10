@@ -26,6 +26,14 @@ describe('KeyboardSafeForm', () => {
     expect(sv.props.keyboardShouldPersistTaps).toBe('handled');
   });
 
+  it("defaults to 'layout' mode: no contentInset, so no iOS hit-test dead zone under the keyboard", () => {
+    Platform.OS = 'ios';
+    const r = render(<KeyboardSafeForm><Text>x</Text></KeyboardSafeForm>);
+    expect(r.UNSAFE_getByType(ScrollView).props.mode).toBe('layout');
+    const insets = render(<KeyboardSafeForm mode="insets"><Text>x</Text></KeyboardSafeForm>);
+    expect(insets.UNSAFE_getByType(ScrollView).props.mode).toBe('insets');
+  });
+
   it('passes props through and lets the caller override the margin and taps', () => {
     Platform.OS = 'android';
     const r = render(
