@@ -16,11 +16,11 @@ import { Platform } from 'react-native';
 const ON_ANDROID = Platform.OS === 'android';
 
 /** 1. Drop every shadow() boxShadow and elevation (and the tab-bar capsule shadow). */
-const DISABLE_SHADOWS = true;
+const DISABLE_SHADOWS = false;
 /** 2. Load small thumbnails instead of full-size bitmaps for tab-screen images. */
 const SIZED_IMAGES = true;
 /** 3. Flatten stacked overlays / gradients behind tab-screen lists. */
-const FLATTEN_OVERLAYS = true;
+const FLATTEN_OVERLAYS = false;
 
 export const androidPerf = {
   disableShadows: ON_ANDROID && DISABLE_SHADOWS,
