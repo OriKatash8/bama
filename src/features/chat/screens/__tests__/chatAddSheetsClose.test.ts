@@ -19,7 +19,7 @@ it.each([
   ['meeting', 'showAddMeeting', 'showMeetingDatePicker', 'closeAddMeeting', 'setShowMeetingDatePicker', 'setShowAddMeeting'],
 ])('%s: the calendar is the sheet\'s own inline overlay, Back dismisses it first', (_n, shown, picker, close, setPicker) => {
   const re = new RegExp(
-    `visible=\\{${shown}\\}\\s+onClose=\\{${close}\\}\\s+onOverlayBack=\\{\\(\\) => ${setPicker}\\(false\\)\\}\\s+overlay=\\{${shown} && ${picker} \\? \\(\\s+<MiniCalendar\\s+inline`,
+    `visible=\\{${shown}\\}\\s+onClose=\\{${close}\\}\\s+onOverlayBack=\\{\\(\\) => [^\\n]*${setPicker}\\(false\\)[^\\n]*\\}\\s+overlay=\\{${shown} && ${picker} \\? \\(\\s+<MiniCalendar\\s+inline`,
   );
   expect(SRC).toMatch(re);
 });
@@ -34,6 +34,26 @@ it.each([
   const order = ['Keyboard.dismiss()', `${setPicker}(false)`, `${setShown}(false)`].map((s) => body.indexOf(s));
   expect(order.every((i) => i > -1)).toBe(true);
   expect(order).toEqual([...order].sort((a, b) => a - b));
+});
+
+it('meeting: the time is the project-details hour picker, inline in the sheet\'s own Modal', () => {
+  expect(SRC).toMatch(/import \{ MiniCalendar, MiniTimePicker \} from '@features\/crew\/components'/);
+  expect(SRC).toMatch(/<MiniTimePicker\s+inline\s+value=\{newMeetingTime\}\s+onSelect=\{\(time\) => setNewMeetingTime\(time\)\}\s+onClose=\{\(\) => setShowMeetingTimePicker\(false\)\}/);
+  // the free-text field is gone
+  expect(SRC).not.toMatch(/onChangeText=\{setNewMeetingTime\}/);
+});
+
+it('closeAddMeeting resets the time picker too, and Back dismisses either overlay', () => {
+  const start = SRC.indexOf('const closeAddMeeting = useCallback(() => {');
+  const body = SRC.slice(start, SRC.indexOf('}, []);', start));
+  expect(body).toMatch(/setShowMeetingTimePicker\(false\)/);
+  expect(SRC).toMatch(/onOverlayBack=\{\(\) => \{ setShowMeetingDatePicker\(false\); setShowMeetingTimePicker\(false\); \}\}/);
+});
+
+it('opening a picker takes the keyboard down first', () => {
+  expect(SRC).toMatch(/Keyboard\.dismiss\(\); setShowMeetingTimePicker\(true\)/);
+  expect(SRC).toMatch(/Keyboard\.dismiss\(\); setShowMeetingDatePicker\(true\)/);
+  expect(SRC).toMatch(/Keyboard\.dismiss\(\); setShowDueDatePicker\(true\)/);
 });
 
 it('every close path goes through it: backdrop (onClose), the dismiss button and a successful add', () => {

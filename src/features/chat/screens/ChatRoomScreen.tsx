@@ -59,7 +59,7 @@ import {
 } from 'firebase/firestore';
 import { Stack, useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { useActiveChatStore } from '@core/stores/activeChatStore';
-import { Plus, Crop, Scissors, Camera, CheckSquare, Calendar, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, ChevronRight, Users, UserMinus, Search, MoreVertical } from 'lucide-react-native';
+import { Plus, Crop, Scissors, Camera, CheckSquare, Calendar, Clock, Coins, Flag, Paperclip, Mic, Play, Pause, X, Eye, ShoppingBag, ChevronDown, ChevronRight, Users, UserMinus, Search, MoreVertical } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
 import { useAppFont } from '@core/hooks/useAppFont';
@@ -92,7 +92,7 @@ import type { ProjectFee } from '@core/types/project';
 import { addMission } from '../services/missionService';
 import { addMeeting } from '../services/meetingService';
 import { formatMeetingDetail } from '../utils/meetingText';
-import { MiniCalendar } from '@features/crew/components';
+import { MiniCalendar, MiniTimePicker } from '@features/crew/components';
 import { PurchaseBanner } from '@features/marketplace/components/PurchaseBanner';
 import { SenderAvatar } from '../components/SenderAvatar';
 import { ReadReceiptIcon } from '../components/ReadReceiptIcon';
@@ -1062,6 +1062,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [newMeetingLocation, setNewMeetingLocation] = useState('');
   const [newMeetingInvitedIds, setNewMeetingInvitedIds] = useState<string[]>([]);
   const [showMeetingDatePicker, setShowMeetingDatePicker] = useState(false);
+  const [showMeetingTimePicker, setShowMeetingTimePicker] = useState(false);
   const [isAddingMeeting, setIsAddingMeeting] = useState(false);
 
   // ONE way to close each sheet, used by the backdrop, the dismiss button, Android Back and
@@ -1075,6 +1076,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   const closeAddMeeting = useCallback(() => {
     Keyboard.dismiss();
     setShowMeetingDatePicker(false);
+    setShowMeetingTimePicker(false);
     setShowAddMeeting(false);
   }, []);
 
@@ -2942,7 +2944,7 @@ export function ChatRoomScreen({ chatId }: Props) {
           ) : (
             <TouchableOpacity
               style={[chatStyles.sheetPickRow, chatStyles.sheetOutlined, { borderColor: modeAccent, flexDirection: rtl ? 'row-reverse' : 'row' }]}
-              onPress={() => setShowDueDatePicker(true)}
+              onPress={() => { Keyboard.dismiss(); setShowDueDatePicker(true); }}
               activeOpacity={0.8}
             >
               <View style={chatStyles.sheetRowTile}>
@@ -2975,7 +2977,7 @@ export function ChatRoomScreen({ chatId }: Props) {
     <BottomSheet
       visible={showAddMeeting}
       onClose={closeAddMeeting}
-      onOverlayBack={() => setShowMeetingDatePicker(false)}
+      onOverlayBack={() => { setShowMeetingDatePicker(false); setShowMeetingTimePicker(false); }}
       overlay={showAddMeeting && showMeetingDatePicker ? (
         <MiniCalendar
           inline
@@ -2984,6 +2986,14 @@ export function ChatRoomScreen({ chatId }: Props) {
           onClose={() => setShowMeetingDatePicker(false)}
           minDate={todayISO}
           maxDate={projectDeadline}
+        />
+      ) : showAddMeeting && showMeetingTimePicker ? (
+        // The same hour picker project details uses, inline in this sheet's own Modal.
+        <MiniTimePicker
+          inline
+          value={newMeetingTime}
+          onSelect={(time) => setNewMeetingTime(time)}
+          onClose={() => setShowMeetingTimePicker(false)}
         />
       ) : null}
     >
@@ -3033,7 +3043,7 @@ export function ChatRoomScreen({ chatId }: Props) {
           ) : (
             <TouchableOpacity
               style={[chatStyles.sheetPickRow, chatStyles.sheetOutlined, { borderColor: modeAccent, flexDirection: rtl ? 'row-reverse' : 'row' }]}
-              onPress={() => setShowMeetingDatePicker(true)}
+              onPress={() => { Keyboard.dismiss(); setShowMeetingDatePicker(true); }}
               activeOpacity={0.8}
             >
               <View style={chatStyles.sheetRowTile}>
@@ -3050,14 +3060,33 @@ export function ChatRoomScreen({ chatId }: Props) {
           <Text style={[chatStyles.sheetFieldLabel, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
             {t('project_details.meeting_time')}
           </Text>
-          <TextInput
-            style={[chatStyles.sheetInput, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}
-            value={newMeetingTime}
-            onChangeText={setNewMeetingTime}
-            placeholder={t('project_details.meeting_time_placeholder')}
-            placeholderTextColor="#9C99AD"
-            keyboardType="numbers-and-punctuation"
-          />
+          {newMeetingTime ? (
+            <View style={[chatStyles.sheetPickRow, chatStyles.sheetOutlined, { borderColor: modeAccent, flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              <View style={chatStyles.sheetRowTile}>
+                <Clock size={16} color="#6D28D9" strokeWidth={2} />
+              </View>
+              <Text style={[chatStyles.sheetPickValue, { textAlign: rtl ? 'right' : 'left', ...font.semiBold }]}>
+                {newMeetingTime}
+              </Text>
+              <TouchableOpacity onPress={() => setNewMeetingTime('')} hitSlop={12} activeOpacity={0.7}>
+                <Text style={[chatStyles.sheetPickClear, { ...font.bold }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              testID="meeting-time-pick"
+              style={[chatStyles.sheetPickRow, chatStyles.sheetOutlined, { borderColor: modeAccent, flexDirection: rtl ? 'row-reverse' : 'row' }]}
+              onPress={() => { Keyboard.dismiss(); setShowMeetingTimePicker(true); }}
+              activeOpacity={0.8}
+            >
+              <View style={chatStyles.sheetRowTile}>
+                <Clock size={16} color="#6D28D9" strokeWidth={2} />
+              </View>
+              <Text style={[chatStyles.sheetPickPlaceholder, { textAlign: rtl ? 'right' : 'left', ...font.regular }]}>
+                {t('project_details.meeting_time_placeholder')}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View>

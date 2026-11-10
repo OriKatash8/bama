@@ -3,6 +3,7 @@ import { Modal, Text } from 'react-native';
 import { fireEvent, render } from '@testing-library/react-native';
 import { BottomSheet } from '../BottomSheet';
 import { MiniCalendar } from '@features/crew/components/MiniCalendar';
+import { MiniTimePicker } from '@features/crew/components/MiniTimePicker';
 
 /**
  * A calendar opened from inside a sheet must live in the SHEET'S Modal. Two Modals
@@ -72,6 +73,42 @@ describe('MiniCalendar inline', () => {
 
   it('is still a Modal of its own by default (every other caller is unchanged)', () => {
     const r = render(<MiniCalendar value="" onSelect={jest.fn()} onClose={jest.fn()} />);
+    expect(r.UNSAFE_getAllByType(Modal)).toHaveLength(1);
+  });
+});
+
+describe('MiniTimePicker inline', () => {
+  it('renders no Modal; confirm saves HH:MM (zero-padded, 5-minute steps) and closes', () => {
+    const onSelect = jest.fn();
+    const onClose = jest.fn();
+    const r = render(<MiniTimePicker inline value="" onSelect={onSelect} onClose={onClose} />);
+    expect(r.UNSAFE_queryAllByType(Modal)).toHaveLength(0);
+    expect(r.getByTestId('mini-time-picker-inline')).toBeTruthy();
+    fireEvent.press(r.getByText('09'));
+    fireEvent.press(r.getByText('30'));
+    fireEvent.press(r.getByText('אישור'));
+    expect(onSelect).toHaveBeenCalledWith('09:30');
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('starts from the value it is given', () => {
+    const onSelect = jest.fn();
+    const r = render(<MiniTimePicker inline value="14:45" onSelect={onSelect} onClose={jest.fn()} />);
+    fireEvent.press(r.getByText('אישור'));
+    expect(onSelect).toHaveBeenCalledWith('14:45');
+  });
+
+  it('inside a sheet: still exactly one Modal', () => {
+    const r = render(
+      <BottomSheet visible onClose={jest.fn()} overlay={<MiniTimePicker inline value="" onSelect={jest.fn()} onClose={jest.fn()} />}>
+        <Text>body</Text>
+      </BottomSheet>,
+    );
+    expect(r.UNSAFE_getAllByType(Modal)).toHaveLength(1);
+  });
+
+  it('is still a Modal of its own by default (project details is unchanged)', () => {
+    const r = render(<MiniTimePicker value="" onSelect={jest.fn()} onClose={jest.fn()} />);
     expect(r.UNSAFE_getAllByType(Modal)).toHaveLength(1);
   });
 });

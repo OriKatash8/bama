@@ -9,9 +9,15 @@ type Props = {
   value: string; // "HH:MM"
   onSelect: (time: string) => void;
   onClose: () => void;
+  /**
+   * Draw over the surrounding view instead of in a Modal of its own. Pass it when the
+   * picker opens from inside a Modal (a bottom sheet): a Modal over another Modal is
+   * fragile on iOS, so the caller renders this inline in the sheet's own Modal.
+   */
+  inline?: boolean;
 };
 
-export function MiniTimePicker({ value, onSelect, onClose }: Props) {
+export function MiniTimePicker({ value, onSelect, onClose, inline }: Props) {
   const [h, m] = value ? value.split(':') : ['12', '00'];
   const [selHour, setSelHour] = useState(h ?? '12');
   const [selMin, setSelMin] = useState(m ?? '00');
@@ -21,8 +27,7 @@ export function MiniTimePicker({ value, onSelect, onClose }: Props) {
     onClose();
   }
 
-  return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+  const body = (
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
@@ -70,6 +75,14 @@ export function MiniTimePicker({ value, onSelect, onClose }: Props) {
           </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
+  );
+
+  if (inline) {
+    return <View testID="mini-time-picker-inline" style={StyleSheet.absoluteFill}>{body}</View>;
+  }
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      {body}
     </Modal>
   );
 }
