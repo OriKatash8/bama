@@ -15,7 +15,10 @@ const SOLID = { light: '#FFFFFF', dark: '#0f0f1f' } as const;
 /** Android has no blur target wired yet (it needs a BlurTargetView around the
  *  screens), so it gets a near-solid material instead of a blur of nothing. */
 const ANDROID_FALLBACK = { light: 'rgba(255,255,255,0.92)', dark: 'rgba(15,15,31,0.92)' } as const;
-const HAIRLINE = { light: 'rgba(0,0,0,0.12)', dark: 'rgba(255,255,255,0.14)' } as const;
+/** Android-only switch (iOS and web keep their blur). Flip to false to bring the
+ *  Android blur back for an A/B comparison. */
+const ANDROID_BLUR_DISABLED = Platform.OS === 'android';
+const HAIRLINE ={ light: 'rgba(0,0,0,0.12)', dark: 'rgba(255,255,255,0.14)' } as const;
 /** A soft lift under the floating capsule: a wide diffuse shadow plus a tight
  *  contact one. CSS box-shadow semantics (RN new architecture + web): drawn
  *  only OUTSIDE the capsule, never behind it — so nothing shows through the
@@ -94,12 +97,18 @@ export function GlassTabBarBackground({ activeColor, isDark, tabNames }: Props) 
         {Platform.OS === 'android' && (
           <View style={[StyleSheet.absoluteFill, { backgroundColor: ANDROID_FALLBACK[scheme] }]} />
         )}
-        <BlurView
-          style={[StyleSheet.absoluteFill, { borderRadius: TAB_BAR_CAPSULE_RADIUS }]}
-          tint={scheme}
-          intensity={80}
-          {...(Platform.OS === 'android' ? { blurMethod: 'dimezisBlurView' as const } : null)}
-        />
+        {/* Android: no BlurView at all. dimezisBlurView re-blurs whatever scrolls
+            behind the bar every frame, on a bar that is on screen for every tab
+            screen — a prime suspect for the Samsung-only tab lag. The near-solid
+            ANDROID_FALLBACK above is the material instead. */}
+        {!ANDROID_BLUR_DISABLED && (
+          <BlurView
+            style={[StyleSheet.absoluteFill, { borderRadius: TAB_BAR_CAPSULE_RADIUS }]}
+            tint={scheme}
+            intensity={80}
+            {...(Platform.OS === 'android' ? { blurMethod: 'dimezisBlurView' as const } : null)}
+          />
+        )}
       </View>
     );
   }

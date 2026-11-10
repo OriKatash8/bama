@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { initializeApp, getApps } from 'firebase/app';
 import { initializeAuth, getAuth, connectAuthEmulator, GoogleAuthProvider, type Auth } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -76,7 +77,16 @@ i18n.on('languageChanged', (lng) => {
 });
 export { firebaseLanguageCode };
 export const googleProvider = new GoogleAuthProvider();
-export const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
+// Android: force long-polling. The RN Firestore bundle has no fetch streams, so
+// auto-detect probes a streaming channel first and falls back to long-polling
+// after a timeout — a delay on every cold start for a result we already expect.
+// Everything else (iOS, web) keeps auto-detect exactly as before.
+export const db = initializeFirestore(
+  app,
+  Platform.OS === 'android'
+    ? { experimentalForceLongPolling: true }
+    : { experimentalAutoDetectLongPolling: true },
+);
 export const storage = getStorage(app);
 export const rtdb = firebaseConfig.databaseURL ? getDatabase(app) : null;
 export const functions = getFunctions(app);
