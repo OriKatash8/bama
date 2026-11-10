@@ -2215,6 +2215,16 @@ export function ChatRoomScreen({ chatId }: Props) {
           data={listItems}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
+          // Without this the list is 'never': with the keyboard up it claims the
+          // touch from anything that is not a text input (to dismiss on tap), so
+          // a row's reply swipe never receives the gesture. 'handled' leaves the
+          // touch to whatever claims it (the row, a photo, a voice note); a tap on
+          // empty space still closes the keyboard.
+          keyboardShouldPersistTaps="handled"
+          // Drag the list down to close the keyboard: iOS follows the finger
+          // ('interactive', and a horizontal swipe cannot trigger it); Android
+          // closes on the first vertical drag.
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           ListFooterComponent={pendingBubble}
           scrollEventThrottle={16}
           onScroll={(e) => {
