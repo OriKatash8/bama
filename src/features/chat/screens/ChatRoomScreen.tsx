@@ -857,10 +857,14 @@ export function ChatRoomScreen({ chatId }: Props) {
     // The BAMA System account is not a person: no profile, nothing to block.
     // Its read-only DM is the only 'dm' chat that exists today.
     if (!uid || uid === currentUserId || uid === SYSTEM_USER_ID || uid === 'system') return;
+    // `from` tells the profile where it was opened. From a PROJECT chat it hides Block
+    // (Report stays) — see the rule on senderLabel. It is passed, never inferred, and the
+    // profile's chevron also uses it to go back to this chat rather than to Browse.
+    const from = chatType === 'group' ? 'projectChat' : 'chat';
     router.push(
-      `/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/browse/profile/${uid}` as never,
+      `/${activeMode === 'client' ? '(client)' : '(professional)'}/(tabs)/browse/profile/${uid}?from=${from}` as never,
     );
-  }, [activeMode, currentUserId, router]);
+  }, [activeMode, chatType, currentUserId, router]);
   /**
    * The name above someone else's bubble, and a route to their profile — which
    * is where Block lives. Four bubble kinds render this (video, image, audio,
@@ -881,11 +885,12 @@ export function ChatRoomScreen({ chatId }: Props) {
         {userNames[senderId] ?? 'Loading...'}
       </AppText>
     );
-    // Project chats: plain name, no route to the profile. A product decision —
-    // project members were hired into the chat and are already reachable
-    // through the project, so Block is not offered from here. Purchase chats and
-    // communities, where strangers meet, keep the route.
-    if (chatType === 'group') return label;
+    // The name opens the profile in EVERY chat type, project chats included. It used to be
+    // plain text in project chats (project members are hired together and reachable through
+    // the project, so Block was not offered from the chat). The profile is now reachable
+    // there too, with one rule: opened from a project chat, the profile hides Block and
+    // keeps Report (pushProfile passes ?from=projectChat). Purchase chats and communities,
+    // where strangers meet, still get both.
     return (
       <TouchableOpacity
         onPress={() => pushProfile(senderId)}
@@ -899,16 +904,18 @@ export function ChatRoomScreen({ chatId }: Props) {
   }, [chatType, pushProfile, t, userNames]);
   /**
    * Their picture beside someone else's bubble, on the outer edge (the row
-   * places it). Tappable exactly where their name is: not in project chats.
+   * places it). Tappable exactly where their name is, in every chat type.
+   * Your own messages carry no picture, so there is no own-avatar tap to handle;
+   * pushProfile also ignores your own uid and the BAMA system account.
    */
   const senderAvatar = useCallback((senderId: string) => (
     <SenderAvatar
       photoURL={userPhotos[senderId]}
       name={userNames[senderId] ?? ''}
       color={colorForUser(senderId)}
-      onPress={chatType === 'group' ? undefined : () => pushProfile(senderId)}
+      onPress={() => pushProfile(senderId)}
     />
-  ), [chatType, pushProfile, userNames, userPhotos]);
+  ), [pushProfile, userNames, userPhotos]);
   /** Caret, a logical index. Fed by onSelectionChange; drives @-detection. */
   const [caret, setCaret] = useState(0);
   /**

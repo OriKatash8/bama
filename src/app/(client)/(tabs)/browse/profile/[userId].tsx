@@ -57,7 +57,13 @@ const REPORT_TILE = '#F3EEFE';
 const REPORT_FLAG = '#6D28D9';
 
 export default function PublicProfileScreen() {
-  const { userId } = useLocalSearchParams<{ userId: string }>();
+  // `from` says where the profile was opened: 'projectChat' (a project group chat) or 'chat'
+  // (a purchase chat, a community channel or a DM). It is passed in the route by the chat,
+  // never guessed from history. Opened from a project chat, Block is NOT offered here (the
+  // members were hired together, and the project is the way to deal with them); Report is.
+  const { userId, from } = useLocalSearchParams<{ userId: string; from?: string }>();
+  const fromProjectChat = from === 'projectChat';
+  const fromChat = fromProjectChat || from === 'chat';
   const router = useRouter();
   const segments = useSegments();
   const modeSegment = segments[0];
@@ -114,6 +120,16 @@ export default function PublicProfileScreen() {
 
   function goToBrowse() {
     router.push(`/${modeSegment}/(tabs)/browse` as never);
+  }
+
+  // Opened from a chat: really go back. The chat is still mounted underneath, so its
+  // scroll position and keyboard are exactly as they were. Anywhere else, as before.
+  function goBack() {
+    if (fromChat && router.canGoBack()) {
+      router.back();
+      return;
+    }
+    goToBrowse();
   }
 
   async function pickEvidence() {
@@ -179,7 +195,7 @@ export default function PublicProfileScreen() {
     );
   }
 
-  if (!user || !profile || !onMySide) {
+  if (!user || !onMySide) {
     /**
      * BLOCK HAS TO SURVIVE THIS BRANCH.
      *
@@ -198,7 +214,7 @@ export default function PublicProfileScreen() {
         <View style={styles.center}>
           <Text style={[styles.errorText, { color: colors.textMuted }]}>{t('profile.not_found')}</Text>
 
-          {userId && userId !== currentUserId && (
+          {userId && userId !== currentUserId && !fromProjectChat && (
             <TouchableOpacity
               onPress={() => setBlockVisible(true)}
               style={[styles.fallbackBlockBtn, { flexDirection: rtl ? 'row-reverse' : 'row' }]}
@@ -214,7 +230,7 @@ export default function PublicProfileScreen() {
           )}
 
           <TouchableOpacity
-            onPress={goToBrowse}
+            onPress={goBack}
             style={[styles.backFallback, { flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 4 }]}
             activeOpacity={0.7}
           >
@@ -242,7 +258,9 @@ export default function PublicProfileScreen() {
     );
   }
 
-  const roleSkills = profile.roleSkills ?? [];
+  // A user with no professional profile (a client) still has a name and a photo: they get
+  // a basic page (header, Report, Block) rather than "not found" or an empty pro page.
+  const roleSkills = profile?.roleSkills ?? [];
 
   return (
     <Screen scrollable style={[styles.screenContent, { paddingBottom: tabBarClearance }]} backgroundColor={PAGE_BG}>
@@ -266,6 +284,7 @@ export default function PublicProfileScreen() {
           {/* Block, beside report. Report is asynchronous — it asks an admin to
               act. Block is immediate self-help, which is the distinction Apple
               1.2 draws and the reason both have to exist. */}
+          {!fromProjectChat && (
           <TouchableOpacity
             onPress={() => setBlockVisible(true)}
             style={styles.reportBtn}
@@ -277,9 +296,10 @@ export default function PublicProfileScreen() {
           >
             <Ban size={18} color={isBlocked ? '#C0392B' : REPORT_FLAG} strokeWidth={2} />
           </TouchableOpacity>
+          )}
           <View style={{ flex: 1 }} />
           <TouchableOpacity
-            onPress={goToBrowse}
+            onPress={goBack}
             style={styles.backBtn}
             activeOpacity={0.7}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -312,6 +332,8 @@ export default function PublicProfileScreen() {
           </View>
         ) : (
         <>
+        {profile && (
+        <>
         {/* ── Bio ── */}
         <BioSection bio={profile.bio} isEditing={false} />
 
@@ -341,6 +363,8 @@ export default function PublicProfileScreen() {
             {t('search.tell_us_about_project')}
           </Text>
         </TouchableOpacity>
+        </>
+        )}
 
         {/* Labelled Report / Block, for anyone who does not know the icons above (Guideline 1.2). */}
         {userId !== currentUserId && (
@@ -349,10 +373,12 @@ export default function PublicProfileScreen() {
               <Flag size={16} color={REPORT_FLAG} strokeWidth={2} />
               <Text style={styles.reportLabel}>{t('report.action')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.safetyItem} onPress={() => setBlockVisible(true)} accessibilityRole="button" testID="profile-block-labelled">
-              <Ban size={16} color={REPORT_FLAG} strokeWidth={2} />
-              <Text style={styles.reportLabel}>{t('blocking.block')}</Text>
-            </TouchableOpacity>
+            {!fromProjectChat && (
+              <TouchableOpacity style={styles.safetyItem} onPress={() => setBlockVisible(true)} accessibilityRole="button" testID="profile-block-labelled">
+                <Ban size={16} color={REPORT_FLAG} strokeWidth={2} />
+                <Text style={styles.reportLabel}>{t('blocking.block')}</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
         <View style={styles.bottomPad} />
@@ -360,6 +386,7 @@ export default function PublicProfileScreen() {
         )}
       </View>
 
+      {profile && (
       <DirectProjectSheet
         visible={sheetVisible}
         professionalId={userId ?? ''}
@@ -370,6 +397,7 @@ export default function PublicProfileScreen() {
           showToast(t('builder.request_submitted'), 'success');
         }}
       />
+      )}
 
       {/* Block's sheet belongs with the loaded profile, where the Block button is.
           It once sat in the loading branch only, so Block did nothing here. */}

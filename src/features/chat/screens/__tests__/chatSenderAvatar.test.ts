@@ -26,7 +26,10 @@ it('the picture comes from the same user read as the name', () => {
   expect(effect.match(/getDoc\(doc\(db, 'users', id\)\)/g)).toHaveLength(1);
 });
 
-it('taps through to the profile exactly where the name does', () => {
+it('taps through to the profile exactly where the name does — in every chat type, project chats included', () => {
   const helper = SRC.slice(SRC.indexOf('const senderAvatar = useCallback'), SRC.indexOf('const senderAvatar = useCallback') + 700);
-  expect(helper).toMatch(/chatType === 'group' \? undefined : \(\) => pushProfile\(senderId\)/);
+  // Project chats used to be the exception (commit 67e93e43); the profile now hides Block
+  // there instead (?from=projectChat), see chatProfileTap.test.ts.
+  expect(helper).toMatch(/onPress=\{\(\) => pushProfile\(senderId\)\}/);
+  expect(helper).not.toMatch(/chatType === 'group'/);
 });
