@@ -1,7 +1,6 @@
 import { View, StyleSheet } from 'react-native';
 import { AppText } from './AppText';
 import { Image } from 'expo-image';
-import { androidPhotoProps } from '@core/theme/androidPerfFlags';
 
 type AvatarProps = {
   uri?: string | null;
@@ -21,7 +20,7 @@ export function Avatar({ uri, name = '', size = 40 }: AvatarProps) {
   return (
     <View style={[styles.container, { width: size, height: size, borderRadius: size / 2 }]}>
       {uri ? (
-        <Image source={{ uri }} style={[styles.image, { borderRadius: size / 2 }]} contentFit="cover" cachePolicy="memory-disk" {...androidPhotoProps} />
+        <Image source={{ uri }} style={[styles.image, { borderRadius: size / 2 }]} contentFit="cover" cachePolicy="memory-disk" decodeFormat="rgb" />
       ) : (
         <AppText weight="semiBold" style={[styles.initials, { fontSize: size * 0.36 }]}>{initials}</AppText>
       )}

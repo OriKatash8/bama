@@ -1,5 +1,4 @@
 import { Platform, type ViewStyle } from 'react-native';
-import { androidPerf } from './androidPerfFlags';
 
 /**
  * One description of a drop shadow, rendered natively on every platform.
@@ -90,9 +89,6 @@ export function shadow(spec: ShadowSpec): ViewStyle {
     if (spec.radius !== undefined) out.shadowRadius = spec.radius;
     return out;
   }
-
-  // A/B test (androidPerfFlags.ts): no shadow and no elevation at all on Android.
-  if (androidPerf.disableShadows) return {};
 
   const opacity = (spec.opacity ?? 0) * ANDROID_OPACITY_GAIN;
   if (spec.android === 'none') return spec.elevation !== undefined ? { elevation: spec.elevation } : {};

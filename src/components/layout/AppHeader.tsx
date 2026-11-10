@@ -14,7 +14,8 @@ import { Text } from '@components/ui/Text';
 import { Image } from 'expo-image';
 import { useModeAccent } from '@core/navigation/floatingTabBar';
 
-import { HEADER_LOGO as BAMA_LOGO } from '@core/theme/androidPerfFlags';
+// 384 px copy: the 6250 px original (7.5 MB) was decoded for a 72 dp view on every tab screen.
+const BAMA_LOGO = require('../../../assets/images/bama-logo-2-small.png');
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';

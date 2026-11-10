@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
-import { androidPerf, androidPhotoProps } from '@core/theme/androidPerfFlags';
 
 type Props = {
   uri: string;
@@ -23,22 +22,15 @@ export function FittedPhoto({ uri, style, testID }: Props) {
   const [landscape, setLandscape] = useState(false);
   return (
     <View style={[styles.box, style]}>
-      {/* Android A/B (androidPerfFlags.flattenOverlays): the blurred copy of the photo
-          plus its veil is a full extra image decode and a radius-24 blur on EVERY card.
-          Off, the box background shows around a 'contain' photo instead. */}
-      {!androidPerf.flattenOverlays && (
-        <>
-          <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" blurRadius={24} cachePolicy="memory-disk" />
-          <View style={[StyleSheet.absoluteFill, styles.veil]} />
-        </>
-      )}
+      <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" blurRadius={24} cachePolicy="memory-disk" />
+      <View style={[StyleSheet.absoluteFill, styles.veil]} />
       <Image
         testID={testID}
         source={{ uri }}
         style={StyleSheet.absoluteFill}
         contentFit={landscape ? 'cover' : 'contain'}
         cachePolicy="memory-disk"
-        {...androidPhotoProps}
+        decodeFormat="rgb"
         onLoad={(e) => setLandscape(e.source.width / Math.max(1, e.source.height) >= LANDSCAPE_RATIO)}
       />
     </View>
