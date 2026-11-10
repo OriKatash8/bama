@@ -1,6 +1,7 @@
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { shadow } from '@core/theme/shadow';
+import { KEYBOARD_MODAL_PROPS } from '@components/KeyboardSafeForm';
 
 type BottomSheetProps = {
   visible: boolean;
@@ -22,7 +23,9 @@ const BOTTOM_INSET = initialWindowMetrics?.insets.bottom ?? 0;
  */
 export function BottomSheet({ visible, onClose, children }: BottomSheetProps) {
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    // Edge to edge on Android so the keyboard can be measured; BOTTOM_INSET below already
+    // keeps the content clear of the navigation bar.
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} {...KEYBOARD_MODAL_PROPS}>
       <View style={styles.scrim}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" />
         <View style={styles.sheet}>

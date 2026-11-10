@@ -3,12 +3,12 @@ import {
   ActivityIndicator,
   Image,
   Modal,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { Text, TextInput } from '@components/ui/Text';
+import { KEYBOARD_MODAL_PROPS, KeyboardSafeForm, useModalInsets } from '@components/KeyboardSafeForm';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera } from 'lucide-react-native';
@@ -73,6 +73,7 @@ export function CommunityManageModal({ visible, onClose, chatId, chatName, owner
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+  const modalInsets = useModalInsets();
   const currentUserId = auth.currentUser?.uid ?? '';
   const isOwner = !!ownerId && currentUserId === ownerId;
 
@@ -189,8 +190,14 @@ export function CommunityManageModal({ visible, onClose, chatId, chatName, owner
   const rowDir = rtl ? 'row-reverse' : 'row';
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} {...KEYBOARD_MODAL_PROPS}>
+      {/* Android draws this Modal edge to edge: pad the overlay by the system bars so the
+          card stays centred where it was. Zero on iOS and web. */}
+      <TouchableOpacity
+        style={[styles.overlay, { paddingTop: modalInsets.top, paddingBottom: modalInsets.bottom }]}
+        activeOpacity={1}
+        onPress={onClose}
+      >
         <TouchableOpacity activeOpacity={1} style={{ width: '90%', maxHeight: '85%' }}>
           <LinearGradient colors={['#1a237e', '#004aad']} style={styles.modal}>
             <View style={[styles.modalHeader, { flexDirection: rowDir }]}>
@@ -199,7 +206,7 @@ export function CommunityManageModal({ visible, onClose, chatId, chatName, owner
                 <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 22 }}>✕</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <KeyboardSafeForm showsVerticalScrollIndicator={false}>
 
               {/* Community photo — owner can change it */}
               <View style={{ alignItems: 'center', marginBottom: 20 }}>
@@ -326,7 +333,7 @@ export function CommunityManageModal({ visible, onClose, chatId, chatName, owner
               )}
 
               <View style={{ height: 16 }} />
-            </ScrollView>
+            </KeyboardSafeForm>
           </LinearGradient>
         </TouchableOpacity>
       </TouchableOpacity>

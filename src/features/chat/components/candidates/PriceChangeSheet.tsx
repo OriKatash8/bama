@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, ScrollView, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, TouchableOpacity, View } from 'react-native';
+import { KEYBOARD_MODAL_PROPS, KeyboardSafeForm, useModalInsets } from '@components/KeyboardSafeForm';
 import { TextInput } from '@components/ui/Text';
 import { AppText } from '@components/ui/AppText';
 import { useTheme } from '@core/hooks/useTheme';
@@ -38,6 +39,9 @@ export function PriceChangeSheet({
 }) {
   const colors = useTheme();
   const { t, align, money, dir } = useCandidateText();
+  // Android draws this Modal edge to edge (so the keyboard can be measured); keep the
+  // sheet's content clear of the navigation bar. Zero on iOS and web.
+  const modalInsets = useModalInsets();
   const [roleKey, setRoleKey] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
@@ -58,10 +62,10 @@ export function PriceChangeSheet({
   const inputStyle = { backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.text, textAlign: align };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} {...KEYBOARD_MODAL_PROPS}>
       <View style={s.overlay}>
-        <View style={s.sheet} testID="price-change-sheet">
-          <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets showsVerticalScrollIndicator={false}>
+        <View style={[s.sheet, modalInsets.bottom > 0 && { paddingBottom: 24 + modalInsets.bottom }]} testID="price-change-sheet">
+          <KeyboardSafeForm showsVerticalScrollIndicator={false}>
             <AppText weight="bold" style={[s.title, { color: colors.text, textAlign: align }, dir]}>
               {t('candidate_review.price_title', { name })}
             </AppText>
@@ -142,7 +146,7 @@ export function PriceChangeSheet({
                 {t('candidate_review.cancel')}
               </AppText>
             </TouchableOpacity>
-          </ScrollView>
+          </KeyboardSafeForm>
         </View>
       </View>
     </Modal>

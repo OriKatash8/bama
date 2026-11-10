@@ -1,8 +1,9 @@
 import { Children, useState, type ReactNode } from 'react';
 import {
-  KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type StyleProp, type ViewStyle,
+  Platform, Pressable, StyleSheet, View, useWindowDimensions, type StyleProp, type ViewStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { KeyboardSafeForm } from '@components/KeyboardSafeForm';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, ChevronRight, ShieldCheck, type LucideIcon } from 'lucide-react-native';
 import { useTabBarClearance, FLOATING_TAB_BAR_BOTTOM } from '@core/navigation/floatingTabBar';
@@ -116,31 +117,22 @@ export function AdminPage({
 }) {
   const p = useAdminPalette();
   const pad = useAdminPageInsets();
-  const scroll = (
-    <ScrollView
-      contentContainerStyle={pad}
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode={keyboardAware ? 'on-drag' : undefined}
-    >
-      <AdminHeaderBar onBack={onBack} />
-      <AdminColumn>
-        <AdminTitle title={title} subtitle={subtitle} side={side} />
-        {children}
-      </AdminColumn>
-    </ScrollView>
-  );
+  // No admin page holds a FlatList / SectionList, so the whole page can be one
+  // keyboard-aware scroll view: it scrolls the focused field above the keyboard.
   return (
     <View style={[styles.root, { backgroundColor: p.bg }]} testID={testID}>
-      {keyboardAware && Platform.OS !== 'web' ? (
-        <KeyboardAvoidingView
-          style={styles.root}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          testID="admin-page-keyboard"
-        >
-          {scroll}
-        </KeyboardAvoidingView>
-      ) : scroll}
+      <KeyboardSafeForm
+        contentContainerStyle={pad}
+        showsVerticalScrollIndicator={false}
+        keyboardDismissMode={keyboardAware ? 'on-drag' : undefined}
+        testID={keyboardAware && Platform.OS !== 'web' ? 'admin-page-keyboard' : undefined}
+      >
+        <AdminHeaderBar onBack={onBack} />
+        <AdminColumn>
+          <AdminTitle title={title} subtitle={subtitle} side={side} />
+          {children}
+        </AdminColumn>
+      </KeyboardSafeForm>
     </View>
   );
 }

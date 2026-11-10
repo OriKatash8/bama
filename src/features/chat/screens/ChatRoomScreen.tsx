@@ -9,6 +9,7 @@ import { bubbleSide } from '../utils/bubbleSide';
 import { firstUnreadMessageId } from '../utils/firstUnread';
 import { openingChannelId } from '../utils/openingChannel';
 import { BottomSheet } from '@components/ui/BottomSheet';
+import { KEYBOARD_MODAL_PROPS, KeyboardSafeForm, KeyboardSafeView } from '@components/KeyboardSafeForm';
 import { useModeAccent } from '@core/navigation/floatingTabBar';
 import {
   ActivityIndicator,
@@ -17,7 +18,6 @@ import {
   FlatList,
   Image,
   Keyboard,
-  KeyboardAvoidingView,
   Modal,
   PanResponder,
   Platform,
@@ -1024,8 +1024,13 @@ export function ChatRoomScreen({ chatId }: Props) {
   }
 
   useEffect(() => {
-    const show = Keyboard.addListener('keyboardWillShow', () => setKeyboardVisible(true));
-    const hide = Keyboard.addListener('keyboardWillHide', () => setKeyboardVisible(false));
+    // Android has no "will" events (only "did"), so on Android keyboardVisible never turned
+    // true and the composer kept its resting bottom padding above the keyboard.
+    const [showEvent, hideEvent] = Platform.OS === 'ios'
+      ? (['keyboardWillShow', 'keyboardWillHide'] as const)
+      : (['keyboardDidShow', 'keyboardDidHide'] as const);
+    const show = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
+    const hide = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
     return () => { show.remove(); hide.remove(); };
   }, []);
 
@@ -1900,11 +1905,7 @@ export function ChatRoomScreen({ chatId }: Props) {
         That is why there is no per-swipe flag: lifting one would re-render this
         screen, and every visible row with it, in the frames the drag needs. */}
     <Stack.Screen options={{ headerShown: false, gestureEnabled: !cardSwipeable, ...EDGE_BACK_SWIPE }} />
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={0}
-    >
+    <KeyboardSafeView style={styles.flex}>
       {/* Header */}
       {/* Back, the chat's picture beside it, then the name — like WhatsApp,
           laid out from the right in BOTH languages (asked for): back and the
@@ -2662,7 +2663,7 @@ export function ChatRoomScreen({ chatId }: Props) {
         </View>
         </View>
       )}
-    </KeyboardAvoidingView>
+    </KeyboardSafeView>
 
     {/* My-listings picker (post into the market channel) */}
     <Modal visible={listingPickerOpen} transparent animationType="fade" onRequestClose={() => setListingPickerOpen(false)}>
@@ -2752,11 +2753,9 @@ export function ChatRoomScreen({ chatId }: Props) {
         if (cropping) { setCropping(false); return; }
         setPendingMedia(null); setPendingCaption('');
       }}
+      {...KEYBOARD_MODAL_PROPS}
     >
-      <KeyboardAvoidingView
-        style={previewStyles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <KeyboardSafeView style={previewStyles.overlay}>
         <View style={[previewStyles.topBar, { paddingTop: TOP_INSET + 12, justifyContent: 'space-between' }]}>
           <TouchableOpacity onPress={() => { setPendingMedia(null); setPendingCaption(''); }} activeOpacity={0.7}>
             <X size={26} color="#fff" strokeWidth={2} />
@@ -2828,7 +2827,7 @@ export function ChatRoomScreen({ chatId }: Props) {
             }}
           />
         )}
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
     </Modal>
 
     {/* Fullscreen media viewer (image: pinch-zoom + double-tap; video: native controls) */}
@@ -2856,11 +2855,9 @@ export function ChatRoomScreen({ chatId }: Props) {
         </Text>
       </View>
 
-      <ScrollView
+      <KeyboardSafeForm
         style={chatStyles.sheetBody}
         contentContainerStyle={chatStyles.sheetBodyContent}
-        automaticallyAdjustKeyboardInsets
-        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         <View>
@@ -2929,7 +2926,7 @@ export function ChatRoomScreen({ chatId }: Props) {
             </TouchableOpacity>
           )}
         </View>
-      </ScrollView>
+      </KeyboardSafeForm>
 
       <View style={[chatStyles.sheetActions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
         <TouchableOpacity style={chatStyles.sheetDismissBtn} onPress={() => setShowAddMission(false)} activeOpacity={0.8}>
@@ -2966,11 +2963,9 @@ export function ChatRoomScreen({ chatId }: Props) {
         </Text>
       </View>
 
-      <ScrollView
+      <KeyboardSafeForm
         style={chatStyles.sheetBody}
         contentContainerStyle={chatStyles.sheetBodyContent}
-        automaticallyAdjustKeyboardInsets
-        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         <View>
@@ -3066,7 +3061,7 @@ export function ChatRoomScreen({ chatId }: Props) {
             );
           })}
         </View>
-      </ScrollView>
+      </KeyboardSafeForm>
 
       <View style={[chatStyles.sheetActions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
         <TouchableOpacity style={chatStyles.sheetDismissBtn} onPress={() => setShowAddMeeting(false)} activeOpacity={0.8}>

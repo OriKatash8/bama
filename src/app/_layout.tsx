@@ -19,6 +19,7 @@ import { ModerationGate } from '@features/moderation/components/ModerationGate';
 import { ThemeProvider, useTheme } from '@core/hooks/useTheme';
 import { LanguageSync } from '@components/layout/LanguageSync';
 import { I18nextProvider } from 'react-i18next';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { setAudioModeAsync } from 'expo-audio';
 
 SplashScreen.preventAutoHideAsync();
@@ -113,9 +114,13 @@ function AppShell() {
 export default function RootLayout() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <AppShell />
-      </ThemeProvider>
+      {/* Keyboard animation + focused-input tracking for KeyboardSafeForm and the chat
+          composer. Native-only: a plain pass-through on web. */}
+      <KeyboardProvider>
+        <ThemeProvider>
+          <AppShell />
+        </ThemeProvider>
+      </KeyboardProvider>
     </ErrorBoundary>
   );
 }

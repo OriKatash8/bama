@@ -1,5 +1,6 @@
 import React from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { Platform, ScrollView } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { render } from '@testing-library/react-native';
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -8,8 +9,8 @@ import { AdminPage } from '../AdminPage';
 
 /**
  * A form on an admin page (Rental companies) must not sit behind the phone
- * keyboard: with `keyboardAware` the page shrinks above it, as Screen does, and a
- * drag closes it. Every other admin page, and web, stays exactly as it was.
+ * keyboard: the page is one keyboard-aware scroll view that scrolls the focused field
+ * above it, and with `keyboardAware` a drag closes it. Web keeps the plain ScrollView.
  */
 
 jest.mock('react-native-reanimated', () => require('../../../../testing/reanimatedMock').reanimatedMock());
@@ -38,21 +39,26 @@ it.each(['ios', 'android'] as const)('%s: keyboardAware wraps the page so the ke
   Platform.OS = os;
   const r = render(page(true));
   expect(r.getByTestId('admin-page-keyboard')).toBeTruthy();
-  expect(r.UNSAFE_getByType(KeyboardAvoidingView).props.behavior).toBe(os === 'ios' ? 'padding' : 'height');
-  expect(r.UNSAFE_getByType(ScrollView).props.keyboardDismissMode).toBe('on-drag');
+  expect(r.UNSAFE_getByType(KeyboardAwareScrollView).props.keyboardDismissMode).toBe('on-drag');
+  expect(r.UNSAFE_getByType(KeyboardAwareScrollView).props.keyboardShouldPersistTaps).toBe('handled');
+  expect(r.UNSAFE_getByType(KeyboardAwareScrollView).props.bottomOffset).toBe(24);
   expect(r.getByText('body')).toBeTruthy();
 });
 
-it('without it, the page is exactly as before', () => {
+it('without it, the page is still keyboard-aware but does not dismiss on drag', () => {
+  Platform.OS = 'ios';
   const r = render(page());
   expect(r.queryByTestId('admin-page-keyboard')).toBeNull();
-  expect(r.UNSAFE_getByType(ScrollView).props.keyboardDismissMode).toBeUndefined();
+  expect(r.UNSAFE_getByType(KeyboardAwareScrollView).props.keyboardDismissMode).toBeUndefined();
 });
 
-it('web: no keyboard wrapper', () => {
+it('web: a plain ScrollView, no keyboard library component', () => {
   Platform.OS = 'web' as never;
   const r = render(page(true));
   expect(r.queryByTestId('admin-page-keyboard')).toBeNull();
+  // The library's Jest mock IS a ScrollView, so tell them apart by the prop only the
+  // keyboard-aware one gets.
+  expect(r.UNSAFE_getByType(ScrollView).props.bottomOffset).toBeUndefined();
 });
 
 it('the Rental companies page turns it on', () => {

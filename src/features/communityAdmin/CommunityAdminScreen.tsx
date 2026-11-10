@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { KeyboardSafeForm } from '@components/KeyboardSafeForm';
 import { Redirect, Stack, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@core/stores/authStore';
@@ -213,7 +214,8 @@ export function CommunityAdminScreen({ chatId }: { chatId: string }) {
     <View style={[styles.root, { backgroundColor: p.bg }]}>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: true, fullScreenGestureEnabled: true }} />
       {/* The header is the top of the page and scrolls away with it — not pinned. */}
-      <ScrollView contentContainerStyle={{ paddingBottom: 56 + insets.bottom }}>
+      {/* One keyboard-aware scroll view: the member search field scrolls above the keyboard. */}
+      <KeyboardSafeForm contentContainerStyle={{ paddingBottom: 56 + insets.bottom }}>
         <View style={{ paddingTop: insets.top }}>
           <AdminHeader
             communityName={community.name}
@@ -272,7 +274,7 @@ export function CommunityAdminScreen({ chatId }: { chatId: string }) {
             onGone={mem.finish}
           />
         </View>
-      </ScrollView>
+      </KeyboardSafeForm>
       <AdminToast message={toast.message} nonce={toast.nonce} />
     </View>
   );

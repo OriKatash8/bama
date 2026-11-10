@@ -1,5 +1,7 @@
 import { useContext, type Ref } from 'react';
-import { SafeAreaView, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { SafeAreaView, Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import type { ScrollView } from 'react-native';
+import { KeyboardSafeForm, KeyboardSafeView } from '@components/KeyboardSafeForm';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@core/hooks/useTheme';
@@ -37,16 +39,14 @@ export function Screen({ children, scrollable = true, style, backgroundColor, gr
       : colors.bgGradient;
 
   const body = (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      {scrollable ? (
-        <ScrollView ref={scrollRef} style={styles.transparent} contentContainerStyle={[styles.content, style]} keyboardShouldPersistTaps={keyboardShouldPersistTaps} showsVerticalScrollIndicator={false} scrollEnabled={scrollEnabled} bounces={scrollEnabled}>{children}</ScrollView>
-      ) : (
-        children
-      )}
-    </KeyboardAvoidingView>
+    // Scrollable: ONE keyboard-aware scroll view (scrolls the focused input into view).
+    // `scrollable={false}`: the screen supplies its own scroller, often a FlatList — never
+    // put that in a ScrollView — so it gets the non-scrolling lift instead.
+    scrollable ? (
+      <KeyboardSafeForm ref={scrollRef} style={styles.transparent} contentContainerStyle={[styles.content, style]} keyboardShouldPersistTaps={keyboardShouldPersistTaps} showsVerticalScrollIndicator={false} scrollEnabled={scrollEnabled} bounces={scrollEnabled}>{children}</KeyboardSafeForm>
+    ) : (
+      <KeyboardSafeView style={styles.flex}>{children}</KeyboardSafeView>
+    )
   );
 
   return (
