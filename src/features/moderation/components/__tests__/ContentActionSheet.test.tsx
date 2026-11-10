@@ -51,4 +51,35 @@ describe('ContentActionSheet', () => {
     mockLang = 'he';
     expect(setup({ reportKind: 'user' }).getByText(he.moderation.block_user)).toBeTruthy();
   });
+
+  describe('my own message in a project / marketplace chat', () => {
+    it('offers Reply FIRST, then Message info — hold-to-reply is not lost', () => {
+      const onReply = jest.fn();
+      const onInfo = jest.fn();
+      const { getByTestId, queryByTestId, props, toJSON } = setup({
+        subjectName: '', onReply, onInfo, onReport: undefined, onBlock: undefined,
+      });
+      const tree = JSON.stringify(toJSON());
+      expect(tree.indexOf('content-action-reply')).toBeGreaterThan(-1);
+      expect(tree.indexOf('content-action-reply')).toBeLessThan(tree.indexOf('content-action-info'));
+      expect(queryByTestId('content-action-report')).toBeNull(); // nothing to report on my own message
+      expect(queryByTestId('content-action-block')).toBeNull();
+      fireEvent.press(getByTestId('content-action-info'));
+      expect(props.onClose).toHaveBeenCalled();
+      expect(onInfo).toHaveBeenCalledTimes(1);
+    });
+
+    it('labels it "Message info" / "פרטי הודעה"', () => {
+      const { getByText } = setup({ onInfo: jest.fn() });
+      expect(getByText(en.read_receipts.message_info)).toBeTruthy();
+      mockLang = 'he';
+      const he2 = setup({ onInfo: jest.fn() });
+      expect(he2.getByText(he.read_receipts.message_info)).toBeTruthy();
+    });
+
+    it('is absent unless onInfo is passed (someone else\'s message, header menu)', () => {
+      const { queryByTestId } = setup();
+      expect(queryByTestId('content-action-info')).toBeNull();
+    });
+  });
 });

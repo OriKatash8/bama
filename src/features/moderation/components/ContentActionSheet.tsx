@@ -1,5 +1,5 @@
 import { Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Ban, Flag, Reply } from 'lucide-react-native';
+import { Ban, Camera, Flag, Reply } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
@@ -21,6 +21,7 @@ export function ContentActionSheet({
   reportKind,
   onClose,
   onReply,
+  onInfo,
   onReport,
   onBlock,
 }: {
@@ -30,11 +31,16 @@ export function ContentActionSheet({
   onClose: () => void;
   /** Absent in the header menu, where there is no message to reply to. */
   onReply?: () => void;
-  onReport: () => void;
-  onBlock: () => void;
+  /** "Message info" — only on MY OWN message in a project / marketplace chat, listed
+   *  right after Reply so hold-to-reply is not lost. */
+  onInfo?: () => void;
+  /** Absent on my own message: there is nothing to report or block. */
+  onReport?: () => void;
+  onBlock?: () => void;
 }) {
   const rtl = useSettingsStore((s) => s.language) === 'he';
   const tr = (rtl ? he : en).moderation;
+  const infoLabel = (rtl ? he : en).read_receipts.message_info;
   const row = rtl ? 'row-reverse' : 'row';
   const align = rtl ? 'right' : 'left';
 
@@ -64,26 +70,41 @@ export function ContentActionSheet({
               <AppText style={[styles.itemText, { textAlign: align }]}>{tr.reply}</AppText>
             </TouchableOpacity>
           )}
-          <TouchableOpacity
-            style={[styles.item, { flexDirection: row }]}
-            onPress={() => run(onReport)}
-            accessibilityRole="button"
-            testID="content-action-report"
-          >
-            <Flag size={20} color={DANGER} strokeWidth={2} />
-            <AppText style={[styles.itemText, { color: DANGER, textAlign: align }]}>
-              {reportKind === 'message' ? tr.report_message : tr.report_user}
-            </AppText>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.item, { flexDirection: row }]}
-            onPress={() => run(onBlock)}
-            accessibilityRole="button"
-            testID="content-action-block"
-          >
-            <Ban size={20} color={DANGER} strokeWidth={2} />
-            <AppText style={[styles.itemText, { color: DANGER, textAlign: align }]}>{tr.block_user}</AppText>
-          </TouchableOpacity>
+          {onInfo && (
+            <TouchableOpacity
+              style={[styles.item, { flexDirection: row }]}
+              onPress={() => run(onInfo)}
+              accessibilityRole="button"
+              testID="content-action-info"
+            >
+              <Camera size={20} color="#000000" strokeWidth={2} />
+              <AppText style={[styles.itemText, { textAlign: align }]}>{infoLabel}</AppText>
+            </TouchableOpacity>
+          )}
+          {onReport && (
+            <TouchableOpacity
+              style={[styles.item, { flexDirection: row }]}
+              onPress={() => run(onReport)}
+              accessibilityRole="button"
+              testID="content-action-report"
+            >
+              <Flag size={20} color={DANGER} strokeWidth={2} />
+              <AppText style={[styles.itemText, { color: DANGER, textAlign: align }]}>
+                {reportKind === 'message' ? tr.report_message : tr.report_user}
+              </AppText>
+            </TouchableOpacity>
+          )}
+          {onBlock && (
+            <TouchableOpacity
+              style={[styles.item, { flexDirection: row }]}
+              onPress={() => run(onBlock)}
+              accessibilityRole="button"
+              testID="content-action-block"
+            >
+              <Ban size={20} color={DANGER} strokeWidth={2} />
+              <AppText style={[styles.itemText, { color: DANGER, textAlign: align }]}>{tr.block_user}</AppText>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.cancel} onPress={onClose} accessibilityRole="button" testID="content-action-cancel">
             <AppText weight="semiBold" style={styles.cancelText}>{tr.cancel}</AppText>
           </TouchableOpacity>

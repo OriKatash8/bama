@@ -995,6 +995,16 @@
     "restore_failed": "Couldn't bring it back",
     "cancellation_removed_undo": "Removed — undo from “Removed” above"
   },
+  "read_receipts": {
+    "message_info": "Message info",
+    "seen_by": "Seen by",
+    "not_seen": "Not seen yet",
+    "nobody_seen": "No one has seen this yet",
+    "status_sending": "Sending",
+    "status_sent": "Sent",
+    "status_seen": "Seen by everyone",
+    "close": "Close"
+  },
   "moderation": {
     "suspended_title": "Account suspended",
     "suspended_body": "Your account has been suspended for violating our Terms of Use. You have been signed out.",

@@ -95,6 +95,10 @@ import { formatMeetingDetail } from '../utils/meetingText';
 import { MiniCalendar } from '@features/crew/components';
 import { PurchaseBanner } from '@features/marketplace/components/PurchaseBanner';
 import { SenderAvatar } from '../components/SenderAvatar';
+import { ReadReceiptIcon } from '../components/ReadReceiptIcon';
+import { MessageInfoSheet } from '../components/MessageInfoSheet';
+import { useReadReceipts } from '../hooks/useReadReceipts';
+import { isReceiptChat, receiptStatus } from '../utils/readReceipts';
 import { ChatSearchSheet } from '../components/ChatSearchSheet';
 import { CandidateReviewCard } from '../components/candidates/CandidateReviewCard';
 import { EndDateBanner } from '../components/EndDateBanner';
@@ -771,6 +775,18 @@ export function ChatRoomScreen({ chatId }: Props) {
   const [chatPhotoUploading, setChatPhotoUploading] = useState(false);
   const [memberNames, setMemberNames] = useState<Record<string, string>>({});
   const [chatMembers, setChatMembers] = useState<string[]>([]);
+  // Read receipts: project (`group`) and marketplace (`purchase`) chats only, and only
+  // for someone who is a MEMBER. An admin can read a project chat's messages without
+  // being in it; they get no listener, no writes, no icon and no "Message info".
+  const receiptsOn = isReceiptChat(chatType) && !!currentUserId && chatMembers.includes(currentUserId);
+  const readMap = useReadReceipts({
+    chatId,
+    enabled: receiptsOn,
+    currentUserId,
+    latestMessageKey: messages.length > 0 ? messages[messages.length - 1].id : null,
+  });
+  const [ownActionMessage, setOwnActionMessage] = useState<Message | null>(null);
+  const [infoMessageId, setInfoMessageId] = useState<string | null>(null);
   /**
    * The other party in a DM. Held in state, not derived, because the chat doc's
    * members array is what names them and it arrives with the subscription.
@@ -805,6 +821,31 @@ export function ChatRoomScreen({ chatId }: Props) {
     : chatType === 'community' ? 'community'
     : chatType === 'purchase' ? 'purchase'
     : chatType === 'group' ? 'project' : 'other';
+  /**
+   * The timestamp under a bubble. On MY message in a receipt chat it carries the
+   * status icon beside it; everywhere else it is the same plain Text it always was.
+   */
+  const timeLine = (msg: Message, isOwn: boolean, pad?: { paddingHorizontal: number; paddingBottom: number }) => {
+    const color = isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)';
+    if (!(receiptsOn && isOwn)) {
+      return <Text style={[styles.messageTime, { color }, pad]}>{formatMessageTime(msg.timestamp)}</Text>;
+    }
+    const { status } = receiptStatus(msg.timestamp, currentUserId, chatMembers, readMap);
+    return (
+      <View style={[styles.timeRow, { flexDirection: rtl ? 'row-reverse' : 'row' }, pad]}>
+        <Text style={[styles.messageTime, { color }]}>{formatMessageTime(msg.timestamp)}</Text>
+        <ReadReceiptIcon
+          status={status}
+          bubbleColor={modeAccent}
+          labels={{
+            sending: t('read_receipts.status_sending'),
+            sent: t('read_receipts.status_sent'),
+            seen: t('read_receipts.status_seen'),
+          }}
+        />
+      </View>
+    );
+  };
   const messageSnippet = (m: Message) =>
     m.text || (m.imageURL ? '[photo]' : m.videoUrl ? '[video]' : m.audioUrl ? '[voice message]' : '');
   /**
@@ -2112,6 +2153,33 @@ export function ChatRoomScreen({ chatId }: Props) {
           if (m) setBlockTarget({ userId: m.senderId, name: userNames[m.senderId] ?? '' });
         }}
       />
+      {/* My own message in a project / marketplace chat: Reply first, then Message info. */}
+      <ContentActionSheet
+        visible={!!ownActionMessage}
+        subjectName=""
+        reportKind="message"
+        onClose={() => setOwnActionMessage(null)}
+        onReply={ownActionMessage ? () => startReply(ownActionMessage) : undefined}
+        onInfo={ownActionMessage ? () => setInfoMessageId(ownActionMessage.id) : undefined}
+      />
+      {(() => {
+        const infoMsg = infoMessageId ? messages.find((m) => m.id === infoMessageId) : undefined;
+        if (!receiptsOn || !infoMsg) return null;
+        const { seenBy, notSeen } = receiptStatus(infoMsg.timestamp, currentUserId, chatMembers, readMap);
+        return (
+          <MessageInfoSheet
+            visible
+            onClose={() => setInfoMessageId(null)}
+            preview={messageSnippet(infoMsg)}
+            currentUserId={currentUserId}
+            seenBy={seenBy}
+            notSeen={notSeen}
+            names={userNames}
+            photos={userPhotos}
+            colorFor={colorForUser}
+          />
+        );
+      })()}
       <ContentActionSheet
         visible={headerMenuOpen}
         subjectName={headerMenuUserId ? (userNames[headerMenuUserId] ?? chatName) : ''}
@@ -2274,9 +2342,10 @@ export function ChatRoomScreen({ chatId }: Props) {
                 rtl={rtl}
                 accent={modeAccent}
                 onReply={() => startReply(msg)}
-                // Someone else's message: hold for Reply / Report / Block. Your
-                // own keeps hold-to-reply (nothing to report or block).
-                onLongPress={isOwn ? undefined : () => setActionMessage(msg)}
+                // Someone else's message: hold for Reply / Report / Block. Your own
+                // keeps hold-to-reply, except in a project / marketplace chat you are in:
+                // there it opens Reply + Message info (Reply stays first).
+                onLongPress={isOwn ? (receiptsOn ? () => setOwnActionMessage(msg) : undefined) : () => setActionMessage(msg)}
                 style={[
                   styles.bubbleWrapper,
                   // Mirrored: yours on the right in English, on the LEFT in
@@ -2301,9 +2370,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                         {msg.text}
                       </AppText>
                     )}
-                    <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)', paddingHorizontal: 10, paddingBottom: 6 }]}>
-                      {formatMessageTime(msg.timestamp)}
-                    </Text>
+                    {timeLine(msg, isOwn, { paddingHorizontal: 10, paddingBottom: 6 })}
                   </View>
                 ) : msg.imageURL ? (
                   <View style={[styles.mediaBubble, { backgroundColor: isOwn ? modeAccent : '#ffffff' }]}>
@@ -2317,9 +2384,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                         {msg.text}
                       </AppText>
                     )}
-                    <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)', paddingHorizontal: 10, paddingBottom: 6 }]}>
-                      {formatMessageTime(msg.timestamp)}
-                    </Text>
+                    {timeLine(msg, isOwn, { paddingHorizontal: 10, paddingBottom: 6 })}
                   </View>
                 ) : msg.audioUrl ? (
                   <View style={[styles.bubble, isOwn ? { backgroundColor: modeAccent } : { backgroundColor: '#ffffff' }]}>
@@ -2333,9 +2398,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                       playingId={playingId}
                       setPlayingId={setPlayingId}
                     />
-                    <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
-                      {formatMessageTime(msg.timestamp)}
-                    </Text>
+                    {timeLine(msg, isOwn)}
                   </View>
                 ) : (
                   <View style={[styles.bubble, isOwn ? { backgroundColor: modeAccent } : { backgroundColor: '#ffffff' }]}>
@@ -2350,9 +2413,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                       font={font}
                       onPressMention={pushProfile}
                     />
-                    <Text style={[styles.messageTime, { color: isOwn ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)' }]}>
-                      {formatMessageTime(msg.timestamp)}
-                    </Text>
+                    {timeLine(msg, isOwn)}
                   </View>
                 )}
                 {!isOwn && rtl && senderAvatar(msg.senderId)}
@@ -3249,6 +3310,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
   },
+  timeRow: { alignSelf: 'flex-start', alignItems: 'center', gap: 4 },
   messageTime: {
     fontSize: 10,
     textAlign: 'left',

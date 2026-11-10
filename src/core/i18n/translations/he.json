@@ -995,6 +995,16 @@
     "restore_failed": "לא ניתן להחזיר",
     "cancellation_removed_undo": "הוסר — אפשר לבטל דרך „הוסרו” למעלה"
   },
+  "read_receipts": {
+    "message_info": "פרטי הודעה",
+    "seen_by": "נצפה על ידי",
+    "not_seen": "טרם נצפה",
+    "nobody_seen": "עדיין אף אחד לא צפה בהודעה",
+    "status_sending": "נשלחת",
+    "status_sent": "נשלחה",
+    "status_seen": "נצפתה על ידי כולם",
+    "close": "סגור"
+  },
   "moderation": {
     "suspended_title": "החשבון הושעה",
     "suspended_body": "החשבון שלך הושעה עקב הפרת תנאי השימוש. נותקת מהמערכת.",
