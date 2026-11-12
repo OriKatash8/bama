@@ -134,7 +134,8 @@ export const onFeeWrittenRecomputeBlock = onDocumentWritten(
 // ── Notifications ────────────────────────────────────────────────────────────
 
 export type Lang = 'he' | 'en';
-type NoticeKind = 'fee_created' | 'fee_due' | 'fee_overdue_soon' | 'fee_overdue';
+type NoticeKind =
+  | 'fee_created' | 'fee_created_nodate' | 'fee_due' | 'fee_overdue_soon' | 'fee_overdue';
 
 /** What a notice says besides the amount: which project, and the date the block
  *  starts. `date` is already formatted (dd/mm/yyyy, Israel time). */
@@ -157,6 +158,12 @@ const NOTICE_TEXT: Record<NoticeKind, Record<Lang, (c: NoticeCtx) => string>> = 
   fee_created: {
     he: (c) => `עמלת תיווך של ₪${c.amount} לפרויקט ${c.project} — לתשלום עד ${c.date}.`,
     en: (c) => `A ₪${c.amount} brokerage fee for ${c.project} — payable by ${c.date}.`,
+  },
+  // The block is switched off: there is no date and no restriction to mention —
+  // only what is owed, for which project, and that it can be paid now.
+  fee_created_nodate: {
+    he: (c) => `עמלת תיווך של ₪${c.amount} לפרויקט ${c.project} ממתינה לתשלום. אפשר לשלם עכשיו באפליקציה.`,
+    en: (c) => `A ₪${c.amount} brokerage fee for ${c.project} is waiting to be paid. You can pay now in the app.`,
   },
   fee_due: {
     he: (c) => `עמלת התיווך בסך ₪${c.amount} לפרויקט ${c.project} לתשלום. יש להסדיר אותה עד ${c.date} כדי להמשיך לקבל פרויקטים חדשים.`,
@@ -190,35 +197,48 @@ export async function langOf(userId: string): Promise<Lang> {
   }
 }
 
-/** `blockAtMs`: the moment the block starts — the date every notice quotes. */
+/**
+ * `blockAtMs`: the moment the block starts — the date the dated notices quote.
+ * Only `fee_created_nodate` (block switched off) may omit it; both fee_created
+ * kinds are delivered with the same push `type: 'fee_created'`.
+ */
 export async function sendFeeNotice(
-  kind: NoticeKind, proId: string, projectId: string, amount: number, blockAtMs: number,
+  kind: NoticeKind, proId: string, projectId: string, amount: number, blockAtMs?: number,
 ): Promise<void> {
+  if (blockAtMs === undefined && kind !== 'fee_created_nodate') {
+    throw new Error(`sendFeeNotice(${kind}) needs the block date`);
+  }
   const lang = await langOf(proId);
   await notify({
     userId: proId,
     title: 'BAMA',
     message: NOTICE_TEXT[kind][lang]({
-      amount, project: await projectLabel(projectId, lang), date: formatNoticeDate(blockAtMs),
+      amount,
+      project: await projectLabel(projectId, lang),
+      date: blockAtMs === undefined ? '' : formatNoticeDate(blockAtMs),
     }),
-    data: { type: kind, projectId },
+    data: { type: kind === 'fee_created_nodate' ? 'fee_created' : kind, projectId },
   });
 }
 
 /**
- * The push sent the moment a fee is created (an engagement completes with
- * something owed): amount, project, and the date the block would start.
- * `blockAtMs` is undefined while the block is switched off (nothing was stamped,
- * so there is no date to quote) and then nothing is sent. Returns whether a push
- * went out. Never throws: a failed push must not undo or fail the completion
- * that just committed.
+ * The push sent the moment a fee is created (an engagement completes, or a
+ * dispute resolves as completed, with something owed). ALWAYS sent when a fee is
+ * owed: with the block on it names the date the block would start; with it off
+ * (`blockAtMs` undefined — nothing was stamped) it says only what is owed, for
+ * which project, and that it can be paid now — no date, no restriction.
+ * Returns whether a push went out. Never throws: a failed push must not undo or
+ * fail the completion that just committed.
  */
 export async function notifyFeeCreated(
   proId: string, projectId: string, amount: number, blockAtMs: number | undefined,
 ): Promise<boolean> {
-  if (blockAtMs === undefined || !(amount > 0)) return false;
+  if (!(amount > 0)) return false;
   try {
-    await sendFeeNotice('fee_created', proId, projectId, amount, blockAtMs);
+    await sendFeeNotice(
+      blockAtMs === undefined ? 'fee_created_nodate' : 'fee_created',
+      proId, projectId, amount, blockAtMs,
+    );
     return true;
   } catch (err) {
     console.error('[feeOverdue] fee_created notice failed', proId, projectId, err);

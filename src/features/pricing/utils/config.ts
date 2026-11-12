@@ -71,6 +71,12 @@ export function resolvePricingConfig(raw: unknown): PricingConfig {
     // All strictly positive. A 0 would read as "no fee" or "no window".
     if (typeof v === 'number' && Number.isFinite(v) && v > 0) out[key as NumericConfigKey] = v;
   }
+  // Same single source of truth as the server: chargeWindowDays follows
+  // disputeWindowDays unless it carries its own valid value.
+  const cw = data.chargeWindowDays;
+  if (!(typeof cw === 'number' && Number.isFinite(cw) && cw > 0)) {
+    out.chargeWindowDays = out.disputeWindowDays;
+  }
   // Only a real `true` — the server and the rules read it the same way.
   out.feeOverdueBlockEnabled = data.feeOverdueBlockEnabled === true;
   return out;

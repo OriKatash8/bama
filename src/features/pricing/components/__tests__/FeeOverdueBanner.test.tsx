@@ -53,6 +53,20 @@ it('warning mode in Hebrew uses the Hebrew copy and the same date format', () =>
   )).toBeTruthy();
 });
 
+it('unpaid mode (block switch off): amount + pay now, no date, no restriction or threat, in both languages', () => {
+  const forbiddenEn = /block|restrict|paus|won't be able|can't send|overdue|\d{2}\/\d{2}\/\d{4}/i;
+  const forbiddenHe = /חסימ|הגבל|מושה|לא ניתן|באיחור|\d{2}\/\d{2}\/\d{4}/;
+  const r = render(<FeeOverdueBanner mode="unpaid" amount={1250} />);
+  expect(r.getByTestId('fee-unpaid-banner')).toBeTruthy();
+  const enTexts = [en.noticeboard.overdue_unpaid_title, en.noticeboard.overdue_unpaid_body, en.noticeboard.overdue_unpaid_how];
+  expect(r.getByText(en.noticeboard.overdue_unpaid_body.replace('{{amount}}', '1,250'))).toBeTruthy();
+  for (const t of enTexts) expect(t).not.toMatch(forbiddenEn);
+  const heTexts = [he.noticeboard.overdue_unpaid_title, he.noticeboard.overdue_unpaid_body, he.noticeboard.overdue_unpaid_how];
+  for (const t of heTexts) expect(t).not.toMatch(forbiddenHe);
+  fireEvent.press(r.getByTestId('fee-banner-pay'));
+  expect(mockPush).toHaveBeenCalledWith('/settings/payment');
+});
+
 it('links to the fee terms', () => {
   const r = render(<FeeOverdueBanner amount={10} />);
   fireEvent.press(r.getByText(en.noticeboard.overdue_banner_terms));

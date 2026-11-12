@@ -109,3 +109,57 @@ it('no warning with the kill switch off', () => {
   expect(result.current.overdueSoon).toBe(false);
   expect(result.current.soonTotal).toBe(0);
 });
+
+describe('bannerMode — which fee banner shows', () => {
+  // A completed, owed, unpaid fee that was completed with the switch OFF carries no overdueAt.
+  const noClock = (over: Record<string, unknown> = {}) => ({
+    professionalId: 'pro-1', feeStatus: 'owed', status: 'pending', feePaid: false, feeDue: 45,
+    engagementStatus: 'completed', ...over,
+  });
+
+  it('switch OFF: an unpaid fee is "unpaid" — never a warning, never blocked, no date', () => {
+    mockConfig = { paymentFailureGraceDays: 7, feeOverdueBlockEnabled: false };
+    const { result } = renderHook(() => useFeeArrears());
+    emit({ p1: fee(Date.now() - 1000, { feeDue: 45 }), p2: noClock({ feeDue: 5 }) });
+    expect(result.current.bannerMode).toBe('unpaid');
+    expect(result.current.unpaidTotal).toBe(50);
+    expect(result.current.overdueBlocked).toBe(false);
+    expect(result.current.overdueSoon).toBe(false);
+    expect(result.current.overdueFrom).toBeNull();
+  });
+
+  it('switch ON, fee with a future block date: "warning"', () => {
+    const { result } = renderHook(() => useFeeArrears());
+    emit({ p1: fee(Date.now() + 5 * 86400_000) });
+    expect(result.current.bannerMode).toBe('warning');
+  });
+
+  it('switch ON, block in force: "blocked" wins over everything', () => {
+    const { result } = renderHook(() => useFeeArrears());
+    emit({ p1: fee(Date.now() - 1000), p2: fee(Date.now() + 5 * 86400_000), p3: noClock() });
+    expect(result.current.bannerMode).toBe('blocked');
+  });
+
+  it('switch turned ON later: a fee completed while it was off stays "unpaid" (no clock, no block)', () => {
+    const { result } = renderHook(() => useFeeArrears());
+    emit({ p1: noClock() });
+    expect(result.current.bannerMode).toBe('unpaid');
+    expect(result.current.overdueBlocked).toBe(false);
+  });
+
+  it.each([
+    ['paid', { feePaid: true }],
+    ['settled', { status: 'paid' }],
+    ['not owed', { status: 'not_owed' }],
+    ['disputed', { status: 'disputed' }],
+    ['exempt', { feeStatus: 'exempt' }],
+    ['still running (not completed)', { engagementStatus: 'accepted' }],
+    ['contested', { engagementStatus: 'disputed' }],
+  ])('no banner for a %s fee', (_n, over) => {
+    mockConfig = { paymentFailureGraceDays: 7, feeOverdueBlockEnabled: false };
+    const { result } = renderHook(() => useFeeArrears());
+    emit({ p1: noClock(over) });
+    expect(result.current.bannerMode).toBeNull();
+    expect(result.current.unpaidTotal).toBe(0);
+  });
+});

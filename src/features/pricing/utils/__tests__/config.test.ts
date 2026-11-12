@@ -34,6 +34,17 @@ describe('resolvePricingConfig', () => {
     expect(resolvePricingConfig(raw)).toEqual(raw);
   });
 
+  it('LIVE doc: chargeWindowDays follows disputeWindowDays (4), the rest default, switch off', () => {
+    const c = resolvePricingConfig({
+      feeOverdueBlockEnabled: false, disputeWindowDays: 4, paymentFailureGraceDays: 7, maxOpenProjects: 2,
+    });
+    expect(c.chargeWindowDays).toBe(4);
+    expect(c.feeOverdueBlockDays).toBe(7);
+    expect(c.feeOverdueBlockEnabled).toBe(false);
+    expect(resolvePricingConfig({ disputeWindowDays: 6 }).chargeWindowDays).toBe(6);
+    expect(resolvePricingConfig({ disputeWindowDays: 6, chargeWindowDays: 3 }).chargeWindowDays).toBe(3);
+  });
+
   it('falls back PER FIELD, so one bad key cannot revert the others', () => {
     const out = resolvePricingConfig({ feePercent: 5, maxOpenProjects: 'three' });
     expect(out.feePercent).toBe(5);

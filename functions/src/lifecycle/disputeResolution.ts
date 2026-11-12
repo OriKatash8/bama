@@ -5,7 +5,9 @@ import {
 } from './helpers';
 import { readConfig } from './config';
 import { applyDerivedProjectState } from './derive';
-import { overdueStampFields, recomputeFeeBlockSafely, sendFeeNotice } from './feeOverdue';
+import {
+  overdueStampFields, recomputeFeeBlockSafely, sendFeeNotice, notifyFeeCreated,
+} from './feeOverdue';
 import { isOfferPriceValid } from '../pricing';
 
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
@@ -143,6 +145,10 @@ export const resolveFeeDispute = onCall(async (request) => {
     // After the commit; a failed push must not report a recorded resolution as failed.
     await sendFeeNotice('fee_due', proId, projectId, feeDue, blockAt)
       .catch((err) => console.error('[resolveFeeDispute] fee_due notice failed', err));
+  } else if (outcome === 'completed' && feeDue > 0) {
+    // Block switched off: nothing was stamped, so no dated fee_due. The pro still
+    // learns a fee is owed (amount + project + pay now, no date). notifyFeeCreated never throws.
+    await notifyFeeCreated(proId, projectId, feeDue, undefined);
   }
 
   return { ok: true, outcome, feeDue };

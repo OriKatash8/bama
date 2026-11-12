@@ -257,6 +257,14 @@ export function resolveConfig(raw: unknown): PricingConfig {
     // window" — too consequential to arrive by typo.
     if (typeof v === 'number' && Number.isFinite(v) && v > 0) out[key as NumericConfigKey] = v;
   }
+  // ONE source of truth for the 4-day contest/charge window: `disputeWindowDays`
+  // is the field the console shows, so when `chargeWindowDays` is absent or
+  // unusable it follows it (and so, in turn, its default). An explicit, valid
+  // `chargeWindowDays` still wins.
+  const cw = data.chargeWindowDays;
+  if (!(typeof cw === 'number' && Number.isFinite(cw) && cw > 0)) {
+    out.chargeWindowDays = out.disputeWindowDays;
+  }
   // Only a real boolean `true` switches the block on. A string "true", a 1, a
   // missing key or a failed read all leave it off — the failure mode of a kill
   // switch must be the safe one.

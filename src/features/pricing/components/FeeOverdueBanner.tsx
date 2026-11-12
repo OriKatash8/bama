@@ -28,8 +28,10 @@ function formatDate(ms: number): string {
 type Props = {
   amount: number;
   /** 'blocked' (default): the block is in force. 'warning': a fee exists and the
-   *  block starts at `blockAt` — the in-app half of the warning Terms 12.8.5 promises. */
-  mode?: 'blocked' | 'warning';
+   *  block starts at `blockAt` — the in-app half of the warning Terms 12.8.5 promises.
+   *  'unpaid': a fee is owed and there is no block date or restriction to mention
+   *  (the block switch is off) — just what is owed and a pay-now button. */
+  mode?: 'blocked' | 'warning' | 'unpaid';
   /** When the block starts, in ms. Required for `warning`. */
   blockAt?: number;
 };
@@ -55,14 +57,16 @@ export function FeeOverdueBanner({ amount, mode = 'blocked', blockAt }: Props) {
   const rtl = language === 'he';
   const align = rtl ? 'right' : 'left';
   const warning = mode === 'warning';
-  const tone = warning ? AMBER : RED;
-  const prefix = warning ? 'noticeboard.overdue_warning' : 'noticeboard.overdue_banner';
+  const unpaid = mode === 'unpaid';
+  const tone = unpaid ? BLUE : warning ? AMBER : RED;
+  const prefix = unpaid ? 'noticeboard.overdue_unpaid'
+    : warning ? 'noticeboard.overdue_warning' : 'noticeboard.overdue_banner';
 
   return (
     <View
-      style={[styles.box, warning ? styles.boxWarning : styles.boxBlocked]}
-      accessibilityRole="alert"
-      testID={warning ? 'fee-warning-banner' : 'fee-overdue-banner'}
+      style={[styles.box, unpaid ? styles.boxUnpaid : warning ? styles.boxWarning : styles.boxBlocked]}
+      accessibilityRole={unpaid ? undefined : 'alert'}
+      testID={unpaid ? 'fee-unpaid-banner' : warning ? 'fee-warning-banner' : 'fee-overdue-banner'}
     >
       <View style={[styles.header, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
         <AlertCircle size={18} color={tone} strokeWidth={2} />
@@ -101,12 +105,14 @@ export function FeeOverdueBanner({ amount, mode = 'blocked', blockAt }: Props) {
 
 const RED = '#C4321F';
 const AMBER = '#9A5B00';
+const BLUE = '#3730A3';
 
 // lineHeight ≥ 1.47 × fontSize throughout: Heebo clips glyph tops below that on iOS.
 const styles = StyleSheet.create({
   box: { borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 14 },
   boxBlocked: { backgroundColor: '#FDECEA', borderColor: '#F3C1BA' },
   boxWarning: { backgroundColor: '#FFF6E5', borderColor: '#F0D9A8' },
+  boxUnpaid: { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' },
   header: { alignItems: 'center', gap: 8, marginBottom: 6 },
   title: { fontSize: 15, lineHeight: 23, flexShrink: 1 },
   body: { fontSize: 14, lineHeight: 21, color: '#3B1712', marginBottom: 6 },

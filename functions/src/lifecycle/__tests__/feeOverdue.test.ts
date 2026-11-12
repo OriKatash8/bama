@@ -92,9 +92,12 @@ describe('fee_created push — amount, project, pay-by date', () => {
     expect(blockAtOf(short, ts(T + 4 * DAY))).toBe(T + 4 * DAY);
   });
 
-  it('blockAtOf is undefined while the switch is off — so nothing is sent', async () => {
+  it('blockAtOf is undefined while the switch is off — the push is then sent WITHOUT a date', () => {
     expect(blockAtOf(overdueStampFields(OFF, T), ts(T + 4 * DAY))).toBeUndefined();
-    await expect(notifyFeeCreated('pro', 'proj', 30, undefined)).resolves.toBe(false);
+    // (what is sent in that case is tested in feeCreatedNotice.test.ts)
+  });
+
+  it('nothing owed, nothing sent', async () => {
     await expect(notifyFeeCreated('pro', 'proj', 0, T)).resolves.toBe(false);
   });
 

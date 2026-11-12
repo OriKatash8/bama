@@ -30,12 +30,18 @@ export type FeeArrears = {
   overdueSoon: boolean;
   /** What is owed on the fees that have not started blocking yet. */
   soonTotal: number;
+  /** What is owed on completed, unpaid fees — independent of the kill switch. */
+  unpaidTotal: number;
+  /** Which fee banner the dashboard shows. blocked (block in force) > warning (switch
+   *  on, block date known) > unpaid (a fee is owed, no date or restriction to
+   *  mention — the only state while the switch is off) > null. */
+  bannerMode: 'blocked' | 'warning' | 'unpaid' | null;
 };
 
 const EMPTY: FeeArrears = {
   blocked: false, totalOwed: 0, oldestDemandSentAt: null, graceDays: 0,
   overdueBlocked: false, overdueTotal: 0, overdueFrom: null,
-  overdueSoon: false, soonTotal: 0,
+  overdueSoon: false, soonTotal: 0, unpaidTotal: 0, bannerMode: null,
 };
 
 /**
@@ -94,11 +100,17 @@ export function useFeeArrears(): FeeArrears {
   const overdueSoon = overdueFrom !== null && now < overdueFrom;
 
   let totalOwed = 0;
+  let unpaidTotal = 0;
   let oldestDemandSentAt: number | null = null;
   let blocked = false;
 
   for (const fee of fees.values()) {
     totalOwed += outstandingFee(fee);
+    // A completed, owed, unpaid, undisputed fee — whatever the kill switch says.
+    if (fee.feeStatus === 'owed' && fee.engagementStatus === 'completed' && fee.feePaid !== true
+      && fee.status !== 'paid' && fee.status !== 'not_owed' && fee.status !== 'disputed') {
+      unpaidTotal += outstandingFee(fee);
+    }
 
     // Mirrors feeBlocksNewHire in functions/src/pricing.ts, clause for clause.
     if (fee.feeStatus !== 'owed') continue;
@@ -117,6 +129,7 @@ export function useFeeArrears(): FeeArrears {
 
   return {
     blocked, totalOwed, oldestDemandSentAt, graceDays: paymentFailureGraceDays,
-    overdueBlocked, overdueTotal, overdueFrom, overdueSoon, soonTotal,
+    overdueBlocked, overdueTotal, overdueFrom, overdueSoon, soonTotal, unpaidTotal,
+    bannerMode: overdueBlocked ? 'blocked' : overdueSoon ? 'warning' : unpaidTotal > 0 ? 'unpaid' : null,
   };
 }

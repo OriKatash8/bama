@@ -378,6 +378,27 @@ describe('resolveConfig — the overdue-fee block', () => {
     expect(resolveConfig({ feeOverdueBlockDays: 0 }).feeOverdueBlockDays).toBe(7);
   });
 
+  it('LIVE config doc: missing block/reminder/charge fields default to 7 / 2 / 4, switch stays off', () => {
+    const live = resolveConfig({
+      feeOverdueBlockEnabled: false, disputeWindowDays: 4, paymentFailureGraceDays: 7, maxOpenProjects: 2,
+    });
+    expect(live.feeOverdueBlockDays).toBe(7);
+    expect(live.feeReminderLeadDays).toBe(2);
+    expect(live.chargeWindowDays).toBe(4);
+    expect(live.disputeWindowDays).toBe(4);
+    expect(live.paymentFailureGraceDays).toBe(7);
+    expect(live.feeOverdueBlockEnabled).toBe(false);
+  });
+
+  it('chargeWindowDays follows disputeWindowDays when missing or unusable; an explicit valid one wins', () => {
+    expect(resolveConfig({ disputeWindowDays: 6 }).chargeWindowDays).toBe(6);
+    expect(resolveConfig({ disputeWindowDays: 6, chargeWindowDays: 0 }).chargeWindowDays).toBe(6);
+    expect(resolveConfig({ disputeWindowDays: 6, chargeWindowDays: 'x' }).chargeWindowDays).toBe(6);
+    expect(resolveConfig({ disputeWindowDays: 6, chargeWindowDays: 3 }).chargeWindowDays).toBe(3);
+    expect(resolveConfig({ disputeWindowDays: -1 }).chargeWindowDays).toBe(4);   // both unusable → default
+    expect(resolveConfig(null).chargeWindowDays).toBe(4);
+  });
+
   it('the reminder lead time is config-driven: default 2 days, bad values fall back', () => {
     expect(CONFIG_DEFAULTS.feeReminderLeadDays).toBe(2);
     expect(resolveConfig({ feeReminderLeadDays: 3 }).feeReminderLeadDays).toBe(3);
