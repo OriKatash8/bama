@@ -1,8 +1,8 @@
 # BAMA — Privacy Policy
 
-Version: 1.6
+Version: 1.7
 
-Last updated: 13/10/2026
+Last updated: 12/11/2026
 
 This is an English translation of the BAMA Privacy Policy. The Hebrew version is the binding version. In case of any conflict, the Hebrew version prevails.
 
@@ -103,6 +103,8 @@ We do not ask for and do not wish to receive information of special sensitivity 
 
 4.6. Using Users' details for any purpose beyond the specific Engagement — including marketing, selling or passing them to a third party — is prohibited under the Terms and may also be prohibited by law.
 
+4.7. Message read status — in project group chats and marketplace chats, the other chat members can see whether you have viewed the messages sent in it. To enable this, each participant's last time of viewing the chat is stored.
+
 ## 5. Who We Share Information With
 
 5.1. We do not sell personal information and do not trade in it.
@@ -111,8 +113,8 @@ We do not ask for and do not wish to receive information of special sensitivity 
 
 | Recipient | Purpose |
 | --- | --- |
-| Google (Firebase) | User authentication, database, file storage, server functions (including video processing and compression) and push notifications. |
-| Apple | Sign in with Apple and push notifications to iOS devices. |
+| Google (Firebase) | User authentication, database, file storage, server functions (including video processing and compression), push notifications, and verifying app and device integrity (Google Play Integrity) to prevent abuse. |
+| Apple | Sign in with Apple and push notifications to iOS devices, and verifying app and device integrity (Apple App Attest) to prevent abuse. |
 | Expo | Delivering push notifications to devices. |
 | SMS provider | Sending verification codes to your phone number, once phone verification is enabled. |
 | Payment provider (currently: Grow) | Processing Brokerage Fee payments from Professionals. |
@@ -208,4 +210,4 @@ For questions, access, correction or deletion requests, or any privacy matter:
 - Address: HaHadarim St., Kadima-Zoran, Israel
 - In the App: the "Contact Us" screen in Settings
 
-BAMA — Build A Media Alliance · Version 1.6 · 13.10.2026
+BAMA — Build A Media Alliance · Version 1.7 · 12.11.2026
