@@ -316,7 +316,7 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 12.8. Non-payment.
 
-12.8.1. Automatic restriction. If a charge is not settled within 7 days of the Engagement Completion it arose from (the "Payment Period"), the Professional cannot submit new Offers or be hired for new Projects, from the end of the Payment Period until all overdue charges are settled in full. The restriction applies automatically, without an individual decision by the Operator. Timeline: the first notice is sent when the charge is created; a reminder is sent two days before the restriction begins; the restriction begins 7 days after the Engagement Completion (the 4-day dispute period is included in those 7 days), provided no dispute was filed.
+12.8.1. Automatic restriction. If a charge is not settled within 7 days of the Engagement Completion it arose from (the "Payment Period"), the Operator may restrict the Professional so that they cannot submit new Offers or be hired for new Projects, from the end of the Payment Period until all overdue charges are settled in full. The Operator may apply the restriction automatically, without an individual decision, and may stop or suspend its automatic application at any time. Timeline: the first notice is sent when the charge is created. The restriction, where applied, begins 7 days after the Engagement Completion (the 4-day dispute period is included in those 7 days), provided no dispute was filed, and a reminder is sent two days before it begins.
 
 12.8.2. Existing Engagements. The restriction does not apply to Engagements for which the Professional was already hired, and they continue as usual.
 
