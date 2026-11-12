@@ -1,8 +1,8 @@
 # BAMA — Terms of Use
 
-Version: 1.6
+Version: 1.7
 
-Last updated: 13/10/2026
+Last updated: 12/11/2026
 
 This is an English translation of the BAMA Terms of Use. The Hebrew version is the binding version. In case of any conflict between the Hebrew version and this translation, the Hebrew version prevails (see section 1.7).
 
@@ -310,13 +310,13 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 12.5. When the charge is created. The fee charge is created automatically at the end of the Dispute Period under section 8.6.5, if no dispute was submitted during it. If a dispute was submitted — the charge will be created, changed or cancelled according to the Operator's decision. No charge will be created for an Engagement that was cancelled, from which the Professional withdrew before its completion, or which was determined not to have taken place.
 
-12.6. How payment is settled. The Operator will send the Professional a payment request for a fee that has been created, specifying how to settle it. Settlement takes place outside the App, by a method the Operator determines from time to time — including bank transfer, online payment method or a payment processor. The Operator may change the settlement method with reasonable notice. There is no charging mechanism in the App, and the Operator does not charge a saved payment method unless the Professional has given separate and express authorization.
+12.6. How payment is settled. The Operator will send the Professional a payment request for a fee that has been created. Payment is made on an external, secure payment page of a licensed payment provider (currently: Grow), opened from the App. The Operator does not store card details; they are entered and held by the payment provider only. The Operator may replace the payment provider or the settlement method with reasonable notice; settlement by another method, including bank transfer, is possible by arrangement with the Operator. The Operator does not charge a saved payment method unless the Professional has given separate and express authorization.
 
 12.7. Billing documents and taxes. The Operator will issue the Professional a lawful document for the fee, according to the Operator's tax status. VAT will be added to fee amounts as required by law, if applicable.
 
 12.8. Non-payment.
 
-12.8.1. Automatic restriction. If a charge is not settled within 7 days of the Engagement Completion it arose from (the "Payment Period"), the Professional cannot submit new Offers or be hired for new Projects, from the end of the Payment Period until all overdue charges are settled in full. The restriction applies automatically, without an individual decision by the Operator.
+12.8.1. Automatic restriction. If a charge is not settled within 7 days of the Engagement Completion it arose from (the "Payment Period"), the Professional cannot submit new Offers or be hired for new Projects, from the end of the Payment Period until all overdue charges are settled in full. The restriction applies automatically, without an individual decision by the Operator. Timeline: the first notice is sent when the charge is created; a reminder is sent two days before the restriction begins; the restriction begins 7 days after the Engagement Completion (the 4-day dispute period is included in those 7 days), provided no dispute was filed.
 
 12.8.2. Existing Engagements. The restriction does not apply to Engagements for which the Professional was already hired, and they continue as usual.
 
@@ -324,7 +324,7 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 12.8.4. Pending dispute. A charge that is the subject of a dispute under section 8.6.5 is not an overdue charge while the dispute is undecided. If the Operator decides that the fee applies, the Payment Period starts again from the date of the decision.
 
-12.8.5. Reminders. The Operator will send the Professional a notice when the charge is created, and a reminder before the restriction begins. Failure to receive a notice, including because of device settings, does not prevent the restriction from applying.
+12.8.5. Reminders. The Operator will send the Professional a notice when the charge is created, and a reminder in the days before the restriction begins, as set in the App. Failure to receive a notice, including because of device settings, does not prevent the restriction from applying.
 
 12.8.6. Length of the Payment Period. The Operator may update the length of the Payment Period with prior notice under section 23.2. An update will not apply to a charge created before it takes effect.
 
@@ -626,4 +626,4 @@ For questions, requests, reports, content removal requests, suspension appeals o
 
 We will try to respond within a reasonable time.
 
-BAMA — Build A Media Alliance · Version 1.6 · 13.10.2026
+BAMA — Build A Media Alliance · Version 1.7 · 12.11.2026
