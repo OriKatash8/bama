@@ -12,6 +12,7 @@
   },
   "hosting": {
     "public": "legal-site/public",
+    "predeploy": ["node scripts/export-app-links.mjs --project bama-af0a0 --optional", "npm run legal:build"],
     "cleanUrls": true,
     "trailingSlash": false,
     "rewrites": [
