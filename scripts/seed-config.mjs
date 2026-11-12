@@ -32,6 +32,8 @@ const SEED = {
   minFeeAmount: 6,
   chargeWindowDays: 4,
   feeOverdueBlockDays: 7,
+  // Days before the block at which the "still unpaid" reminder push goes out.
+  feeReminderLeadDays: 2,
   // The overdue-fee kill switch. Seeded OFF; turning it on is a deliberate
   // console edit, never a side effect of seeding.
   feeOverdueBlockEnabled: false,

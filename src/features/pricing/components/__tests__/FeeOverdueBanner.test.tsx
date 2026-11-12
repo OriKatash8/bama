@@ -24,6 +24,35 @@ it('names the amount owed and how settlement happens', () => {
   expect(r.getByText(en.noticeboard.overdue_banner_how)).toBeTruthy();
 });
 
+it('has a pay-now button to the balance screen, and no longer says settlement is outside the app', () => {
+  const r = render(<FeeOverdueBanner amount={10} />);
+  fireEvent.press(r.getByTestId('fee-banner-pay'));
+  expect(mockPush).toHaveBeenCalledWith('/settings/payment');
+  expect(en.noticeboard.overdue_banner_how).not.toMatch(/outside the app/i);
+  expect(he.noticeboard.overdue_banner_how).not.toContain('מחוץ לאפליקציה');
+});
+
+it('warning mode: amount and the pay-by date, existing projects keep going, pay-now present', () => {
+  const at = new Date(2026, 10, 19, 12).getTime();
+  const r = render(<FeeOverdueBanner mode="warning" amount={1250} blockAt={at} />);
+  expect(r.getByTestId('fee-warning-banner')).toBeTruthy();
+  expect(r.getByText(en.noticeboard.overdue_warning_title)).toBeTruthy();
+  expect(r.getByText(
+    en.noticeboard.overdue_warning_body.replace('{{amount}}', '1,250').replace('{{date}}', '19/11/2026'),
+  )).toBeTruthy();
+  fireEvent.press(r.getByTestId('fee-banner-pay'));
+  expect(mockPush).toHaveBeenCalledWith('/settings/payment');
+});
+
+it('warning mode in Hebrew uses the Hebrew copy and the same date format', () => {
+  mockLanguage = 'he';
+  const at = new Date(2026, 10, 19, 12).getTime();
+  const r = render(<FeeOverdueBanner mode="warning" amount={10} blockAt={at} />);
+  expect(r.getByText(
+    he.noticeboard.overdue_warning_body.replace('{{amount}}', '10').replace('{{date}}', '19/11/2026'),
+  )).toBeTruthy();
+});
+
 it('links to the fee terms', () => {
   const r = render(<FeeOverdueBanner amount={10} />);
   fireEvent.press(r.getByText(en.noticeboard.overdue_banner_terms));
@@ -39,7 +68,7 @@ it('in Hebrew: Hebrew copy, right-aligned', () => {
 
 it('keeps Heebo line heights at or above 1.47× the font size', () => {
   const r = render(<FeeOverdueBanner amount={10} />);
-  for (const key of ['overdue_banner_title', 'overdue_banner_how', 'overdue_banner_terms'] as const) {
+  for (const key of ['overdue_banner_title', 'overdue_banner_how', 'overdue_banner_terms', 'overdue_banner_pay'] as const) {
     const st = StyleSheet.flatten(r.getByText(en.noticeboard[key]).props.style);
     expect(st.lineHeight / st.fontSize).toBeGreaterThanOrEqual(1.47);
   }

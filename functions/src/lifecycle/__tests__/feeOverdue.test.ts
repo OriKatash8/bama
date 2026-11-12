@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { overdueStampFields, overdueNoticeFor, dueNoticeOwed } from '../feeOverdue';
+import {
+  overdueStampFields, overdueNoticeFor, dueNoticeOwed, blockAtOf, notifyFeeCreated, formatNoticeDate,
+} from '../feeOverdue';
 import { resolvedFee } from '../disputeResolution';
 import { computeFee } from '../helpers';
 
@@ -60,17 +62,53 @@ describe('the notices', () => {
     expect(dueNoticeOwed(fee({ feePaid: true }), T + 5 * DAY)).toBe(false);
   });
 
-  it('"one day before" fires inside the last 24h, then "block started" at the moment', () => {
-    expect(overdueNoticeFor(fee(), T + 6 * DAY - 1)).toBeNull();
-    expect(overdueNoticeFor(fee(), T + 6 * DAY)).toBe('fee_overdue_soon');
+  it('the reminder fires feeReminderLeadDays (default 2) before the block, then "block started" at the moment', () => {
+    expect(overdueNoticeFor(fee(), T + 5 * DAY - 1)).toBeNull();
+    expect(overdueNoticeFor(fee(), T + 5 * DAY)).toBe('fee_overdue_soon');
     expect(overdueNoticeFor(fee({ overdueWarnedAt: ts(T) }), T + 6.5 * DAY)).toBeNull();
     expect(overdueNoticeFor(fee({ overdueWarnedAt: ts(T) }), T + 7 * DAY)).toBe('fee_overdue');
     expect(overdueNoticeFor(fee({ overdueBlockNotifiedAt: ts(T) }), T + 8 * DAY)).toBeNull();
   });
 
+  it('the reminder lead time is config-driven, not a hardcoded day', () => {
+    expect(overdueNoticeFor(fee(), T + 6 * DAY - 1, 1)).toBeNull();
+    expect(overdueNoticeFor(fee(), T + 6 * DAY, 1)).toBe('fee_overdue_soon');
+    expect(overdueNoticeFor(fee(), T + 4 * DAY, 3)).toBe('fee_overdue_soon');
+    expect(overdueNoticeFor(fee(), T + 4 * DAY - 1, 3)).toBeNull();
+  });
+
   it('says nothing about a paid or disputed fee', () => {
     expect(overdueNoticeFor(fee({ status: 'paid' }), T + 8 * DAY)).toBeNull();
     expect(overdueNoticeFor(fee({ engagementStatus: 'disputed' }), T + 8 * DAY)).toBeNull();
+  });
+});
+
+describe('fee_created push — amount, project, pay-by date', () => {
+  it('blockAtOf is the stamped overdueAt, never inside the contest window', () => {
+    const stamp = overdueStampFields(ON, T);
+    expect(blockAtOf(stamp, ts(T + 4 * DAY))).toBe(T + 7 * DAY);
+    // a block shorter than the contest window waits for it, like effectiveOverdueAt
+    const short = overdueStampFields({ ...ON, feeOverdueBlockDays: 3 }, T);
+    expect(blockAtOf(short, ts(T + 4 * DAY))).toBe(T + 4 * DAY);
+  });
+
+  it('blockAtOf is undefined while the switch is off — so nothing is sent', async () => {
+    expect(blockAtOf(overdueStampFields(OFF, T), ts(T + 4 * DAY))).toBeUndefined();
+    await expect(notifyFeeCreated('pro', 'proj', 30, undefined)).resolves.toBe(false);
+    await expect(notifyFeeCreated('pro', 'proj', 0, T)).resolves.toBe(false);
+  });
+
+  it('formats the date in Israel time, dd/mm/yyyy', () => {
+    expect(formatNoticeDate(Date.UTC(2026, 10, 12, 12))).toBe('12/11/2026');
+    // 23:30 UTC on the 12th is already the 13th in Israel
+    expect(formatNoticeDate(Date.UTC(2026, 10, 12, 23, 30))).toBe('13/11/2026');
+  });
+
+  it('is sent from both completion paths and the lead time comes from config', () => {
+    const src = (f: string) => readFileSync(join(__dirname, '..', f), 'utf8');
+    expect(src('completion.ts').match(/notifyFeeCreated\(/g)).toHaveLength(2);
+    expect(src('feeOverdue.ts')).toContain('runFeeOverdueSweep(Date.now(), config.feeReminderLeadDays)');
+    expect(src('feeOverdue.ts')).not.toMatch(/overdueAt', '<=', Timestamp\.fromMillis\(now \+ DAY\)/);
   });
 });
 

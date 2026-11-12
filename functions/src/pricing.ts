@@ -39,6 +39,9 @@ export const DEFAULT_MIN_FEE_AMOUNT = 6;
 export const DEFAULT_CHARGE_WINDOW_DAYS = 4;
 /** Days after completion before an unpaid fee blocks new work. See feeIsOverdue. */
 export const DEFAULT_FEE_OVERDUE_BLOCK_DAYS = 7;
+/** Days before the block starts at which the "still unpaid" reminder goes out.
+ *  Live value: `config/pricing.feeReminderLeadDays`. */
+export const DEFAULT_FEE_REMINDER_LEAD_DAYS = 2;
 /** Kill switch for the overdue-fee block. OFF unless config says exactly `true`. */
 export const DEFAULT_FEE_OVERDUE_BLOCK_ENABLED = false;
 /** Which payment provider charges brokerage fees. 'none' = today's stub. */
@@ -201,6 +204,8 @@ export type PricingConfig = {
   /** Days after completion at which an unpaid fee becomes overdue and blocks new
    *  work. Stamped onto the fee as `overdueAt` at completion time. */
   feeOverdueBlockDays: number;
+  /** Days before the block starts at which the reminder push is sent. */
+  feeReminderLeadDays: number;
   /** Kill switch for the whole overdue-fee block. Off: nothing is stamped, the
    *  hire gate and the offer rule skip it, and no overdue notices go out. The
    *  rules read this same field directly (feeOverdueBlocks in firestore.rules). */
@@ -225,6 +230,7 @@ export const CONFIG_DEFAULTS: PricingConfig = {
   minFeeAmount: DEFAULT_MIN_FEE_AMOUNT,
   chargeWindowDays: DEFAULT_CHARGE_WINDOW_DAYS,
   feeOverdueBlockDays: DEFAULT_FEE_OVERDUE_BLOCK_DAYS,
+  feeReminderLeadDays: DEFAULT_FEE_REMINDER_LEAD_DAYS,
   feeOverdueBlockEnabled: DEFAULT_FEE_OVERDUE_BLOCK_ENABLED,
   paymentProvider: DEFAULT_PAYMENT_PROVIDER,
   chargeMaxAttempts: DEFAULT_CHARGE_MAX_ATTEMPTS,

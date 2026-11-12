@@ -378,6 +378,13 @@ describe('resolveConfig — the overdue-fee block', () => {
     expect(resolveConfig({ feeOverdueBlockDays: 0 }).feeOverdueBlockDays).toBe(7);
   });
 
+  it('the reminder lead time is config-driven: default 2 days, bad values fall back', () => {
+    expect(CONFIG_DEFAULTS.feeReminderLeadDays).toBe(2);
+    expect(resolveConfig({ feeReminderLeadDays: 3 }).feeReminderLeadDays).toBe(3);
+    expect(resolveConfig({ feeReminderLeadDays: 0 }).feeReminderLeadDays).toBe(2);
+    expect(resolveConfig({ feeReminderLeadDays: 'x' }).feeReminderLeadDays).toBe(2);
+  });
+
   it.each([['true', true, true], ['"true"', 'true', false], ['1', 1, false], ['false', false, false], ['null', null, false]])(
     'switch %s → %s',
     (_label, value, expected) => {

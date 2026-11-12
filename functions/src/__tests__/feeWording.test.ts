@@ -35,13 +35,13 @@ it('no string a function sends names it "platform fee" / "עמלת פלטפור�
   expect(offenders).toEqual([]);
 });
 
-it('the three overdue pushes say "עמלת התיווך" / "brokerage fee"', () => {
+it('the four fee pushes (created / due / reminder / overdue) say "עמלת תיווך" / "brokerage fee"', () => {
   const src = stripComments(readFileSync(join(ROOT, 'functions/src/lifecycle/feeOverdue.ts'), 'utf8'));
   const block = src.slice(src.indexOf('const NOTICE_TEXT'), src.indexOf('async function langOf'));
-  const he = [...block.matchAll(/he: \(a\) => `([^`]*)`/g)].map((m) => m[1]);
-  const en = [...block.matchAll(/en: \(a\) => `([^`]*)`/g)].map((m) => m[1]);
-  expect(he).toHaveLength(3);
-  expect(en).toHaveLength(3);
-  for (const t of he) expect(t).toContain('עמלת התיווך');
+  const he = [...block.matchAll(/he: \(c\) => `([^`]*)`/g)].map((m) => m[1]);
+  const en = [...block.matchAll(/en: \(c\) => `([^`]*)`/g)].map((m) => m[1]);
+  expect(he).toHaveLength(4);
+  expect(en).toHaveLength(4);
+  for (const t of he) expect(t).toMatch(/עמלת (ה)?תיווך/);
   for (const t of en) expect(t).toContain('brokerage fee');
 });

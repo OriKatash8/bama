@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '@core/stores/authStore';
 import { listenToMyFees } from '../services/feesService';
 import { outstandingFee } from '../utils/fee';
-import { earliestOverdueAt, feeIsOverdue } from '../utils/overdue';
+import { earliestOverdueAt, effectiveOverdueAt, feeIsOverdue } from '../utils/overdue';
 import { usePricingConfig } from './usePricingConfig';
 import type { ProjectFee } from '@core/types/project';
 
@@ -24,11 +24,18 @@ export type FeeArrears = {
   /** The earliest moment any fee starts blocking, in ms (may be in the future).
    *  `null` when none will. Mirrors feeBlocks/{uid}.blockedFrom. */
   overdueFrom: number | null;
+  /** True from the moment a fee exists until its block starts: an unpaid fee that
+   *  WILL block (kill switch on, `overdueFrom` still in the future). Drives the
+   *  warning banner — the in-app half of Terms 12.8.5. */
+  overdueSoon: boolean;
+  /** What is owed on the fees that have not started blocking yet. */
+  soonTotal: number;
 };
 
 const EMPTY: FeeArrears = {
   blocked: false, totalOwed: 0, oldestDemandSentAt: null, graceDays: 0,
   overdueBlocked: false, overdueTotal: 0, overdueFrom: null,
+  overdueSoon: false, soonTotal: 0,
 };
 
 /**
@@ -76,12 +83,15 @@ export function useFeeArrears(): FeeArrears {
 
   const now = Date.now();
   let overdueTotal = 0;
+  let soonTotal = 0;
   if (feeOverdueBlockEnabled) {
     for (const fee of fees.values()) {
       if (feeIsOverdue(fee, now)) overdueTotal += outstandingFee(fee);
+      else if (effectiveOverdueAt(fee) !== undefined) soonTotal += outstandingFee(fee);
     }
   }
   const overdueBlocked = overdueFrom !== null && now >= overdueFrom;
+  const overdueSoon = overdueFrom !== null && now < overdueFrom;
 
   let totalOwed = 0;
   let oldestDemandSentAt: number | null = null;
@@ -107,6 +117,6 @@ export function useFeeArrears(): FeeArrears {
 
   return {
     blocked, totalOwed, oldestDemandSentAt, graceDays: paymentFailureGraceDays,
-    overdueBlocked, overdueTotal, overdueFrom,
+    overdueBlocked, overdueTotal, overdueFrom, overdueSoon, soonTotal,
   };
 }

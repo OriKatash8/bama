@@ -4,7 +4,7 @@ import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { db, FieldValue, Timestamp, notify, type FeeDoc } from './helpers';
 import { readConfig, type PricingConfig } from './config';
 import {
-  TIMEZONE, effectiveOverdueAt, earliestOverdueAt, feeIsOverdue,
+  TIMEZONE, effectiveOverdueAt, earliestOverdueAt, feeIsOverdue, DEFAULT_FEE_REMINDER_LEAD_DAYS,
 } from '../pricing';
 
 /**
@@ -31,6 +31,16 @@ import {
  */
 
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
+
+/**
+ * When the block will start for a fee just stamped by overdueStampFields, in ms —
+ * `undefined` when nothing was stamped (switch off). The same max() as
+ * effectiveOverdueAt: never inside the contest window.
+ */
+export function blockAtOf(stamp: Update, chargeDueAt: { toMillis(): number }): number | undefined {
+  const at = (stamp.overdueAt as { toMillis?: () => number } | undefined)?.toMillis?.();
+  return typeof at === 'number' ? Math.max(at, chargeDueAt.toMillis()) : undefined;
+}
 
 export function feeBlockRef(proId: string) {
   return db.doc(`feeBlocks/${proId}`);
@@ -124,7 +134,18 @@ export const onFeeWrittenRecomputeBlock = onDocumentWritten(
 // ── Notifications ────────────────────────────────────────────────────────────
 
 export type Lang = 'he' | 'en';
-type NoticeKind = 'fee_due' | 'fee_overdue_soon' | 'fee_overdue';
+type NoticeKind = 'fee_created' | 'fee_due' | 'fee_overdue_soon' | 'fee_overdue';
+
+/** What a notice says besides the amount: which project, and the date the block
+ *  starts. `date` is already formatted (dd/mm/yyyy, Israel time). */
+type NoticeCtx = { amount: number; project: string; date: string };
+
+/** dd/mm/yyyy in Israel time — the zone every date the app shows uses. */
+export function formatNoticeDate(ms: number): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: TIMEZONE, day: '2-digit', month: '2-digit', year: 'numeric',
+  }).format(new Date(ms));
+}
 
 /**
  * Push text. Every other server notification is hardcoded Hebrew, because the
@@ -132,20 +153,33 @@ type NoticeKind = 'fee_due' | 'fee_overdue_soon' | 'fee_overdue';
  * `users/{uid}.language` if that field ever exists — today it does not, so
  * Hebrew is what goes out.
  */
-const NOTICE_TEXT: Record<NoticeKind, Record<Lang, (amount: number) => string>> = {
+const NOTICE_TEXT: Record<NoticeKind, Record<Lang, (c: NoticeCtx) => string>> = {
+  fee_created: {
+    he: (c) => `עמלת תיווך של ₪${c.amount} לפרויקט ${c.project} — לתשלום עד ${c.date}.`,
+    en: (c) => `A ₪${c.amount} brokerage fee for ${c.project} — payable by ${c.date}.`,
+  },
   fee_due: {
-    he: (a) => `עמלת התיווך בסך ₪${a} לתשלום. יש להסדיר אותה כדי להמשיך לקבל פרויקטים חדשים.`,
-    en: (a) => `Your ₪${a} brokerage fee is now due. Settle it to keep receiving new projects.`,
+    he: (c) => `עמלת התיווך בסך ₪${c.amount} לפרויקט ${c.project} לתשלום. יש להסדיר אותה עד ${c.date} כדי להמשיך לקבל פרויקטים חדשים.`,
+    en: (c) => `Your ₪${c.amount} brokerage fee for ${c.project} is now due. Settle it by ${c.date} to keep receiving new projects.`,
   },
   fee_overdue_soon: {
-    he: (a) => `תזכורת: עמלת התיווך בסך ₪${a} טרם שולמה. מחר לא ניתן יהיה לשלוח הצעות או להתקבל לפרויקטים חדשים עד להסדרתה.`,
-    en: (a) => `Reminder: your ₪${a} brokerage fee is still unpaid. From tomorrow you won't be able to send offers or be hired for new projects until it's settled.`,
+    he: (c) => `תזכורת: עמלת התיווך בסך ₪${c.amount} לפרויקט ${c.project} טרם שולמה. החל מ‑${c.date} לא ניתן יהיה לשלוח הצעות או להתקבל לפרויקטים חדשים עד להסדרתה.`,
+    en: (c) => `Reminder: your ₪${c.amount} brokerage fee for ${c.project} is still unpaid. From ${c.date} you won't be able to send offers or be hired for new projects until it's settled.`,
   },
   fee_overdue: {
-    he: (a) => `עמלת התיווך בסך ₪${a} באיחור. שליחת הצעות וקבלה לפרויקטים חדשים מושהות עד להסדרתה. הפרויקטים הקיימים שלך ממשיכים כרגיל.`,
-    en: (a) => `Your ₪${a} brokerage fee is overdue. Sending offers and being hired for new projects are paused until it's settled. Your current projects continue as normal.`,
+    he: (c) => `עמלת התיווך בסך ₪${c.amount} לפרויקט ${c.project} באיחור. שליחת הצעות וקבלה לפרויקטים חדשים מושהות עד להסדרתה. הפרויקטים הקיימים שלך ממשיכים כרגיל.`,
+    en: (c) => `Your ₪${c.amount} brokerage fee for ${c.project} is overdue. Sending offers and being hired for new projects are paused until it's settled. Your current projects continue as normal.`,
   },
 };
+
+/** The project's title for a push, quoted; a generic word when it has none. */
+async function projectLabel(projectId: string, lang: Lang): Promise<string> {
+  try {
+    const t = (await db.doc(`projects/${projectId}`).get()).get('title');
+    if (typeof t === 'string' && t.trim()) return `"${t.trim()}"`;
+  } catch { /* a push must not fail on a title lookup */ }
+  return lang === 'he' ? 'הפרויקט' : 'the project';
+}
 
 export async function langOf(userId: string): Promise<Lang> {
   try {
@@ -156,16 +190,40 @@ export async function langOf(userId: string): Promise<Lang> {
   }
 }
 
+/** `blockAtMs`: the moment the block starts — the date every notice quotes. */
 export async function sendFeeNotice(
-  kind: NoticeKind, proId: string, projectId: string, amount: number,
+  kind: NoticeKind, proId: string, projectId: string, amount: number, blockAtMs: number,
 ): Promise<void> {
   const lang = await langOf(proId);
   await notify({
     userId: proId,
     title: 'BAMA',
-    message: NOTICE_TEXT[kind][lang](amount),
+    message: NOTICE_TEXT[kind][lang]({
+      amount, project: await projectLabel(projectId, lang), date: formatNoticeDate(blockAtMs),
+    }),
     data: { type: kind, projectId },
   });
+}
+
+/**
+ * The push sent the moment a fee is created (an engagement completes with
+ * something owed): amount, project, and the date the block would start.
+ * `blockAtMs` is undefined while the block is switched off (nothing was stamped,
+ * so there is no date to quote) and then nothing is sent. Returns whether a push
+ * went out. Never throws: a failed push must not undo or fail the completion
+ * that just committed.
+ */
+export async function notifyFeeCreated(
+  proId: string, projectId: string, amount: number, blockAtMs: number | undefined,
+): Promise<boolean> {
+  if (blockAtMs === undefined || !(amount > 0)) return false;
+  try {
+    await sendFeeNotice('fee_created', proId, projectId, amount, blockAtMs);
+    return true;
+  } catch (err) {
+    console.error('[feeOverdue] fee_created notice failed', proId, projectId, err);
+    return false;
+  }
 }
 
 const DAY = 86400_000;
@@ -194,12 +252,12 @@ async function paginate(query: admin.firestore.Query, handler: (doc: Doc) => Pro
 
 /** Which notice, if any, a fee is owed at `now`. Pure — the cron's whole decision. */
 export function overdueNoticeFor(
-  fee: FeeDoc, now: number,
+  fee: FeeDoc, now: number, leadDays: number = DEFAULT_FEE_REMINDER_LEAD_DAYS,
 ): 'fee_overdue_soon' | 'fee_overdue' | null {
   const at = effectiveOverdueAt(fee);
   if (at === undefined) return null;
   if (now >= at) return fee.overdueBlockNotifiedAt ? null : 'fee_overdue';
-  if (at - now <= DAY) return fee.overdueWarnedAt || fee.overdueBlockNotifiedAt ? null : 'fee_overdue_soon';
+  if (at - now <= leadDays * DAY) return fee.overdueWarnedAt || fee.overdueBlockNotifiedAt ? null : 'fee_overdue_soon';
   return null;
 }
 
@@ -213,7 +271,9 @@ export function dueNoticeOwed(fee: FeeDoc, now: number): boolean {
   return typeof due === 'number' && due <= now;
 }
 
-export async function runFeeOverdueSweep(now: number): Promise<void> {
+export async function runFeeOverdueSweep(
+  now: number, leadDays: number = DEFAULT_FEE_REMINDER_LEAD_DAYS,
+): Promise<void> {
   // 1) Fee is now due — the contest window just closed. Uses the existing
   //    (engagementStatus, chargeDueAt) collection-group index.
   await paginate(
@@ -229,29 +289,34 @@ export async function runFeeOverdueSweep(now: number): Promise<void> {
       // Marker first: a crash between the two loses a notice, never doubles one —
       // the same trade every lifecycleCron sweep makes.
       await doc.ref.update({ dueNotifiedAt: FieldValue.serverTimestamp() });
-      await sendFeeNotice('fee_due', doc.id, projectId, Math.max(0, fee.feeDue ?? 0));
+      await sendFeeNotice(
+        'fee_due', doc.id, projectId, Math.max(0, fee.feeDue ?? 0),
+        effectiveOverdueAt(fee) ?? now,
+      );
     },
   );
 
-  // 2) One day before the block, and the block itself. Needs the
-  //    fees.overdueAt COLLECTION_GROUP field override.
+  // 2) `leadDays` before the block (config feeReminderLeadDays), and the block
+  //    itself. Needs the fees.overdueAt COLLECTION_GROUP field override.
   await paginate(
     db.collectionGroup('fees')
       .where('overdueAt', '>', Timestamp.fromMillis(now - BLOCK_LOOKBACK_MS))
-      .where('overdueAt', '<=', Timestamp.fromMillis(now + DAY))
+      .where('overdueAt', '<=', Timestamp.fromMillis(now + leadDays * DAY))
       .orderBy('overdueAt'),
     async (doc) => {
       const fee = doc.data() as FeeDoc;
       const projectId = doc.ref.parent.parent?.id;
       if (!projectId) return;
-      const kind = overdueNoticeFor(fee, now);
+      const kind = overdueNoticeFor(fee, now, leadDays);
       if (!kind) return;
       await doc.ref.update(
         kind === 'fee_overdue'
           ? { overdueBlockNotifiedAt: FieldValue.serverTimestamp() }
           : { overdueWarnedAt: FieldValue.serverTimestamp() },
       );
-      await sendFeeNotice(kind, doc.id, projectId, Math.max(0, fee.feeDue ?? 0));
+      await sendFeeNotice(
+        kind, doc.id, projectId, Math.max(0, fee.feeDue ?? 0), effectiveOverdueAt(fee) ?? now,
+      );
       // The block needs no write to START — the rule compares request.time — but
       // recompute anyway so feeBlocks is self-healing if a trigger was ever lost.
       if (kind === 'fee_overdue' && feeIsOverdue(fee, now)) {
@@ -262,7 +327,7 @@ export async function runFeeOverdueSweep(now: number): Promise<void> {
 }
 
 /**
- * Hourly, not inside the daily lifecycleCron: "one day before" and "the block
+ * Hourly, not inside the daily lifecycleCron: "N days before" and "the block
  * started" are only worth sending close to the moment they describe.
  */
 export const feeOverdueCron = onSchedule(
@@ -270,6 +335,6 @@ export const feeOverdueCron = onSchedule(
   async () => {
     const config = await readConfig();
     if (!config.feeOverdueBlockEnabled) return;
-    await runFeeOverdueSweep(Date.now());
+    await runFeeOverdueSweep(Date.now(), config.feeReminderLeadDays);
   },
 );

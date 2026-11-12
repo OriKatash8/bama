@@ -168,6 +168,7 @@ export function useNotificationRouting(): void {
       // ── overdue fee ──
       // The professional's own balance, which is where what is owed and how to
       // settle it are listed — the same place a failed charge goes.
+      case 'fee_created':
       case 'fee_due':
       case 'fee_overdue_soon':
       case 'fee_overdue':

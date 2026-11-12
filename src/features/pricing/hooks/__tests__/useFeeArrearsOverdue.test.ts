@@ -67,3 +67,45 @@ it('a block that starts while the screen is open shows on the second, without a 
   act(() => { jest.advanceTimersByTime(60_000 + 100); });
   expect(result.current.overdueBlocked).toBe(true);
 });
+
+it('before any block: overdueSoon with the date and amount, not blocked', () => {
+  const { result } = renderHook(() => useFeeArrears());
+  const at = Date.now() + 5 * 86400_000;
+  emit({ p1: fee(at) });
+  expect(result.current.overdueBlocked).toBe(false);
+  expect(result.current.overdueSoon).toBe(true);
+  expect(result.current.soonTotal).toBe(45);
+  expect(result.current.overdueFrom).toBe(Math.floor(at / 1000) * 1000);
+});
+
+it('soonTotal counts only fees that have not started blocking', () => {
+  const { result } = renderHook(() => useFeeArrears());
+  emit({ p1: fee(Date.now() + 5 * 86400_000, { feeDue: 99 }), p2: fee(Date.now() - 1000, { feeDue: 45 }) });
+  expect(result.current.overdueBlocked).toBe(true);
+  expect(result.current.overdueTotal).toBe(45);
+  expect(result.current.soonTotal).toBe(99);
+});
+
+it('the warning turns into the block on the second the block starts', () => {
+  const { result } = renderHook(() => useFeeArrears());
+  emit({ p1: fee(Date.now() + 60_000) });
+  expect(result.current.overdueSoon).toBe(true);
+  act(() => { jest.advanceTimersByTime(60_000 + 100); });
+  expect(result.current.overdueSoon).toBe(false);
+  expect(result.current.overdueBlocked).toBe(true);
+});
+
+it('no warning for a paid fee', () => {
+  const { result } = renderHook(() => useFeeArrears());
+  emit({ p1: fee(Date.now() + 86400_000, { feePaid: true }) });
+  expect(result.current.overdueSoon).toBe(false);
+  expect(result.current.soonTotal).toBe(0);
+});
+
+it('no warning with the kill switch off', () => {
+  mockConfig = { paymentFailureGraceDays: 7, feeOverdueBlockEnabled: false };
+  const { result } = renderHook(() => useFeeArrears());
+  emit({ p1: fee(Date.now() + 86400_000) });
+  expect(result.current.overdueSoon).toBe(false);
+  expect(result.current.soonTotal).toBe(0);
+});

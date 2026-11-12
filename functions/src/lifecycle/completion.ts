@@ -13,7 +13,7 @@ import { releaseEngagement } from './removal';
 import { warnIfCompletedUnderReview } from './review';
 import { deletePendingOffers } from './offerCleanup';
 import { addChatCloseWrites } from './chatClose';
-import { overdueStampFields, recomputeFeeBlockSafely } from './feeOverdue';
+import { overdueStampFields, recomputeFeeBlockSafely, blockAtOf, notifyFeeCreated } from './feeOverdue';
 
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
 
@@ -155,6 +155,8 @@ export async function confirmCompletionInternal(
 
   const batch = db.batch();
   const owedByPro = new Map<string, number>();
+  /** When each owing pro's block starts; absent/undefined while the switch is off. */
+  const blockAtByPro = new Map<string, number | undefined>();
   /** Professionals whose engagement this run actually closes — the ones whose
    *  slot must be given back. */
   const closedPros: string[] = [];
@@ -212,12 +214,14 @@ export async function confirmCompletionInternal(
 
     if (outstanding > 0) {
       owedByPro.set(proId, outstanding);
+      const stamp = overdueStampFields(config, completedAtMs, fee);
+      blockAtByPro.set(proId, blockAtOf(stamp, chargeDueAt));
       // feeDue is stored NET of paidAmount — it is what is left to pay.
       batch.update(feeRef(projectId, proId), {
         baseAmount, feeDue: outstanding, feePaid: false, slotActive: false,
         status: 'pending', projectId, ...engagementClose,
         // The overdue clock (empty while the kill switch is off).
-        ...overdueStampFields(config, completedAtMs, fee),
+        ...stamp,
       } as Update);
     } else {
       // Already paid in full, or the price fell far enough that nothing remains.
@@ -272,6 +276,9 @@ export async function confirmCompletionInternal(
   // string computed once would be wrong for everyone but one of them.
   for (const proId of proIds) {
     const owed = owedByPro.get(proId);
+    // With the overdue block on, the fee push names the project and the pay-by
+    // date and replaces the generic "completed — fee ₪X" one (never both).
+    if (owed && await notifyFeeCreated(proId, projectId, owed, blockAtByPro.get(proId))) continue;
     await notify({
       userId: proId,
       title: 'BAMA',
@@ -880,6 +887,7 @@ export async function completeEngagementInternal(
   const baseAmount = await computeProAmount(projectId, proId);
   const outstanding = eng.feeStatus === 'owed' ? outstandingOf(eng, baseAmount) : 0;
 
+  const stamp = outstanding > 0 ? overdueStampFields(config, completedAtMs, eng) : {};
   await engRef.update({
     engagementStatus: 'completed',
     baseAmount,
@@ -896,8 +904,12 @@ export async function completeEngagementInternal(
     projectId,
     // The overdue clock — only when something is actually left to pay, and
     // empty while the kill switch is off.
-    ...(outstanding > 0 ? overdueStampFields(config, completedAtMs, eng) : {}),
+    ...stamp,
   } as Update);
+
+  // The fee now exists: tell the professional what it is, for which project, and
+  // by when. Only with the overdue block on (that is what gives it a date).
+  await notifyFeeCreated(proId, projectId, outstanding, blockAtOf(stamp, chargeDueAt));
 
   // The slot goes back now, not at charge time. The work is done; holding
   // capacity through the charge window would make the fee gate capacity, which

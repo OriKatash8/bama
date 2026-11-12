@@ -486,7 +486,11 @@ export default function DashboardScreen() {
         {notifPrompt.visible && pendingCount > 0 && (
           <NotifPermissionBanner context="offers" onDismiss={notifPrompt.dismiss} />
         )}
-        {arrears.overdueBlocked && <FeeOverdueBanner amount={arrears.overdueTotal} />}
+        {arrears.overdueBlocked
+          ? <FeeOverdueBanner amount={arrears.overdueTotal} />
+          : arrears.overdueSoon && arrears.overdueFrom !== null && (
+            <FeeOverdueBanner mode="warning" amount={arrears.soonTotal} blockAt={arrears.overdueFrom} />
+          )}
 
         {/* ── In-progress projects — shown only while the toggle is on ── */}
         {showInProgress && activeProjects.length > 0 && (
@@ -606,7 +610,7 @@ export default function DashboardScreen() {
             // The sheet's paddingTop too — unless the notifications prompt, the
             // overdue-fee banner or the search row (projects exist but none
             // match) sits above it.
-            bleedTop={(notifPrompt.visible && pendingCount > 0) || arrears.overdueBlocked || biddable.length > 0 ? 0 : 18}
+            bleedTop={(notifPrompt.visible && pendingCount > 0) || arrears.overdueBlocked || arrears.overdueSoon || biddable.length > 0 ? 0 : 18}
             radius={26}
             variant="board"
             // English: the title on one row; and the text shows without scrolling,

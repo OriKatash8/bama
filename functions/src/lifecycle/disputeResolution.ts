@@ -77,7 +77,7 @@ export const resolveFeeDispute = onCall(async (request) => {
   const now = Date.now();
   const ref = feeRef(projectId, proId);
 
-  const { feeDue, notifyDue } = await db.runTransaction(async (tx) => {
+  const { feeDue, notifyDue, blockAt } = await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists) throw new HttpsError('not-found', 'no-engagement');
     const fee = snap.data() as FeeDoc;
@@ -104,7 +104,7 @@ export const resolveFeeDispute = onCall(async (request) => {
         overdueAt: FieldValue.delete(),
         dueNotifiedAt: FieldValue.delete(),
       } as Update);
-      return { feeDue: 0, notifyDue: false };
+      return { feeDue: 0, notifyDue: false, blockAt: now };
     }
 
     const priced = resolvedFee(fee, agreedAmount);
@@ -127,7 +127,10 @@ export const resolveFeeDispute = onCall(async (request) => {
       // notice would never find this fee; the notice is sent below instead.
       dueNotifiedAt: stamped ? FieldValue.serverTimestamp() : FieldValue.delete(),
     } as Update);
-    return { feeDue: priced.feeDue, notifyDue: stamped };
+    // The contest window closed long ago, so the block starts at the restarted
+    // overdueAt itself (effectiveOverdueAt's max() picks it over the old chargeDueAt).
+    const blockAt = (stamp.overdueAt as { toMillis?: () => number } | undefined)?.toMillis?.() ?? now;
+    return { feeDue: priced.feeDue, notifyDue: stamped, blockAt };
   });
 
   // The contest re-took the slot (contestEngagement); a closed engagement holds none.
@@ -138,7 +141,7 @@ export const resolveFeeDispute = onCall(async (request) => {
   await recomputeFeeBlockSafely(proId);
   if (notifyDue) {
     // After the commit; a failed push must not report a recorded resolution as failed.
-    await sendFeeNotice('fee_due', proId, projectId, feeDue)
+    await sendFeeNotice('fee_due', proId, projectId, feeDue, blockAt)
       .catch((err) => console.error('[resolveFeeDispute] fee_due notice failed', err));
   }
 
