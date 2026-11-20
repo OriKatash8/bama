@@ -9,6 +9,7 @@ import {
   overdueStampFields, recomputeFeeBlockSafely, sendFeeNotice, notifyFeeCreated,
 } from './feeOverdue';
 import { isOfferPriceValid } from '../pricing';
+import { settleHeldReviews } from './reviewHold';
 
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
 
@@ -141,6 +142,10 @@ export const resolveFeeDispute = onCall(async (request) => {
   } as Update);
   await applyDerivedProjectState(projectId);
   await recomputeFeeBlockSafely(proId);
+  // A review held for a "didn't happen" dispute: published if the work happened,
+  // deleted if it did not. No-op for an amount dispute (nothing was held).
+  await settleHeldReviews(projectId, proId, outcome).catch((err) =>
+    console.error(`[resolveFeeDispute] could not settle the held review. projectId=${projectId} proId=${proId}`, err));
   if (notifyDue) {
     // After the commit; a failed push must not report a recorded resolution as failed.
     await sendFeeNotice('fee_due', proId, projectId, feeDue, blockAt)

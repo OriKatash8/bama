@@ -1430,6 +1430,11 @@ service cloud.firestore {
       // clauses are the surviving enforcement half of a removed mechanism that hid
       // a client's review until the professional paid their commission.
       //
+      // ONE sanctioned exception (comment only; the rules below already enforce it):
+      // a review of a professional disputed as "didn't happen" is held until an admin
+      // resolves it (functions/src/lifecycle/reviewHold.ts) and is marked
+      // `heldForDispute`. Nothing else may write false.
+      //
       // They are inert only because nothing sets the field to false. Any future
       // writer of `published: false` silently re-creates a visibility gate with no
       // change to this file — and the `list` clause below would hide such a review

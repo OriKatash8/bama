@@ -45,8 +45,15 @@ describe('the slot a contest holds', () => {
     // And the one mechanism that would clear slotHolders wholesale cannot fire,
     // because it needs the project to derive as complete — which this very
     // engagement prevents. The trap is circular.
-    const d = deriveProjectState([{ engagementStatus: 'disputed' } as never], now);
-    expect(d.isComplete).toBe(false);
+    // A CONTEST (the engagement carries the window stamped at completion) no longer
+    // holds the project open, so the project derives as complete; but completing
+    // keeps the disputed pro's slot (derive.ts disputedIds), so settling still frees
+    // nothing and only resolveFeeDispute returns it.
+    const d = deriveProjectState(
+      [{ professionalId: 'p', engagementStatus: 'disputed', chargeDueAt: ts(now + 86400_000) } as never], now,
+    );
+    expect(d.isComplete).toBe(true);
+    expect(d.disputedIds).toEqual(['p']);
   });
 
   it('PATH B — the fee was voided by didnt_happen: settleFee cannot resolve it (resolveFeeDispute does)', () => {
@@ -89,22 +96,31 @@ describe('the slot a contest holds', () => {
 });
 
 describe('what the project looks like while a contest is open', () => {
-  it('reopens to `open`, so the cap view calls the slot "Active"', () => {
-    // derive.ts:187 — a dispute after the fact reopens a completed project. That
-    // is why the blocked sheet showed the slot as one more active project he
-    // should go and close, which is what the copy fix addresses.
+  it('does NOT reopen a completed project: a contest leaves status and completion state alone', () => {
+    // A dispute used to reopen a completed project, which took away the review
+    // screen, the closing contacts and the reviews rule (all keyed on 'completed').
     const d = deriveProjectState(
-      [{ engagementStatus: 'disputed' }, { engagementStatus: 'completed' }] as never,
+      [
+        { professionalId: 'a', engagementStatus: 'disputed', chargeDueAt: ts(now + 86400_000) },
+        { professionalId: 'b', engagementStatus: 'completed' },
+      ] as never,
       now,
     );
-    expect(d.isComplete).toBe(false);
+    expect(d.isComplete).toBe(true);
+    expect(d.completionState).toBe('confirmed');
   });
 
-  it('holds the project open however long resolution takes', () => {
+  it('is the same however long resolution takes, and the review flag survives', () => {
     const d = deriveProjectState(
-      [{ engagementStatus: 'disputed', chargeDueAt: ts(now - 400 * 86400_000) }] as never,
+      [{ professionalId: 'a', engagementStatus: 'disputed', adminReviewPending: true, chargeDueAt: ts(now - 400 * 86400_000) }] as never,
       now,
     );
+    expect(d.isComplete).toBe(true);
+    expect(d.adminReviewPending).toBe(true);
+  });
+
+  it('a request the client REJECTED (never completed) still holds the project open', () => {
+    const d = deriveProjectState([{ professionalId: 'a', engagementStatus: 'disputed' }] as never, now);
     expect(d.isComplete).toBe(false);
   });
 });

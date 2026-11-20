@@ -249,6 +249,8 @@ export const lifecycleCron = onSchedule(
         .where('createdAt', '<', daysAgo(REVIEW_FORCE_PUBLISH_DAYS))
         .orderBy('createdAt'),
       async (doc) => {
+        // Held for an unresolved "didn't happen" dispute: only resolveFeeDispute releases it.
+        if (doc.get('heldForDispute') === true) return;
         await doc.ref.update({ published: true, visibleAt: FieldValue.serverTimestamp() });
       },
     );

@@ -19,6 +19,8 @@ export const FieldValue = {
   serverTimestamp: () => ({ [FV]: 'ts' }),
   increment: (n: number) => ({ [FV]: 'inc', n }),
   delete: () => ({ [FV]: 'del' }),
+  arrayUnion: (...v: any[]) => ({ [FV]: 'au', v }),
+  arrayRemove: (...v: any[]) => ({ [FV]: 'ar', v }),
 };
 
 function resolve(existing: unknown, v: any): any {
@@ -27,6 +29,8 @@ function resolve(existing: unknown, v: any): any {
       case 'ts': return new Ts(Date.now());
       case 'inc': return ((existing as number) ?? 0) + v.n;
       case 'del': return undefined;
+      case 'au': { const cur = (existing as any[]) ?? []; return [...cur, ...v.v.filter((x: any) => !cur.includes(x))]; }
+      case 'ar': return ((existing as any[]) ?? []).filter((x: any) => !v.v.includes(x));
     }
   }
   return v;
@@ -110,9 +114,24 @@ export class MemoryDb {
 
   collection = (name: string): any => ({
     doc: (id: string) => this.doc(`${name}/${id}`),
+    ...this.query((p) => p.startsWith(`${name}/`) && p.split('/').length === name.split('/').length + 1),
   });
 
-  collectionGroup = (name: string): any => {
+  /** Writes applied together on commit(), like Firestore's WriteBatch. */
+  batch = (): any => {
+    const writes: { path: string; kind: 'set' | 'update' | 'create' | 'delete'; data?: Doc; merge?: boolean }[] = [];
+    return {
+      set: (ref: any, data: Doc, o?: { merge?: boolean }) => { writes.push({ path: ref.path, kind: 'set', data, merge: o?.merge }); },
+      update: (ref: any, data: Doc) => { writes.push({ path: ref.path, kind: 'update', data }); },
+      delete: (ref: any) => { writes.push({ path: ref.path, kind: 'delete' }); },
+      commit: async () => this.commit(writes),
+    };
+  };
+
+  collectionGroup = (name: string): any =>
+    this.query((p) => p.split('/').slice(-2)[0] === name && p.split('/').length % 2 === 0);
+
+  private query = (inScope: (path: string) => boolean): any => {
     const filters: [string, string, any][] = [];
     const num = (v: any) => (v && typeof v.toMillis === 'function' ? v.toMillis() : v);
     const test = (actual: any, op: string, v: any) => {
@@ -131,7 +150,7 @@ export class MemoryDb {
       orderBy: () => q, limit: () => q, startAfter: () => q,
       get: async () => {
         const docs = [...this.data.keys()]
-          .filter((p) => p.split('/').slice(-2)[0] === name && p.split('/').length % 2 === 0)
+          .filter(inScope)
           .filter((p) => filters.every(([f, op, v]) => test(this.data.get(p)![f], op, v)))
           .map((p) => ({ ...this.snap(p), ref: this.doc(p) }));
         return { docs, empty: docs.length === 0, size: docs.length };

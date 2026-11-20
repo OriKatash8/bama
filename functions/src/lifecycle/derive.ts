@@ -37,8 +37,12 @@ const REVIEW_RELEASES = new Set(['candidate_rejected', 'candidate_declined']);
 const NON_CHARGING = new Set(['withdrawn', 'cancelled']);
 
 export type DerivedProjectState = {
-  /** True when every engagement is terminal and none is disputed. */
+  /** True when every engagement is terminal or disputed. A dispute is raised AFTER
+   *  an engagement completed, so it never changes the project's status: it lives on
+   *  the fee, `adminReviewPending` and `slotHolders`. */
   isComplete: boolean;
+  /** Engagements currently disputed. Their slots are kept when the project completes. */
+  disputedIds: string[];
   /** Why not, when not — for the caller's logs, not for storage. */
   reason: string;
   /** max() of the engagements' own windows that are still open at `now`, or null
@@ -114,6 +118,17 @@ export function deriveProjectState(
     .map((e) => e.professionalId)
     .filter((id): id is string => typeof id === 'string' && id.length > 0);
 
+  // The review flag and the disputed set come from the RAW list too. They used to be
+  // computed after the filters below, so an engagement a filter dropped (a stale
+  // `releaseReason` on a re-hired pro) took its dispute with it and the project flag
+  // was written false while the fee still said true. A flag is cleared only when no
+  // fee still carries it.
+  const adminReviewPending = engagements.some((e) => e.adminReviewPending === true);
+  const disputedIds = engagements
+    .filter((e) => e.engagementStatus === 'disputed')
+    .map((e) => e.professionalId)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0);
+
   // A candidate the client rejected during review never started. Counting their
   // voided engagement as a terminal one completed the project the moment the
   // only candidate was turned down — status 'completed', slots emptied, and a
@@ -122,7 +137,14 @@ export function deriveProjectState(
   // project nobody is hired on yet.
   //
   // The same holds for a professional who declined during review.
-  engagements = engagements.filter((e) => !REVIEW_RELEASES.has(e.releaseReason ?? ''));
+  //
+  // Only a WITHDRAWN engagement is such a release. `releaseReason` used to be read
+  // alone, and nothing cleared it when the same professional was re-hired: the live
+  // engagement kept a stale 'candidate_rejected', was dropped here, and the project
+  // could never complete (no review screen, no closing contacts, no dispute flag).
+  engagements = engagements.filter(
+    (e) => !(REVIEW_RELEASES.has(e.releaseReason ?? '') && e.engagementStatus === 'withdrawn'),
+  );
 
   // Withdrawals only close a project that had real work in it. When nothing on
   // the project ever completed, withdrawn engagements are dropped: a project
@@ -146,8 +168,6 @@ export function deriveProjectState(
   const disputeWindowEndsAt = openWindows.length
     ? openWindows.reduce((a, b) => (a.toMillis() >= b.toMillis() ? a : b))
     : null;
-  const adminReviewPending = engagements.some((e) => e.adminReviewPending === true);
-
   const openRequests = engagements
     .filter((e) => e.engagementStatus === 'end_requested_by_pro'
       || e.engagementStatus === 'end_requested_by_client')
@@ -157,26 +177,37 @@ export function deriveProjectState(
     ? openRequests.reduce((a, b) => (a.toMillis() <= b.toMillis() ? a : b))
     : null;
 
-  const base = { disputeWindowEndsAt, adminReviewPending, endRequestedAt, endedEngagementIds };
+  const base = { disputeWindowEndsAt, adminReviewPending, endRequestedAt, endedEngagementIds, disputedIds };
 
   if (engagements.length === 0) {
     return { ...base, isComplete: false, reason: 'no engagements', completionState: 'none' as const };
   }
 
-  // A dispute holds the project open however many others have finished. It is
-  // checked before the terminal sweep because 'disputed' is not terminal and the
-  // distinction is the point: a disputed engagement is unfinished business.
-  const disputed = engagements.filter((e) => e.engagementStatus === 'disputed');
-  if (disputed.length > 0) {
+  // A 'disputed' engagement that NEVER COMPLETED is a different dispute: the client
+  // rejected the professional's request to finish or to withdraw (the same status,
+  // 'fee_disputed' / 'withdrawal_rejected'). Nothing was delivered or confirmed, so it
+  // is unfinished business and holds the project open, as before. What separates it
+  // from a contest is that a contested engagement carries the dispute window stamped
+  // at completion (everCompleted).
+  const stuck = engagements.filter((e) => e.engagementStatus === 'disputed' && !everCompleted(e));
+  if (stuck.length > 0) {
     return {
       ...base,
       isComplete: false,
-      reason: `${disputed.length} engagement(s) disputed`,
+      reason: `${stuck.length} engagement(s) disputed`,
       completionState: endRequestedAt ? ('requested' as const) : ('none' as const),
     };
   }
 
-  const open = engagements.filter((e) => !TERMINAL.has(e.engagementStatus ?? 'hired'));
+  // A CONTEST (the professional disputing a completed engagement) does NOT hold the
+  // project open. It is raised after the engagement completed, on the fee, and must
+  // not change the project's status or completion state: the review screen, the
+  // closing contacts and the reviews rule all depend on the project staying
+  // 'completed'. A contested engagement counts as settled for the roll-up; its slot
+  // is kept separately (disputedIds).
+  const open = engagements.filter(
+    (e) => e.engagementStatus !== 'disputed' && !TERMINAL.has(e.engagementStatus ?? 'hired'),
+  );
   if (open.length > 0) {
     return {
       ...base,
@@ -246,13 +277,16 @@ export async function applyDerivedProjectState(projectId: string): Promise<Deriv
     if (derived.isComplete && project.status !== 'completed') {
       update.status = 'completed';
       update.completedAt = FieldValue.serverTimestamp();
-      // Completion is what frees capacity, for everyone, whatever is owed.
-      update.slotHolders = [];
-      update.slotActive = false;
+      // Completion is what frees capacity, for everyone, whatever is owed. EXCEPT a
+      // professional whose engagement is in dispute: that slot is held until an admin
+      // resolves it (see contestEngagement), so completing around it must not free it.
+      update.slotHolders = derived.disputedIds;
+      update.slotActive = derived.disputedIds.length > 0;
     } else if (!derived.isComplete && project.status === 'completed') {
-      // A re-hire onto a completed project, or a dispute raised after the fact,
-      // reopens it. The rules forbid a CLIENT making this transition; the Admin
-      // SDK is not subject to them, and the derivation is the authority now.
+      // A re-hire onto a completed project reopens it. (A dispute does not: it is
+      // settled for the roll-up, see deriveProjectState.) The rules forbid a CLIENT
+      // making this transition; the Admin SDK is not subject to them, and the
+      // derivation is the authority now.
       update.status = 'open';
     }
   }

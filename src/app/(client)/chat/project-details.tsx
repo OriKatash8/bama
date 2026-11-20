@@ -65,6 +65,7 @@ import {
   canDispute, markEngagementComplete, canMarkComplete, contestEngagement,
 } from '@features/projects/services/completionService';
 import { afterConfirmCompletion, contestWindowEndsAt } from '@features/projects/utils/completion';
+import { contestErrorKey } from '@features/projects/utils/contestErrors';
 import { CompleteEngagementSheet } from '@features/projects/components/CompleteEngagementSheet';
 import {
   ContestEngagementSheet, type ContestReason,
@@ -630,7 +631,7 @@ export default function ProjectDetailsScreen() {
       showToast(t('engagement.contest_sent'), 'success');
     } catch (err) {
       console.error('[completion] contestEngagement failed:', err);
-      showToast(t('engagement.contest_error'), 'error');
+      showToast(t(contestErrorKey(err)), 'error');
     } finally {
       setProActionBusy(false);
     }

@@ -199,7 +199,11 @@ describe('wiring', () => {
   });
 
   it('a paid re-hire clears the old clock', () => {
-    expect(HIRE).toMatch(/feeUpdate\.overdueAt = FieldValue\.delete\(\)/);
+    // The fee merge-write now lives in feeRehire.ts (buildHireFeeUpdate), shared with
+    // the re-hire reset; hire.ts only calls it.
+    const REHIRE = readFileSync(join(__dirname, '..', 'feeRehire.ts'), 'utf8');
+    expect(REHIRE).toMatch(/feeUpdate\.overdueAt = FieldValue\.delete\(\)/);
+    expect(HIRE).toContain('buildHireFeeUpdate');
   });
 
   it('the rules gate offers, bundles and applications, and read the kill switch themselves', () => {

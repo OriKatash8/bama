@@ -1,5 +1,8 @@
 import { mockDb, Timestamp } from '../../payments/__fixtures__/memoryHelpers';
 import { contestEngagement, disputeFeeByPro } from '../completion';
+import { applyDerivedProjectState } from '../derive';
+import { recomputeFeeBlockSafely } from '../feeOverdue';
+import { notifyAdminsOfDispute } from '../disputeAlert';
 
 jest.mock('../helpers', () => {
   const m = require('../../payments/__fixtures__/memoryHelpers').mockHelpers;
@@ -7,6 +10,7 @@ jest.mock('../helpers', () => {
   return { ...m, FieldValue: { ...m.FieldValue, arrayUnion: (...v: unknown[]) => v } };
 });
 jest.mock('../config', () => ({ readConfig: jest.fn() }));
+jest.mock('../disputeAlert', () => ({ notifyAdminsOfDispute: jest.fn(async () => undefined) }));
 jest.mock('../derive', () => ({ applyDerivedProjectState: jest.fn(async () => undefined) }));
 jest.mock('../feeOverdue', () => ({
   overdueStampFields: jest.fn(() => ({})), recomputeFeeBlockSafely: jest.fn(async () => undefined),
@@ -92,5 +96,56 @@ describe('contesting with a live payment link', () => {
     seed();
     await call(contestEngagement, { reason: 'amount_disputed' });
     expect(fee().paymentLink).toBeUndefined();
+  });
+});
+
+describe('a dispute is visible to the admin even when the derive step fails', () => {
+  it('flags the project in the same transaction as the fee', async () => {
+    seed();
+    await call(contestEngagement, { reason: 'didnt_happen' });
+    expect(mockDb.read('projects/p1')).toMatchObject({ adminReviewPending: true });
+  });
+
+  it('a failing applyDerivedProjectState is logged with ids, the dispute still stands and the call succeeds', async () => {
+    seed();
+    (applyDerivedProjectState as jest.Mock).mockRejectedValueOnce(new Error('deadline'));
+    const err = jest.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(call(contestEngagement, { reason: 'amount_disputed' })).resolves.toMatchObject({ ok: true });
+    expect(fee()).toMatchObject({ engagementStatus: 'disputed', adminReviewPending: true });
+    expect(mockDb.read('projects/p1')).toMatchObject({ adminReviewPending: true });
+    expect(err).toHaveBeenCalledWith(expect.stringContaining('projectId=p1 proId=pro1'), expect.any(Error));
+    err.mockRestore();
+  });
+
+  it('the old-build alias also recomputes the fee block and alerts admins', async () => {
+    seed();
+    await call(disputeFeeByPro);
+    expect(recomputeFeeBlockSafely).toHaveBeenCalledWith('pro1');
+    expect(notifyAdminsOfDispute).toHaveBeenCalledWith({ projectId: 'p1', proId: 'pro1', reason: 'amount_disputed' });
+  });
+
+  it('contestEngagement alerts admins with the chosen reason', async () => {
+    seed();
+    await call(contestEngagement, { reason: 'didnt_happen' });
+    expect(notifyAdminsOfDispute).toHaveBeenCalledWith({ projectId: 'p1', proId: 'pro1', reason: 'didnt_happen' });
+  });
+
+  it('a refused contest alerts no one and flags no project', async () => {
+    seed({ feePaid: true, status: 'paid', feeDue: 0 });
+    await expect(call(contestEngagement, { reason: 'amount_disputed' })).rejects.toBeDefined();
+    expect(notifyAdminsOfDispute).not.toHaveBeenCalled();
+    expect(mockDb.read('projects/p1')!.adminReviewPending).toBeUndefined();
+  });
+});
+
+describe('contesting twice', () => {
+  it('a second contest is refused and the original fee snapshot survives', async () => {
+    seed();
+    await call(contestEngagement, { reason: 'didnt_happen' });
+    const first = fee().preDispute;
+    await expect(call(contestEngagement, { reason: 'amount_disputed' }))
+      .rejects.toMatchObject({ message: 'already-disputed' });
+    expect(fee().preDispute).toEqual(first);
+    expect(first).toMatchObject({ feeDue: 100, status: 'pending' });
   });
 });

@@ -179,6 +179,8 @@ type FlaggedRow = {
   title: string;
   status: string;
   clientId: string;
+  /** The project's group chat, for the admin's "open chat". Null if it has none. */
+  chatId: string | null;
   reason: string;
   proId: string | null;
   flaggedAt: number | null;
@@ -216,6 +218,7 @@ export function flaggedRowsFor(
     title: (project.title as string) ?? '',
     status: (project.status as string) ?? '',
     clientId: (project.clientId as string) ?? '',
+    chatId: (project.chatId as string) ?? null,
   };
   const flagged = fees.filter((f) => f.data.adminReviewPending === true || f.data.engagementStatus === 'disputed');
   if (flagged.length === 0) {

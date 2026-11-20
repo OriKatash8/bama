@@ -14,6 +14,8 @@ import { warnIfCompletedUnderReview } from './review';
 import { deletePendingOffers } from './offerCleanup';
 import { addChatCloseWrites } from './chatClose';
 import { overdueStampFields, recomputeFeeBlockSafely, blockAtOf, notifyFeeCreated } from './feeOverdue';
+import { notifyAdminsOfDispute } from './disputeAlert';
+import { holdReviewsForDispute } from './reviewHold';
 
 type Update = admin.firestore.UpdateData<admin.firestore.DocumentData>;
 
@@ -631,6 +633,11 @@ async function contestFeeAtomically(
     if (eng.feePaid === true || eng.status === 'paid') {
       throw new HttpsError('failed-precondition', 'fee-already-paid');
     }
+    // A second contest would overwrite `preDispute` with the already-voided values
+    // (feeDue 0, status not_owed) and lose the fee the admin must restore.
+    if (eng.engagementStatus === 'disputed') {
+      throw new HttpsError('failed-precondition', 'already-disputed');
+    }
     // The window is the charge date. Past it the money has moved (or would have),
     // and a contest becomes a support conversation rather than a state change.
     const dueAt = contestWindowEndsAt(eng)?.toMillis();
@@ -651,7 +658,39 @@ async function contestFeeAtomically(
       );
     }
     tx.update(engRef, update);
+    // The admin's "Needs review" list starts from `projects where adminReviewPending`
+    // (adminListFlaggedProjects), so the flag is set in THIS transaction, with the
+    // fee. It used to be written only by applyDerivedProjectState after the commit;
+    // if that step failed, the fee was disputed and invisible. derive recomputes the
+    // same value from the fee docs afterwards, so this only makes it durable sooner.
+    const projectRef = engRef.parent.parent;
+    if (projectRef) tx.set(projectRef, { adminReviewPending: true }, { merge: true });
   });
+}
+
+/**
+ * The post-commit step of a contest: re-derive the project cache.
+ *
+ * Not atomic with the fee write (see derive.ts), so it can fail after the dispute
+ * is saved: a transient Firestore error or deadline on its two reads or its write,
+ * the instance being recycled between the commit and here (a callable is not
+ * retried), or a malformed fee doc throwing inside deriveProjectState. The fee is
+ * the source of truth and the admin flag is already set in the transaction, so the
+ * dispute stands and the professional is not shown an error for it. What is lost is
+ * only the project's derived cache (status reopen, disputeWindowEndsAt,
+ * completion), which the next derive (cron, resolution) rebuilds. The failure is
+ * logged with the ids needed to re-run it, never swallowed quietly.
+ */
+async function deriveAfterContest(fn: string, projectId: string, uid: string): Promise<void> {
+  try {
+    await applyDerivedProjectState(projectId);
+  } catch (err) {
+    console.error(
+      `[${fn}] applyDerivedProjectState FAILED after the dispute was saved — fee is 'disputed' but the project cache is stale. ` +
+      `projectId=${projectId} proId=${uid}. Re-run applyDerivedProjectState to repair.`,
+      err,
+    );
+  }
 }
 
 /**
@@ -696,7 +735,10 @@ export const disputeFeeByPro = onCall(async (request) => {
     slotHolders: FieldValue.arrayUnion(uid),
   } as Update);
 
-  await applyDerivedProjectState(projectId);
+  await deriveAfterContest('disputeFeeByPro', projectId, uid);
+  // The overdue clock pauses while disputed — same as contestEngagement.
+  await recomputeFeeBlockSafely(uid);
+  await notifyAdminsOfDispute({ projectId, proId: uid, reason: 'amount_disputed' });
   return { ok: true };
 });
 
@@ -1004,8 +1046,16 @@ export const contestEngagement = onCall(async (request) => {
     slotHolders: FieldValue.arrayUnion(uid),
   } as Update);
 
-  await applyDerivedProjectState(projectId);
+  // "It never happened": the client's review of this professional waits for the
+  // admin. An amount dispute holds nothing. The dispute is already saved, so a
+  // failure here is logged, never thrown at the professional.
+  if (reason === 'didnt_happen') {
+    await holdReviewsForDispute(projectId, uid).catch((err) =>
+      console.error(`[contestEngagement] could not hold the review. projectId=${projectId} proId=${uid}`, err));
+  }
+  await deriveAfterContest('contestEngagement', projectId, uid);
   // The overdue clock pauses while disputed — take effect now, not on the trigger.
   await recomputeFeeBlockSafely(uid);
+  await notifyAdminsOfDispute({ projectId, proId: uid, reason });
   return { ok: true, reason };
 });

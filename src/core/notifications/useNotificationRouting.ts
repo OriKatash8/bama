@@ -217,6 +217,11 @@ export function useNotificationRouting(): void {
         await navigate(null, '/admin/reports');
         return;
       }
+      // A professional raised a dispute: Reports, on the Disputes tab.
+      case 'admin_dispute': {
+        await navigate(null, '/admin/reports?tab=disputes');
+        return;
+      }
       case 'project': {
         // The noticeboard lives on the dashboard tab (no standalone route).
         await navigate('professional', '/(professional)/(tabs)/dashboard');

@@ -297,10 +297,10 @@ describe('withdrawals close a project only if something ever completed', () => {
     expect(deriveProjectState([e('completed'), e('withdrawn'), e('withdrawn')], now).isComplete).toBe(true);
   });
 
-  it('a completed-then-contested engagement still counts as ever-completed, and holds open as disputed', () => {
-    const d = deriveProjectState([e('disputed', { chargeDueAt: future }), e('withdrawn')], now);
-    expect(d.isComplete).toBe(false);
-    expect(d.reason).toContain('disputed');
+  it('a completed-then-contested engagement still counts as ever-completed, and does NOT hold the project open', () => {
+    const d = deriveProjectState([e('disputed', { chargeDueAt: future, professionalId: 'p1' }), e('withdrawn')], now);
+    expect(d.isComplete).toBe(true);
+    expect(d.disputedIds).toEqual(['p1']);
   });
 
   it('a completed-then-rehired engagement keeps the project open until it finishes again', () => {
@@ -414,5 +414,39 @@ describe('endedEngagementIds — who is past repricing', () => {
       const listed = deriveProjectState([eng('p', status)], now).endedEngagementIds.length === 1;
       expect(listed).toBe(engagementPriceFrozen(status));
     }
+  });
+});
+
+
+describe('a dispute must not overwrite the project flag, and a stale release reason must not hide a live engagement', () => {
+  const past = ts(now - 10 * DAY);
+  const future = ts(now + 2 * DAY);
+  it('the review flag is read from EVERY engagement, including ones a filter drops', () => {
+    // The production failure: the only engagement was dropped by the release-reason
+    // filter, so the flag derived as false while the fee still said true.
+    const d = deriveProjectState(
+      [e('withdrawn', { releaseReason: 'candidate_rejected', adminReviewPending: true })], now,
+    );
+    expect(d.adminReviewPending).toBe(true);
+  });
+
+  it('only a WITHDRAWN engagement is a candidate-review release', () => {
+    expect(deriveProjectState(
+      [e('completed', { releaseReason: 'candidate_rejected', chargeDueAt: past })], now,
+    ).isComplete).toBe(true);
+    expect(deriveProjectState(
+      [e('hired', { releaseReason: 'candidate_declined' })], now,
+    ).isComplete).toBe(false);
+    expect(deriveProjectState(
+      [e('withdrawn', { releaseReason: 'candidate_rejected' })], now,
+    ).reason).toBe('no engagements');
+  });
+
+  it('completing around a dispute keeps the disputing professional\'s slot', () => {
+    const d = deriveProjectState(
+      [e('disputed', { chargeDueAt: future, professionalId: 'a' }), e('completed', { professionalId: 'b', chargeDueAt: future })], now,
+    );
+    expect(d.isComplete).toBe(true);
+    expect(d.disputedIds).toEqual(['a']);
   });
 });

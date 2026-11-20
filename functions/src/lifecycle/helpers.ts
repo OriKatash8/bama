@@ -362,11 +362,13 @@ export async function publishProReview(projectId: string, proId: string): Promis
     .where('professionalId', '==', proId)
     .where('published', '==', false)
     .get();
+  // Reviews held for a dispute stay held: only resolveFeeDispute releases them.
+  const releasable = snap.docs.filter((d) => d.get('heldForDispute') !== true);
   const batch = db.batch();
-  snap.docs.forEach((d) =>
+  releasable.forEach((d) =>
     batch.update(d.ref, { published: true, visibleAt: FieldValue.serverTimestamp() }),
   );
-  if (!snap.empty) await batch.commit();
+  if (releasable.length > 0) await batch.commit();
 }
 
 /**

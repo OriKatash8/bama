@@ -34,6 +34,8 @@ const ESSENTIAL = [
   'mention',
   // A report or block reaching the admin: Guideline 1.2 needs these seen.
   'admin_report',
+  // A professional raised a dispute: an admin must see it.
+  'admin_dispute',
   // A community ownership offer, and its answer: a decision someone is waiting on.
   'community_ownership_offer', 'community_ownership_result',
 ];

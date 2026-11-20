@@ -1,5 +1,6 @@
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
-import { FieldValue } from './helpers';
+import { FieldValue, feeRef, type FeeDoc } from './helpers';
+import { isDidntHappenDispute } from './reviewHold';
 
 /**
  * Resolve `published` on every new review.
@@ -14,6 +15,11 @@ import { FieldValue } from './helpers';
  * separate matter between BAMA and the professional, and must not change what
  * anyone else can see.
  *
+ * ONE EXCEPTION, tied to a dispute and not to payment: a review of a professional
+ * whose engagement is disputed as "didn't happen" is written held
+ * (`published: false, heldForDispute: true`) and settled when an admin resolves the
+ * dispute (reviewHold.ts). Nothing else may write `published: false`.
+ *
  * The `published` field, the get/list rules split in firestore.rules, and
  * publishProReview() all remain in place. They now describe a state nothing
  * enters: every review is written published, and the 60-day cron sweep is a
@@ -25,6 +31,20 @@ export const onReviewCreate = onDocumentCreated('reviews/{reviewId}', async (eve
   // A client cannot set `published` itself — firestore.rules rejects a create
   // carrying `published` or `visibleAt` — so this trigger is the only writer,
   // and it has exactly one answer.
+  const review = snap.data() as { projectId?: string; professionalId?: string } | undefined;
+  if (review?.projectId && review.professionalId) {
+    try {
+      const fee = (await feeRef(review.projectId, review.professionalId).get()).data() as FeeDoc | undefined;
+      if (isDidntHappenDispute(fee)) {
+        await snap.ref.set({ published: false, heldForDispute: true }, { merge: true });
+        return;
+      }
+    } catch (err) {
+      // Fail OPEN: a review is published by default, and this one error must not
+      // leave a review stuck unpublished. Logged so a missed hold is findable.
+      console.error('[onReviewCreate] dispute check failed, publishing', review.projectId, err);
+    }
+  }
   await snap.ref.set(
     { published: true, visibleAt: FieldValue.serverTimestamp() },
     { merge: true },

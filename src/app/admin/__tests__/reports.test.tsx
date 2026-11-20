@@ -14,6 +14,10 @@ import ReportsAdmin from '../reports';
 let mockLang = 'en';
 const mockToast = jest.fn();
 const mockModerate = jest.fn(() => Promise.resolve({ success: true, actionId: 'a1' }));
+const mockFlagged = jest.fn((..._a: unknown[]) => Promise.resolve({ rows: [] as unknown[] }));
+const mockResolve = jest.fn((..._a: unknown[]) => Promise.resolve({ ok: true, outcome: 'completed', feeDue: 0 }));
+const mockPush = jest.fn();
+let mockTab: string | undefined;
 
 jest.mock('react-native-reanimated', () => require('../../../testing/reanimatedMock').reanimatedMock());
 jest.mock('expo-linear-gradient', () => ({
@@ -28,7 +32,17 @@ jest.mock('@core/stores/authStore', () => ({
   useAuthStore: (s: (x: { user: { displayName: string } }) => unknown) => s({ user: { displayName: 'Dana Admin' } }),
 }));
 jest.mock('@core/firebase/config', () => ({ db: {} }));
-jest.mock('@core/firebase/functions', () => ({ callFunction: () => (...a: unknown[]) => mockModerate(...(a as [])) }));
+jest.mock('@core/firebase/functions', () => ({
+  callFunction: (name: string) => (...a: unknown[]) => (
+    name === 'adminListFlaggedProjects' ? mockFlagged(...a)
+      : name === 'resolveFeeDispute' ? mockResolve(...a)
+        : mockModerate(...(a as []))
+  ),
+}));
+jest.mock('expo-router', () => ({
+  useLocalSearchParams: () => ({ tab: mockTab }),
+  useRouter: () => ({ push: mockPush }),
+}));
 jest.mock('@core/stores/uiStore', () => ({ useUiStore: (sel?: (s: object) => unknown) => { const st = { showToast: mockToast }; return sel ? sel(st) : st; } }));
 jest.mock('firebase/firestore', () => ({
   // Refs carry their collection name, so onSnapshot can answer per collection.
@@ -61,6 +75,8 @@ function serve() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockLang = 'en';
+  mockTab = undefined;
+  mockFlagged.mockImplementation(() => Promise.resolve({ rows: [] }));
   mockCollections = { reports: docs, adminActions: [], users: [] };
   serve();
 });
@@ -261,5 +277,93 @@ describe('deleting a report that is no longer relevant (Done tab)', () => {
     await act(async () => { fireEvent.press(r.getByTestId('delete-report-r3')); });
     expect(mockToast).toHaveBeenCalledWith(E.delete_report_failed, 'error');
     alert.mockRestore();
+  });
+});
+
+
+describe('the disputes tab', () => {
+  const answer = (yes: boolean) => jest.spyOn(require('react-native').Alert, 'alert').mockImplementation(
+    (...a: unknown[]) => (a[2] as { onPress?: () => void }[])[yes ? 1 : 0].onPress?.(),
+  );
+  afterEach(() => jest.restoreAllMocks());
+  const row = {
+    projectId: 'p1', title: 'Kitchen shoot', clientName: 'Cleo Client', chatId: 'chat1',
+    proId: 'pro1', proName: 'Dana Pro', reason: 'didnt_happen', note: 'The client cancelled on the day',
+    flaggedAt: new Date(2026, 10, 18).getTime(),
+    disputes: [{ proId: 'pro1', proName: 'Dana Pro', reason: 'didnt_happen', baseAmount: 3000, feeDueIfCompleted: 90 }],
+  };
+  const unrelated = { ...row, projectId: 'p2', proId: 'pro2', disputes: [], reason: 'completion_unanswered' };
+
+  it('counts open disputes on the tab, ignoring flagged rows that are not disputes', async () => {
+    mockFlagged.mockImplementation(() => Promise.resolve({ rows: [row, unrelated] }));
+    const r = await renderPage();
+    expect(r.getByText(`${E.filter_disputes} (1)`)).toBeTruthy();
+  });
+
+  it('shows — rather than 0 when the disputes could not be loaded, and says so', async () => {
+    mockFlagged.mockImplementation(() => Promise.reject(new Error('boom')));
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const r = await renderPage();
+    expect(r.getByText(`${E.filter_disputes} (—)`)).toBeTruthy();
+    fireEvent.press(r.getByTestId('filter-disputes'));
+    expect(r.getByTestId('disputes-error')).toBeTruthy();
+    expect(r.queryByTestId('disputes-empty')).toBeNull();
+  });
+
+  it('a card carries project, professional, client, type, the pro\'s words, date, fee and status', async () => {
+    mockFlagged.mockImplementation(() => Promise.resolve({ rows: [row] }));
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('filter-disputes'));
+    const card = within(r.getByTestId('dispute-card-p1:pro1'));
+    expect(card.getByText('Kitchen shoot')).toBeTruthy();
+    expect(card.getByText(en.admin_fees.pro_label.replace('{{name}}', 'Dana Pro'))).toBeTruthy();
+    expect(card.getByText(en.admin_fees.client_label.replace('{{name}}', 'Cleo Client'))).toBeTruthy();
+    expect(card.getByText(en.admin_fees.reason_didnt_happen)).toBeTruthy();
+    expect(card.getByText('The client cancelled on the day')).toBeTruthy();
+    expect(card.getByText(E.dispute_submitted.replace('{{date}}', '18/11/2026'))).toBeTruthy();
+    expect(card.getByText(en.admin_fees.dispute_fee_if_completed.replace('{{amount}}', '90'))).toBeTruthy();
+    expect(card.getByText(E.dispute_status_open)).toBeTruthy();
+  });
+
+  it('opens the project chat', async () => {
+    mockFlagged.mockImplementation(() => Promise.resolve({ rows: [row] }));
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('filter-disputes'));
+    fireEvent.press(r.getByTestId('open-chat-p1:pro1'));
+    expect(mockPush).toHaveBeenCalledWith('/admin/project-chat?chatId=chat1&projectId=p1');
+  });
+
+  it('resolves through the existing resolveFeeDispute after a confirm, then reloads the list', async () => {
+    mockFlagged.mockImplementation(() => Promise.resolve({ rows: [row] }));
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('filter-disputes'));
+    mockFlagged.mockImplementation(() => Promise.resolve({ rows: [] }));
+    const alert = answer(true);
+    await act(async () => { fireEvent.press(r.getByTestId('resolve-cancelled-p1:pro1')); });
+    expect(alert).toHaveBeenCalled();
+    expect(mockResolve).toHaveBeenCalledWith({ projectId: 'p1', proId: 'pro1', outcome: 'cancelled' });
+    expect(mockToast).toHaveBeenCalledWith(en.admin_fees.resolve_done, 'success');
+    expect(r.getByTestId('disputes-empty')).toBeTruthy();
+  });
+
+  it('does nothing when the confirm is cancelled', async () => {
+    mockFlagged.mockImplementation(() => Promise.resolve({ rows: [row] }));
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('filter-disputes'));
+    answer(false);
+    await act(async () => { fireEvent.press(r.getByTestId('resolve-cancelled-p1:pro1')); });
+    expect(mockResolve).not.toHaveBeenCalled();
+  });
+
+  it('opens on the disputes tab from the push (?tab=disputes)', async () => {
+    mockTab = 'disputes';
+    mockFlagged.mockImplementation(() => Promise.resolve({ rows: [row] }));
+    const r = await renderPage();
+    expect(r.getByTestId('filter-disputes').props.accessibilityState.selected).toBe(true);
+    expect(r.getByTestId('dispute-card-p1:pro1')).toBeTruthy();
+  });
+
+  it('has Hebrew strings for every new key', () => {
+    for (const k of Object.keys(en.admin_reports)) expect(H).toHaveProperty(k);
   });
 });

@@ -12,6 +12,7 @@ import { TextInput } from '@components/ui/Text';
 import {
   collection, onSnapshot, updateDoc, deleteDoc, doc, getDoc, query, orderBy, where, Timestamp,
 } from 'firebase/firestore';
+import { useLocalSearchParams } from 'expo-router';
 import { Trash2 } from 'lucide-react-native';
 import { db } from '@core/firebase/config';
 import { callFunction } from '@core/firebase/functions';
@@ -22,6 +23,8 @@ import {
   AdminPage, AdminText, Card, CardHead, EmptyState, InitialsAvatar, PillButton, Row, Segment, WhoBlock,
   RADIUS, SPACE, TYPE, useAdminPalette, useScopedT,
 } from '@features/admin/ui';
+import { DisputesPanel } from '@features/admin/disputes/DisputesPanel';
+import { useAdminDisputes } from '@features/admin/disputes/useAdminDisputes';
 
 type ModAction = 'warn' | 'suspend';
 /** Lifting a warning or a suspension, from the warned & suspended tab. */
@@ -52,9 +55,10 @@ type Report = {
   createdAt: Timestamp | null;
 };
 
-/** The report states, plus 'users': everyone currently warned or suspended. */
-type FilterTab = 'all' | 'pending' | 'reviewed' | 'resolved' | 'users';
-const FILTER_TABS: FilterTab[] = ['all', 'pending', 'reviewed', 'resolved', 'users'];
+/** The report states, plus 'users' (everyone currently warned or suspended) and
+ *  'disputes' (professionals' open fee disputes, which live on fees, not reports). */
+type FilterTab = 'all' | 'pending' | 'reviewed' | 'resolved' | 'users' | 'disputes';
+const FILTER_TABS: FilterTab[] = ['all', 'pending', 'reviewed', 'resolved', 'users', 'disputes'];
 
 /** A user under a warning or a suspension right now (users/{uid}.moderation). */
 type ModeratedUser = { id: string; displayName?: string; moderation: UserModeration };
@@ -101,7 +105,15 @@ export default function ReportsAdmin() {
 
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<FilterTab>('pending');
+  // `?tab=disputes` is where the admin dispute push lands.
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  // The admin's own pick wins; until they pick, the push's param (or 'pending') decides.
+  const [picked, setFilter] = useState<FilterTab | null>(null);
+  // A push tapped while this screen is already open changes the param: let it win again.
+  const [seenTab, setSeenTab] = useState(tab);
+  if (seenTab !== tab) { setSeenTab(tab); setFilter(null); }
+  const filter: FilterTab = picked ?? (tab === 'disputes' ? 'disputes' : 'pending');
+  const { disputes, state: disputesState, reload: reloadDisputes } = useAdminDisputes();
   const [updating, setUpdating] = useState<Record<string, boolean>>({});
   const [resolvedNames, setResolvedNames] = useState<Record<string, string>>({});
   const [modTarget, setModTarget] = useState<{ report: Report; action: ModAction } | null>(null);
@@ -215,10 +227,12 @@ export default function ReportsAdmin() {
   /** A report an admin acted on (warned / suspended from it) is Done, whatever its stored status. */
   const statusOf = (r: Report): Report['status'] => ((actionsByReport[r.id]?.length ?? 0) > 0 ? 'resolved' : r.status);
   const filtered = filter === 'all' ? reports : reports.filter((r) => statusOf(r) === filter);
-  const countOf = (tab: FilterTab) =>
+  // '—' while the disputes are unknown: a 0 would claim there are none.
+  const countOf = (tab: FilterTab): number | string =>
     tab === 'users' ? moderated.length
-      : tab === 'all' ? reports.length
-        : reports.filter((r) => statusOf(r) === tab).length;
+      : tab === 'disputes' ? (disputesState === 'ok' ? disputes.length : '—')
+        : tab === 'all' ? reports.length
+          : reports.filter((r) => statusOf(r) === tab).length;
 
   /** Deletes a Done report that is no longer relevant, after a confirm. The
    *  moderation record (adminActions) stays. */
@@ -275,7 +289,9 @@ export default function ReportsAdmin() {
           />
         </ScrollView>
 
-        {filter === 'users' ? (
+        {filter === 'disputes' ? (
+          <DisputesPanel disputes={disputes} state={disputesState} onReload={reloadDisputes} />
+        ) : filter === 'users' ? (
           // Everyone warned or suspended right now, with the way to lift it.
           <Card testID="moderated-card">
             <CardHead title={t('moderated_title')} sub={t('moderated_sub')} />

@@ -6,6 +6,7 @@ import { applyDerivedProjectState } from './derive';
 import { slotCapBlocksHire } from './slotCap';
 import { assignFilledCapability } from '../matching';
 import { assertSameSide } from '../demo';
+import { buildHireFeeUpdate } from './feeRehire';
 import {
   DEFAULT_PROJECT_DURATION_DAYS,
   canHireOnStatus, isOfferPriceValid,
@@ -82,6 +83,12 @@ async function loadAndEnforce(uid: string, projectId: string, proId: string) {
   // for a second role on a project they are already on. Read here (never inside
   // commitHire) so the immutable lock is decided before the batch runs.
   const existingFeeSnap = await feeRef(projectId, proId).get();
+
+  // A disputed engagement is in front of an admin. Merging `hired` over it would
+  // silently erase the dispute (and the voided fee), so it is refused until resolved.
+  if (existingFeeSnap.get('engagementStatus') === 'disputed') {
+    throw new HttpsError('failed-precondition', 'engagement-disputed');
+  }
 
   // A second role on a project this pro already holds a slot on consumes nothing —
   // see hireConsumesNewSlot for why this must come BEFORE the cap query, and why
@@ -285,55 +292,15 @@ async function commitHire(args: {
   // ── This pro's fee record ──
   // `baseAmount` accumulates: a pro hired for a second role on the same project
   // owes on the sum of both. increment() treats a missing doc/field as 0.
-  const feeUpdate: Record<string, unknown> = {
-    professionalId: proId,
+  const feeUpdate = buildHireFeeUpdate({
+    proId,
     projectId: projSnap.id,
-    baseAmount: FieldValue.increment(amount),
-    slotActive: true,
-    // Set on EVERY hire, not just the first. Being hired is what makes an
-    // engagement live, and once completion is per-engagement a professional whose
-    // engagement already closed can be hired again onto the same still-open
-    // project — that re-hire has to pull them back out of 'completed'. The
-    // feePaid reset below is the money half of the same re-engagement.
-    engagementStatus: 'hired',
-    // Stamped from the project's endDate, or left absent when there is none —
-    // which is every project that predates this field, and every project whose
-    // client answered 'flexible'. Absent means this engagement never
-    // auto-completes; it waits for the professional to mark it.
-    ...(fresh.endDate ? { completionDueAt: fresh.endDate } : {}),
-  };
-  if (!existingFeeSnap.exists) {
-    // Written once, at this pro's FIRST hire on this project, and immutable
-    // afterwards. The RATE IS CAPTURED HERE, not at completion: a later edit to
-    // config/pricing.feePercent must never change a fee that was already agreed.
-    feeUpdate.feeStatus = 'owed';
-    feeUpdate.feeRate = feeRateOf(config);
-    // The commission FLOOR, locked here for the same reason as the rate: raising
-    // config/pricing.minFeeAmount later must never reprice a project that was
-    // already agreed. Absent on pre-floor records, which read it as 0.
-    feeUpdate.minFeeApplied = config.minFeeAmount;
-    feeUpdate.status = 'pending';
-    feeUpdate.hiredAt = FieldValue.serverTimestamp();
-    feeUpdate.createdAt = FieldValue.serverTimestamp();
-  } else if (existingFeeSnap.get('feePaid') === true) {
-    // Re-hire onto a project whose fee this pro has ALREADY settled, for a
-    // further role. The extra baseAmount is genuinely owed, so the settled flag
-    // has to drop — otherwise markFeePaid would refuse the new amount as
-    // "already paid" and it could never be recorded.
-    // `paidAmount` is untouched and carries their earlier payment forward, so
-    // they are charged only the delta, never twice for the first portion.
-    // Bookkeeping only: nothing here affects slots, reviews, or what they can do.
-    feeUpdate.feePaid = false;
-    feeUpdate.feePaidAt = FieldValue.delete();
-    feeUpdate.status = 'pending';
-    // A fresh debt cycle: the settled one's overdue clock and notices must not
-    // carry over, or the next completion would inherit a deadline that already
-    // passed and block on the spot.
-    feeUpdate.overdueAt = FieldValue.delete();
-    feeUpdate.dueNotifiedAt = FieldValue.delete();
-    feeUpdate.overdueWarnedAt = FieldValue.delete();
-    feeUpdate.overdueBlockNotifiedAt = FieldValue.delete();
-  }
+    amount,
+    endDate: fresh.endDate,
+    existing: existingFeeSnap,
+    feeRate: feeRateOf(config),
+    minFeeApplied: config.minFeeAmount,
+  });
   tx.set(feeRef(projSnap.id, proId), feeUpdate, { merge: true });
 
   return thisChatId as string;
