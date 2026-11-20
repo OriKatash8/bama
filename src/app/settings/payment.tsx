@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { View, TouchableOpacity, StyleSheet, ActivityIndicator, AppState } from 'react-native';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
@@ -45,6 +45,11 @@ function chargeDate(fee: ProjectFee, locale = 'en-US'): string {
   return new Date(ts.seconds * 1000)
     .toLocaleDateString(locale, { day: 'numeric', month: 'short' });
 }
+
+/** How long a row says "checking your payment" after the user comes back from the
+ *  payment page. Settlement has taken ~40s; after this the button returns, and a
+ *  second tap is safe (the server reuses the live link). */
+const CHECKING_MS = 3 * 60_000;
 
 type Row = {
   projectId: string;
@@ -102,10 +107,34 @@ export default function BalanceScreen() {
   // can say the payment is being confirmed until the server marks the fee paid.
   const [opening, setOpening] = useState<string | null>(null);
   const [returned, setReturned] = useState<Set<string>>(new Set());
+  // Rows that say "checking your payment": returned from the payment page, for at most
+  // CHECKING_MS. Timer-driven rather than a timestamp compared in render.
+  const [checking, setChecking] = useState<Set<string>>(new Set());
+  const checkTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  // Bumped on focus and on foreground: re-subscribes the fee listener, which makes
+  // Firestore deliver a fresh snapshot even if the connection stalled in the background.
+  const [refreshKey, setRefreshKey] = useState(0);
+  const openingRef = useRef<string | null>(null);
+
+  const markReturned = useCallback((id: string) => {
+    setReturned((prev) => new Set(prev).add(id));
+    setChecking((prev) => new Set(prev).add(id));
+    const old = checkTimers.current.get(id);
+    if (old) clearTimeout(old);
+    checkTimers.current.set(id, setTimeout(() => {
+      checkTimers.current.delete(id);
+      setChecking((prev) => { const n = new Set(prev); n.delete(id); return n; });
+    }, CHECKING_MS));
+  }, []);
+  useEffect(() => {
+    const timers = checkTimers.current;
+    return () => { timers.forEach(clearTimeout); timers.clear(); };
+  }, []);
 
   const payNow = async (rowProjectId: string, fee: ProjectFee) => {
     if (opening) return;
     setOpening(rowProjectId);
+    openingRef.current = rowProjectId;
     try {
       // A live link is opened as is. Otherwise (inside the contest window, or the old
       // link went stale) the server makes one — through the same claim as the
@@ -124,15 +153,39 @@ export default function BalanceScreen() {
       // Returns when the sheet closes or the success page redirects back to the app.
       // Its result is NOT a payment confirmation; the fee row updates from the server.
       await WebBrowser.openAuthSessionAsync(url, Linking.createURL('/settings/payment'));
-      setReturned((prev) => new Set(prev).add(rowProjectId));
+      markReturned(rowProjectId);
       await refreshCard();
     } catch (err) {
       console.error('[balance] opening the payment page failed:', err);
       showToast(t('balance.pay_open_failed'), 'error');
     } finally {
       setOpening(null);
+      openingRef.current = null;
     }
   };
+
+  // Back in front of the user: coming back from the payment page (or the bit app, which
+  // never redirects through /pay-return) must not leave a stale row. Both paths
+  // re-subscribe the fee listener and re-ask the server for the link mode.
+  const firstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocus.current) { firstFocus.current = false; return; }
+      setRefreshKey((k) => k + 1);
+      void refreshCard();
+    }, [refreshCard]),
+  );
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      setRefreshKey((k) => k + 1);
+      void refreshCard();
+      // The payment sheet is still open (a bit payment never closes it): the user is
+      // back, so treat the row as returned.
+      if (openingRef.current) markReturned(openingRef.current);
+    });
+    return () => sub.remove();
+  }, [refreshCard, markReturned]);
 
   // A listener, not a fetch: this screen is reached from the chat list and the
   // project detail, and an admin recording a payment while it is open should
@@ -140,8 +193,12 @@ export default function BalanceScreen() {
   useEffect(() => {
     if (!userId) { setRows([]); return; }
     let active = true;
+    // Each snapshot loads titles asynchronously; only the newest one may set rows, or an
+    // older snapshot finishing last would put a stale row (a paid fee still payable) back.
+    let seq = 0;
 
-    return listenToMyFees(userId, (byProjectId) => {
+    const unsubscribe = listenToMyFees(userId, (byProjectId) => {
+      const mine = ++seq;
       // FILTERED ON LIFECYCLE, NOT ON THE AMOUNT. `owed > 0` hid a contested
       // engagement the moment `didnt_happen` zeroed its fee, and hid a completed
       // one awaiting charge — the two rows a professional most needs to see. See
@@ -167,7 +224,7 @@ export default function BalanceScreen() {
           return { ...r, title };
         }),
       ).then((withTitles) => {
-        if (!active) return;
+        if (!active || mine !== seq) return;
         // The project they arrived from goes first; the rest keep their order.
         withTitles.sort((a, b) => {
           if (a.projectId === projectId) return -1;
@@ -177,8 +234,9 @@ export default function BalanceScreen() {
         setRows(withTitles);
       });
     });
+    return () => { active = false; unsubscribe(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, projectId, language]);
+  }, [userId, projectId, language, refreshKey]);
 
   const total = (rows ?? []).reduce((sum, r) => sum + r.owed, 0);
 
@@ -338,7 +396,7 @@ export default function BalanceScreen() {
                       </AppText>
                     </>
                   )}
-                  {returned.has(r.projectId) && (
+                  {returned.has(r.projectId) && !(checking.has(r.projectId) && chargeStateKey(r.fee) === 'awaiting_payment') && (
                     <AppText
                       weight="regular"
                       style={[styles.linePending, { color: colors.textMuted, textAlign: align }]}
@@ -347,18 +405,43 @@ export default function BalanceScreen() {
                       {t('balance.link_pending_confirm')}
                     </AppText>
                   )}
-                  <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: accent, opacity: opening ? 0.6 : 1 }]}
-                    onPress={() => payNow(r.projectId, r.fee)}
-                    disabled={opening !== null}
-                    activeOpacity={0.8}
-                    accessibilityRole="button"
-                    testID={`pay-now-${r.projectId}`}
-                  >
-                    {opening === r.projectId
-                      ? <ActivityIndicator color="#ffffff" />
-                      : <AppText weight="bold" style={styles.actionBtnText}>{t('balance.pay_now')}</AppText>}
-                  </TouchableOpacity>
+                  {checking.has(r.projectId) && chargeStateKey(r.fee) === 'awaiting_payment' ? (
+                    // Back from the payment page and the fee is not settled yet: say we are
+                    // looking, instead of offering a second payment. Falls back to the
+                    // button after CHECKING_MS (a user who cancelled must not wait for ever).
+                    <View
+                      style={[styles.checkingRow, { flexDirection: rowDir }]}
+                      testID={`checking-payment-${r.projectId}`}
+                    >
+                      <ActivityIndicator color={accent} />
+                      <AppText weight="semiBold" style={[styles.linePending, { color: colors.text }]}>
+                        {t('balance.checking_payment')}
+                      </AppText>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { backgroundColor: accent, opacity: opening ? 0.6 : 1 }]}
+                      onPress={() => payNow(r.projectId, r.fee)}
+                      disabled={opening !== null}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      testID={`pay-now-${r.projectId}`}
+                    >
+                      {opening === r.projectId
+                        ? <ActivityIndicator color="#ffffff" />
+                        : <AppText weight="bold" style={styles.actionBtnText}>{t('balance.pay_now')}</AppText>}
+                    </TouchableOpacity>
+                  )}
+                  {(payLinkUrl(r.fee) !== null || opening === r.projectId || returned.has(r.projectId)) && (
+                    // bit hands off to its own app and never comes back through /pay-return.
+                    <AppText
+                      weight="regular"
+                      style={[styles.linePending, { color: colors.textMuted, textAlign: align }]}
+                      testID={`bit-return-hint-${r.projectId}`}
+                    >
+                      {t('balance.bit_return_hint')}
+                    </AppText>
+                  )}
                 </>
               )}
               {linkMode && r.fee.chargeState === 'needs_phone' && chargeStateKey(r.fee) === 'needs_phone' && (
@@ -432,6 +515,7 @@ const styles = StyleSheet.create({
   lineBreakdown: { fontSize: 13 },
   actionBtn: { marginTop: 8, borderRadius: 12, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
   actionBtnText: { color: '#ffffff', fontSize: 15 },
+  checkingRow: { marginTop: 8, alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 12 },
   lineDisputed: { fontSize: 12, color: DISPUTED_AMBER, marginTop: 2 },
   amountLabel: { fontSize: 13 },
   amount: { fontSize: 40, lineHeight: 48 },

@@ -31,6 +31,7 @@ jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({
 jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn(), push: jest.fn() }),
   useLocalSearchParams: () => ({}),
+  useFocusEffect: (cb: () => void) => { require('react').useEffect(cb, []); },
 }));
 jest.mock('expo-web-browser', () => ({ openAuthSessionAsync: jest.fn() }));
 jest.mock('expo-linking', () => ({ createURL: (p: string) => `bama://${p}` }));

@@ -22,6 +22,7 @@ jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({
 jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn() }),
   useLocalSearchParams: () => ({}),
+  useFocusEffect: (cb: () => void) => { require('react').useEffect(cb, []); },
 }));
 jest.mock('@components/layout/Screen', () => ({
   Screen: ({ children }: { children: React.ReactNode }) => children,

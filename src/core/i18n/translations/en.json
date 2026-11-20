@@ -1675,7 +1675,9 @@
     "charge_state_idle_link": "Pending",
     "pay_early_hint": "You can pay now, or by {{date}}. The link is also created automatically then.",
     "pay_early_confirm": "Paying now confirms the amount.",
-    "pay_preparing": "Preparing your payment link. It will appear here in a moment."
+    "pay_preparing": "Preparing your payment link. It will appear here in a moment.",
+    "checking_payment": "Checking your payment…",
+    "bit_return_hint": "Paid with bit? Switch back to BAMA yourself after paying. The update takes up to a minute."
   },
   "payment_method": {
     "title": "Payment method for brokerage fee",

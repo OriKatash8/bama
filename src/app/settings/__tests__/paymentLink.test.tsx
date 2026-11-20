@@ -16,6 +16,10 @@ const mockOpen = jest.fn(async () => ({ type: 'dismiss' }));
 const mockRefresh = jest.fn(async () => undefined);
 const mockToast = jest.fn();
 const mockRequestNow = jest.fn();
+let mockFocusCb: (() => void) | null = null;
+let mockSnapshotCb: ((m: Map<string, unknown>) => void) | null = null;
+let mockSubscribed = 0;
+let mockUnsubscribed = 0;
 let mockView: Record<string, unknown> = { enabled: false, hasCard: false, linkMode: true };
 let mockFee: Record<string, unknown> = {};
 
@@ -34,6 +38,10 @@ jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({
 jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn(), push: mockPush }),
   useLocalSearchParams: () => ({}),
+  useFocusEffect: (cb: () => void) => {
+    mockFocusCb = cb;
+    require('react').useEffect(cb, []);
+  },
 }));
 jest.mock('expo-web-browser', () => ({ openAuthSessionAsync: (...a: unknown[]) => (mockOpen as any)(...a) }));
 jest.mock('expo-linking', () => ({ createURL: (p: string) => `bama://${p.replace(/^\//, '')}` }));
@@ -57,8 +65,10 @@ jest.mock('@features/pricing/services/paymentMethodService', () => ({
 jest.mock('@core/firebase/firestore', () => ({ getDocument: jest.fn(async () => ({ title: 'Wedding shoot' })) }));
 jest.mock('@features/pricing/services/feesService', () => ({
   listenToMyFees: (_uid: string, cb: (m: Map<string, unknown>) => void) => {
+    mockSubscribed += 1;
+    mockSnapshotCb = cb;
     cb(new Map([['p1', mockFee]]));
-    return () => undefined;
+    return () => { mockUnsubscribed += 1; };
   },
 }));
 jest.mock('@features/pricing/hooks/usePaymentMethod', () => ({
@@ -78,6 +88,9 @@ async function renderScreen() {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockSubscribed = 0;
+  mockUnsubscribed = 0;
+  mockSnapshotCb = null;
   mockView = { enabled: false, hasCard: false, linkMode: true };
 });
 
@@ -91,16 +104,19 @@ it('awaiting payment on a live link: Pay now, the state line and the link note; 
   expect(r.queryByText(en.balance.no_charge_note)).toBeNull();
 });
 
-it('Pay now opens the link in an auth session returning to the payment screen, then says it is updating', async () => {
+it('Pay now opens the link in an auth session returning to the payment screen, then says it is checking', async () => {
   mockFee = { ...baseFee, chargeState: 'awaiting_payment', paymentLink: link() };
   const r = await renderScreen();
   expect(r.queryByTestId('link-pending-p1')).toBeNull();
+  expect(r.queryByTestId('checking-payment-p1')).toBeNull();
   await act(async () => { fireEvent.press(r.getByTestId('pay-now-p1')); });
   expect(mockOpen).toHaveBeenCalledWith('https://pay.grow.example/abc', 'bama://settings/payment');
   expect(mockRefresh).toHaveBeenCalled();
-  expect(r.getByTestId('link-pending-p1').props.children).toBe(en.balance.link_pending_confirm);
-  // The fee was not marked paid by anything the screen did.
-  expect(r.getByTestId('pay-now-p1')).toBeTruthy();
+  // Back from the page and not settled yet: "checking", not a second Pay now, and not
+  // the older "updating" line on top of it.
+  expect(r.getByText(en.balance.checking_payment)).toBeTruthy();
+  expect(r.queryByTestId('pay-now-p1')).toBeNull();
+  expect(r.queryByTestId('link-pending-p1')).toBeNull();
 });
 
 it('no Pay now when the fee is already paid', async () => {
@@ -261,5 +277,121 @@ describe('Pay now inside the contest window', () => {
     }
     expect(he.balance.pay_early_confirm).toBe('תשלום עכשיו מאשר את הסכום.');
     expect(he.balance.pay_early_hint).toContain('אפשר לשלם כבר עכשיו, או עד {{date}}');
+  });
+});
+
+describe('live refresh, checking state and the bit hint', () => {
+  const { AppState } = require('react-native');
+  let appStateCb: ((s: string) => void) | null = null;
+  let addSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    appStateCb = null;
+    mockFocusCb = null;
+    addSpy = jest.spyOn(AppState, 'addEventListener').mockImplementation(((_t: string, cb: (s: string) => void) => {
+      appStateCb = cb;
+      return { remove: jest.fn() };
+    }) as never);
+  });
+  afterEach(() => { addSpy.mockRestore(); jest.useRealTimers(); });
+
+  it('the bit hint shows with a live link, and has Hebrew and English copy', async () => {
+    mockFee = { ...baseFee, chargeState: 'awaiting_payment', paymentLink: link() };
+    const r = await renderScreen();
+    expect(r.getByTestId('bit-return-hint-p1').props.children).toBe(en.balance.bit_return_hint);
+    expect(he.balance.bit_return_hint).toBe('שילמת בביט? אחרי התשלום חזרו לאפליקציה בעצמכם. העדכון לוקח עד דקה.');
+    expect(en.balance.bit_return_hint).toContain('The update takes up to a minute');
+    expect(he.balance.checking_payment).toBe('בודקים את התשלום…');
+    expect(en.balance.checking_payment).toBe('Checking your payment…');
+  });
+
+  it('no bit hint before there is a link to pay', async () => {
+    mockFee = { ...baseFee, chargeState: undefined, paymentLink: undefined };
+    const r = await renderScreen();
+    expect(r.queryByTestId('bit-return-hint-p1')).toBeNull();
+  });
+
+  it('coming back to the app re-subscribes the fee listener and re-asks the server', async () => {
+    mockFee = { ...baseFee, chargeState: 'awaiting_payment', paymentLink: link() };
+    await renderScreen();
+    const before = mockSubscribed;
+    mockRefresh.mockClear();
+    await act(async () => { appStateCb?.('background'); });
+    expect(mockSubscribed).toBe(before);
+    await act(async () => { appStateCb?.('active'); });
+    expect(mockSubscribed).toBe(before + 1);
+    expect(mockUnsubscribed).toBeGreaterThanOrEqual(1);
+    expect(mockRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('returning to the screen (focus) re-subscribes, but the first focus does not', async () => {
+    mockFee = { ...baseFee, chargeState: 'awaiting_payment', paymentLink: link() };
+    await renderScreen();
+    expect(mockSubscribed).toBe(1);
+    mockRefresh.mockClear();
+    await act(async () => { mockFocusCb?.(); });
+    expect(mockSubscribed).toBe(2);
+    expect(mockRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('a bit payment never closes the sheet: coming back while it is open still says checking', async () => {
+    mockFee = { ...baseFee, chargeState: 'awaiting_payment', paymentLink: link() };
+    let closeSheet: () => void = () => undefined;
+    mockOpen.mockImplementationOnce(() => new Promise((res) => { closeSheet = () => res({ type: 'dismiss' } as never); }));
+    const r = await renderScreen();
+    await act(async () => { fireEvent.press(r.getByTestId('pay-now-p1')); });
+    expect(r.queryByTestId('checking-payment-p1')).toBeNull();
+    await act(async () => { appStateCb?.('active'); });
+    expect(r.getByTestId('checking-payment-p1')).toBeTruthy();
+    await act(async () => { closeSheet(); });
+  });
+
+  it('checking clears when the fee settles, and falls back to the button after 3 minutes', async () => {
+    jest.useFakeTimers();
+    mockFee = { ...baseFee, chargeState: 'awaiting_payment', paymentLink: link() };
+    const r = await renderScreen();
+    await act(async () => { fireEvent.press(r.getByTestId('pay-now-p1')); });
+    expect(r.getByTestId('checking-payment-p1')).toBeTruthy();
+
+    // 2m59s: still checking.
+    await act(async () => { jest.advanceTimersByTime(3 * 60_000 - 1000); });
+    expect(r.getByTestId('checking-payment-p1')).toBeTruthy();
+    // 3m: the user who cancelled gets the button back (and the "updating" line).
+    await act(async () => { jest.advanceTimersByTime(1000); });
+    expect(r.queryByTestId('checking-payment-p1')).toBeNull();
+    expect(r.getByTestId('pay-now-p1')).toBeTruthy();
+    expect(r.getByTestId('link-pending-p1')).toBeTruthy();
+  });
+
+  it('a settled fee ends the checking state at once, no button', async () => {
+    mockFee = { ...baseFee, chargeState: 'awaiting_payment', paymentLink: link() };
+    const r = await renderScreen();
+    await act(async () => { fireEvent.press(r.getByTestId('pay-now-p1')); });
+    expect(r.getByTestId('checking-payment-p1')).toBeTruthy();
+    await act(async () => {
+      mockSnapshotCb?.(new Map([['p1', { ...baseFee, chargeState: 'succeeded', feePaid: true, status: 'paid', feeDue: 0, paymentLink: link() }]]));
+    });
+    expect(r.queryByTestId('checking-payment-p1')).toBeNull();
+    expect(r.queryByTestId('pay-now-p1')).toBeNull();
+  });
+
+  it('an older snapshot that finishes loading last cannot put a stale payable row back', async () => {
+    const { getDocument } = require('@core/firebase/firestore');
+    mockFee = { ...baseFee, chargeState: 'awaiting_payment', paymentLink: link() };
+    const r = await renderScreen();
+    expect(r.getByTestId('pay-now-p1')).toBeTruthy();
+
+    // Snapshot A (still payable) is slow to load its title; snapshot B (paid) is fast.
+    let releaseA: (v: unknown) => void = () => undefined;
+    (getDocument as jest.Mock).mockImplementationOnce(() => new Promise((res) => { releaseA = res; }));
+    (getDocument as jest.Mock).mockImplementationOnce(async () => ({ title: 'Wedding shoot' }));
+    await act(async () => { mockSnapshotCb?.(new Map([['p1', { ...baseFee, chargeState: 'awaiting_payment', paymentLink: link() }]])); });
+    await act(async () => {
+      mockSnapshotCb?.(new Map([['p1', { ...baseFee, chargeState: 'succeeded', feePaid: true, status: 'paid', feeDue: 0, paymentLink: link() }]]));
+    });
+    expect(r.queryByTestId('pay-now-p1')).toBeNull();
+    // A finishes last. Before the fix this overwrote the paid row with the payable one.
+    await act(async () => { releaseA({ title: 'Wedding shoot' }); });
+    expect(r.queryByTestId('pay-now-p1')).toBeNull();
   });
 });
