@@ -60,6 +60,11 @@ const adminAuth = gAdminAuth(adminApp);
 
 let failures = 0;
 const check = (l, ok, d = '') => { console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${l}${d ? `  - ${d}` : ''}`); if (!ok) failures++; };
+/** Succeeds AND the document is returned: a refusal or a missing doc is a failure. */
+const readable = async (label, fn) => {
+  try { const snap = await fn(); check(label, snap.exists(), snap.exists() ? 'readable' : 'no such document'); }
+  catch (e) { check(label, false, `${e.code}: refused`); }
+};
 const denied = async (label, fn) => {
   try { await fn(); check(label, false, 'was ALLOWED'); }
   catch (e) { check(label, String(e.code ?? '').includes('permission-denied'), e.code); }
@@ -125,9 +130,16 @@ try {
       check(`${who.name}: list published reviews of the pro`, ids.includes(OPEN) && !ids.includes(HELD), ids.join(','));
     } catch (e) { check(`${who.name}: list published reviews of the pro`, false, e.code); }
   }
-  await denied('pro: get own HELD review', () => getDoc(doc(pro.db, `reviews/${HELD}`)));
   await denied('stranger: unconstrained list of the pro\'s reviews', () => getDocs(query(collection(stranger.db, 'reviews'), where('professionalId', '==', pro.uid))));
   await denied('pro: unconstrained list of own reviews', () => getDocs(query(collection(pro.db, 'reviews'), where('professionalId', '==', pro.uid))));
+
+  console.log('\n1b. A held review fetched BY ID (what a stranger who knows projectId_professionalId would do):');
+  await denied('stranger: get the HELD review by id', () => getDoc(doc(stranger.db, `reviews/${HELD}`)));
+  await denied('pro (the reviewed professional): get the HELD review by id', () => getDoc(doc(pro.db, `reviews/${HELD}`)));
+  await readable('client (the reviewer): get their own HELD review by id', () => getDoc(doc(client.db, `reviews/${HELD}`)));
+  await readable('admin: get the HELD review by id', () => getDoc(doc(admin.db, `reviews/${HELD}`)));
+  await readable('stranger: get a PUBLISHED review by id (still allowed)', () => getDoc(doc(stranger.db, `reviews/${OPEN}`)));
+  await readable('pro: get a PUBLISHED review by id (still allowed)', () => getDoc(doc(pro.db, `reviews/${OPEN}`)));
 
   console.log('\n2. Reviews are immutable and cannot be forced public:');
   for (const who of [pro, client, stranger]) {

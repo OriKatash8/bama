@@ -641,6 +641,14 @@ async function contestFeeAtomically(
     if (eng.engagementStatus === 'disputed') {
       throw new HttpsError('failed-precondition', 'already-disputed');
     }
+    // Only a COMPLETED engagement can be contested: a contest is a challenge to the fee of work that is
+    // finished. Without this the dispute window was the only gate, and a professional re-hired for a
+    // second role keeps the old completion's window stamp while their engagement is `hired`, so for up
+    // to four days they could "dispute" live work, void the fee, and have derive treat it as settled.
+    // The same rule as the app's canDispute (features/projects/utils/completion.ts).
+    if (eng.engagementStatus !== 'completed') {
+      throw new HttpsError('failed-precondition', 'not-completed');
+    }
     // One dispute per engagement: once an admin has resolved it the professional
     // cannot contest it again, even inside the window (which a quick resolution
     // leaves open). A re-hire as a NEW join clears `resolvedAt` (feeRehire.ts); a

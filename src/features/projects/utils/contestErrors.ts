@@ -13,6 +13,7 @@ export function contestErrorKey(err: unknown): string {
   if (msg.includes('dispute-resolved')) return 'engagement.contest_error_already_resolved';
   if (msg.includes('already-disputed')) return 'engagement.contest_error_already_disputed';
   if (msg.includes('fee-already-paid')) return 'engagement.contest_error_already_paid';
+  if (msg.includes('not-completed')) return 'engagement.contest_error_not_allowed';
   const code = String((err as { code?: string })?.code ?? '');
   if (
     code.includes('permission-denied') || code.includes('not-found') || code.includes('unauthenticated')

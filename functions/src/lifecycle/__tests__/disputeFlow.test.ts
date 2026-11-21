@@ -197,6 +197,48 @@ describe('reject → re-hire → complete → dispute → resolve', () => {
     });
   });
 
+  describe('only a COMPLETED engagement can be contested', () => {
+    /** Completed once (the window stamp stays open), then re-hired for a second role: status 'hired' again. */
+    async function reHiredForASecondRole() {
+      await rehire(); await complete();
+      await mockDb.doc(FEE).update({ engagementStatus: 'hired', slotActive: true });
+      await mockDb.doc(PROJECT).update({ status: 'open', adminReviewPending: false });
+    }
+
+    it('refuses a re-hired second role that still carries the old, open window — on both entry points — and changes nothing', async () => {
+      await reHiredForASecondRole();
+      expect(fee().chargeDueAt).toBeDefined(); // the stale stamp: the window alone would have let it through
+      const before = fee();
+      await expect(call(contestEngagement, asPro({ reason: 'didnt_happen' }))).rejects.toMatchObject({ message: 'not-completed' });
+      await expect(call(contestEngagement, asPro({ reason: 'amount_disputed' }))).rejects.toMatchObject({ message: 'not-completed' });
+      await expect(call(disputeFeeByPro, asPro({}))).rejects.toMatchObject({ message: 'not-completed' });
+      expect(fee()).toEqual(before);
+      expect(fee().feeDue).toBe(6); // not voided
+      expect(project().adminReviewPending).toBe(false);
+    });
+
+    it.each(['end_requested_by_pro', 'end_requested_by_client', 'withdrawn', 'cancelled'])(
+      'refuses a %s engagement even inside a still-open window', async (status) => {
+        await rehire(); await complete();
+        await mockDb.doc(FEE).update({ engagementStatus: status });
+        await expect(call(contestEngagement, asPro({ reason: 'didnt_happen' }))).rejects.toMatchObject({ message: 'not-completed' });
+        expect(fee().engagementStatus).toBe(status);
+      },
+    );
+
+    it('still lets the professional contest a COMPLETED engagement (the legitimate case)', async () => {
+      await rehire(); await complete();
+      await expect(call(contestEngagement, asPro({ reason: 'amount_disputed' }))).resolves.toMatchObject({ ok: true });
+      expect(fee().engagementStatus).toBe('disputed');
+    });
+
+    it('an already-disputed engagement still says so (the more specific refusal comes first)', async () => {
+      await rehire(); await complete();
+      await call(contestEngagement, asPro({ reason: 'amount_disputed' }));
+      await expect(call(contestEngagement, asPro({ reason: 'didnt_happen' }))).rejects.toMatchObject({ message: 'already-disputed' });
+    });
+  });
+
   describe('one dispute per engagement (resolvedAt guard)', () => {
     beforeEach(async () => { await rehire(); await complete(); });
 

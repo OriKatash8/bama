@@ -1445,9 +1445,16 @@ service cloud.firestore {
       //
       // `get` is evaluated per document, so the full condition works. The
       // get() default keeps any legacy field-less review readable.
+      //
+      // An UNPUBLISHED review (held for a "didn't happen" dispute) is readable only by the person
+      // who wrote it and by admins. It used to be readable by everyone EXCEPT the reviewed
+      // professional, so any signed-in stranger who knew `projectId_professionalId` could fetch a
+      // held review's rating and text by id. Nothing in the app reads a single review document
+      // (it lists `published == true` and writes through submitReviews), so this costs no feature.
       allow get: if isAuth() && (
         resource.data.get('published', true) != false ||
-        request.auth.uid != resource.data.professionalId
+        request.auth.uid == resource.data.get('reviewerId', '') ||
+        isAdmin()
       );
       // `list` must be provable from the QUERY, not the document. The condition
       // above is NOT: production returned a professional their own held review

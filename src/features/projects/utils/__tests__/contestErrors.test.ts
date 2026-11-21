@@ -8,6 +8,7 @@ describe('contestErrorKey', () => {
     ['dispute-resolved', 'engagement.contest_error_already_resolved'],
     ['fee-already-paid', 'engagement.contest_error_already_paid'],
     ['no-engagement', 'engagement.contest_error_not_allowed'],
+    ['not-completed', 'engagement.contest_error_not_allowed'],
     ['something unexpected', 'engagement.contest_error'],
   ])('maps %s', (message, key) => {
     expect(contestErrorKey({ message })).toBe(key);
