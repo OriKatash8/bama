@@ -326,6 +326,9 @@ export const disputeCompletion = onCall(async (request) => {
   for (const d of open) {
     batch.update(d.ref, {
       engagementStatus: 'disputed',
+      // A client-rejected end, like respondToEngagementEnd's reject: nothing was
+      // delivered or confirmed, so derive holds the project open on this marker.
+      endRejected: true,
       adminReviewPending: true,
       adminReview: { reason: 'completion_unanswered', at: FieldValue.serverTimestamp() },
     } as Update);

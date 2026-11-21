@@ -9,9 +9,10 @@
  *   client      the project's client (the reviewer)
  *   pro         the disputing professional (the reviewed party)
  *   stranger    a throwaway who is a party to nothing  → must be denied
- *   admin       a throwaway uid signed in with a `role: admin` CUSTOM TOKEN. It is never
- *               added to ADMIN_UIDS and gets no persistent claim: the claim lives only in
- *               that one session's token, exactly what requireAdmin / isAdmin() read.
+ *   admin       a throwaway email/password user given the `role: admin` custom claim (what
+ *               requireAdmin / isAdmin() read). The claim exists only on that throwaway uid,
+ *               which is deleted at the end. It is never added to ADMIN_UIDS. (A custom
+ *               token would do the same, but needs signBlob rights this login lacks.)
  *
  * What it checks:
  *   - a held review (published:false, heldForDispute:true) is not readable by `get` by
@@ -35,7 +36,7 @@ import {
   getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, collection, query, where,
 } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { getAuth, createUserWithEmailAndPassword, signInWithCustomToken } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 
 for (const line of readFileSync(new URL('../.env', import.meta.url), 'utf8').split('\n')) {
   const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
@@ -76,29 +77,26 @@ const signUp = (name) => (auth) =>
 
 const created = { uids: [], docs: [] };
 const mk = async (name) => { const p = await principal(name, signUp(name)); created.uids.push(p.uid); return p; };
-
-const client = await mk('client');
-const pro = await mk('pro');
-const stranger = await mk('stranger');
-// Admin: a throwaway uid + custom token carrying role:admin. NOT added to ADMIN_UIDS.
-const adminUid = `${STAMP}-admin`;
-created.uids.push(adminUid);
-const admin = await principal('admin', async (auth) => {
-  const token = await adminAuth.createCustomToken(adminUid, { role: 'admin' });
-  return (await signInWithCustomToken(auth, token)).user.uid;
-});
-{
-  const claims = JSON.parse(Buffer.from((await (await import('firebase/auth')).getAuth(admin.db.app).currentUser.getIdToken(true)).split('.')[1], 'base64url').toString());
-  console.log(`admin token: uid=${claims.user_id} role=${claims.role}\n`);
-}
+let client, pro, stranger, admin;
 
 const PROJECT = `${STAMP}-proj`;
-const HELD = `${PROJECT}_${pro.uid}`;
+let HELD;
 const OPEN = `${STAMP}-published`;
 const seed = async (path, data) => { await adminDb.doc(path).set(data); created.docs.push(path); };
 
 let exitCode = 0;
 try {
+  client = await mk('client');
+  pro = await mk('pro');
+  stranger = await mk('stranger');
+  admin = await mk('admin');
+  HELD = `${PROJECT}_${pro.uid}`;
+  await adminAuth.setCustomUserClaims(admin.uid, { role: 'admin' });
+  {
+    const idToken = await (await import('firebase/auth')).getAuth(admin.db.app).currentUser.getIdToken(true);
+    const claims = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64url').toString());
+    console.log(`admin token: uid=${claims.user_id} role=${claims.role}\n`);
+  }
   await seed(`projects/${PROJECT}`, {
     clientId: client.uid, title: 'Probe dispute', status: 'completed', professionalIds: [pro.uid],
     slotHolders: [pro.uid], adminReviewPending: true, chatId: `${STAMP}-chat`,

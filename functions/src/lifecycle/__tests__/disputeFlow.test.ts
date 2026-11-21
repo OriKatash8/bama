@@ -1,5 +1,5 @@
 import { mockDb, Timestamp } from '../../payments/__fixtures__/memoryHelpers';
-import { contestEngagement, disputeFeeByPro, respondToEngagementEnd } from '../completion';
+import { contestEngagement, disputeFeeByPro, respondToEngagementEnd, disputeCompletion } from '../completion';
 import { resolveFeeDispute } from '../disputeResolution';
 import { applyDerivedProjectState } from '../derive';
 import { buildHireFeeUpdate } from '../feeRehire';
@@ -255,6 +255,24 @@ describe('reject → re-hire → complete → dispute → resolve', () => {
       // The old completion stamp (chargeDueAt) must not make this look like a contest.
       expect(fee().chargeDueAt).toBeDefined();
       expect(project()).toMatchObject({ status: 'open', adminReviewPending: true });
+    });
+
+    it('disputeCompletion (the client rejecting "I\'m done") writes it too, and the project does NOT complete around it', async () => {
+      // Another professional already finished; this one asked to finish and the client objects.
+      mockDb.reset();
+      mockDb.seed(PROJECT, { clientId: 'c1', status: 'open', chatId: 'chat1', professionalIds: ['pro1', 'pro2'], slotHolders: ['pro1'] });
+      mockDb.seed(FEE, {
+        professionalId: 'pro1', projectId: 'p1', feeStatus: 'owed', baseAmount: 50, engagementStatus: 'end_requested_by_pro',
+        completion: { state: 'requested', source: 'pro', endKind: 'finished', requestedAt: Timestamp.fromMillis(Date.now()) },
+      });
+      mockDb.seed('projects/p1/fees/pro2', {
+        professionalId: 'pro2', projectId: 'p1', feeStatus: 'owed', baseAmount: 80, engagementStatus: 'completed',
+        feePaid: false, chargeDueAt: Timestamp.fromMillis(Date.now() + 4 * DAY),
+      });
+      await call(disputeCompletion, { auth: { uid: 'c1' }, data: { projectId: 'p1' } });
+      expect(fee()).toMatchObject({ engagementStatus: 'disputed', endRejected: true, adminReviewPending: true });
+      expect(project()).toMatchObject({ status: 'open', adminReviewPending: true });
+      expect(project()).not.toHaveProperty('completedAt');
     });
 
     it('resolveFeeDispute clears the marker', async () => {
