@@ -56,7 +56,7 @@ function ListRow({
     <View style={[styles.listRow, !first && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: p.border }]} testID={testID}>
       <View style={[styles.listLine, { flexDirection: rowDir }]}>
         {rank != null ? <AdminText tabular style={[styles.rank, { color: p.text3 }]}>{rank}</AdminText> : null}
-        <AdminText style={[styles.grow, { color: p.text, textAlign }]} numberOfLines={1} ellipsizeMode="middle">{label}</AdminText>
+        <AdminText selectable style={[styles.grow, { color: p.text, textAlign }]} numberOfLines={2} ellipsizeMode="middle">{label}</AdminText>
         <AdminText weight="semiBold" tabular style={styles.listValue} testID={`${testID}-value`}>{value}</AdminText>
       </View>
       {bar != null ? (

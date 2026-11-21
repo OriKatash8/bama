@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Check } from 'lucide-react-native';
 import {
@@ -97,15 +97,14 @@ export function NeedsSortingCard({
         <EmptyState text={t('sort_empty')} testID="needs-sorting-empty" />
       ) : (
         <>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.filters, { flexDirection: rowDir }]}>
             <Segment<string>
               options={filterOptions}
               value={filter}
               onChange={(v) => { setFilter(v); setShown(PAGE); }}
               label={t('sort_title')}
               testIDPrefix="sort-filter"
+              scroll
             />
-          </ScrollView>
 
           {/* Bulk: the selection, a category for it, and "accept every suggestion" in this view. */}
           <View style={[styles.bulk, { borderTopColor: p.border, backgroundColor: p.surface2 }]}>
@@ -167,12 +166,12 @@ export function NeedsSortingCard({
                   )}
                   <View style={styles.info}>
                     <AdminText weight="semiBold" numberOfLines={2} style={[TYPE.rowName, { textAlign }]}>{i.name}</AdminText>
-                    <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
+                    <AdminText numberOfLines={3} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
                       {i.externalCategories?.length
                         ? t('store_category', { name: i.externalCategories.join(', ') })
                         : t('no_store_category')}
                     </AdminText>
-                    <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: i.suggestedCategory ? p.accent : p.text3, textAlign }]}>
+                    <AdminText numberOfLines={3} style={[TYPE.rowMeta, { color: i.suggestedCategory ? p.accent : p.text3, textAlign }]}>
                       {i.suggestedCategory ? `${t('suggested')}: ${tm(categoryLabelKey(i.suggestedCategory) ?? '')}` : t('no_suggestion')}
                     </AdminText>
                   </View>

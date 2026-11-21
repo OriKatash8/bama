@@ -264,7 +264,7 @@ export function ManualItemsCard({
               )}
               <View style={styles.info}>
                 <AdminText weight="semiBold" numberOfLines={2} style={[TYPE.rowName, { textAlign }]}>{i.name}</AdminText>
-                <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
+                <AdminText numberOfLines={3} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
                   {`${priceText(i)} · ${categoryText(i)}`}
                 </AdminText>
               </View>

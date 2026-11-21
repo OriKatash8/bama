@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-  View, StyleSheet, Modal, Pressable,
-  Switch, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform,
+  View, StyleSheet, Pressable,
+  Switch, ActivityIndicator,
 } from 'react-native';
 import {
   collection, onSnapshot, addDoc, updateDoc, deleteDoc, deleteField, doc,
@@ -19,7 +19,7 @@ import { useUiStore } from '@core/stores/uiStore';
 import { useDemoStore } from '@core/stores/demoStore';
 import { confirmDialog } from '@utils/confirmDialog';
 import {
-  AdminPage, AdminText, Card, CardHead, Chip, CountBadge, EmptyState, IconTile, PillButton,
+  AdminPage, AdminSheet, AdminText, Card, CardHead, Chip, CountBadge, EmptyState, IconTile, PillButton,
   StatGrid, StatTile, WhoBlock, RADIUS, SPACE, TYPE, useAdminPalette, useScopedT,
 } from '@features/admin/ui';
 
@@ -78,6 +78,7 @@ export default function CoursesAdmin() {
   const { t: tOps } = useScopedT('admin_operations');
   const { t: tDash } = useScopedT('admin_dashboard');
   const { t: tc } = useScopedT('admin_courses');
+  const { t: tCommon } = useScopedT('common');
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [coursesLoaded, setCoursesLoaded] = useState(false);
@@ -274,20 +275,21 @@ export default function CoursesAdmin() {
               <View style={[styles.requestTop, { flexDirection: rowDir }]}>
                 <IconTile icon={GraduationCap} tone="warn" />
                 <View style={styles.requestText}>
-                  <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.rowName, { textAlign }]}>
+                  <AdminText weight="semiBold" style={[TYPE.rowName, { textAlign }]}>
                     {req.title}
                   </AdminText>
-                  <AdminText tabular numberOfLines={1} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
+                  <AdminText tabular style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
                     {req.category} · ₪{req.price}
                   </AdminText>
-                  <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
+                  <AdminText style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
                     {req.instructorName}
                   </AdminText>
-                  <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.accent, textAlign }]}>
+                  {/* The URL is what the admin checks before approving: the whole of it, and copyable. */}
+                  <AdminText selectable style={[TYPE.rowMeta, { color: p.accent, textAlign }]}>
                     {req.courseUrl}
                   </AdminText>
                   {req.description ? (
-                    <AdminText numberOfLines={2} style={[TYPE.rowMeta, styles.desc, { color: p.text3, textAlign }]}>
+                    <AdminText selectable style={[TYPE.rowMeta, styles.desc, { color: p.text3, textAlign }]}>
                       {req.description}
                     </AdminText>
                   ) : null}
@@ -331,84 +333,74 @@ export default function CoursesAdmin() {
               style={[styles.row, { flexDirection: rowDir, borderTopColor: p.border }]}
             >
               <IconTile icon={BookOpen} tone={item.published ? 'accent' : 'neutral'} />
-              <WhoBlock name={item.title} meta={`₪${item.price} · ${item.instructorName}`} textAlign={textAlign} />
-              <View style={[styles.clicks, { flexDirection: rowDir }]} testID={`clicks-${item.id}`}>
-                <Eye size={13} color={p.text3} strokeWidth={2} />
-                <AdminText weight="semiBold" tabular style={[TYPE.chip, { color: p.text3 }]}>
-                  {clicks[item.id] ?? 0}
-                </AdminText>
+              <WhoBlock name={item.title} meta={`₪${item.price} · ${item.instructorName}`} metaLines={3} textAlign={textAlign} />
+              {/* Grouped: on a phone the whole group drops under the title instead of squeezing it. */}
+              <View style={[styles.controls, { flexDirection: rowDir }]}>
+                <View style={[styles.clicks, { flexDirection: rowDir }]} testID={`clicks-${item.id}`}>
+                  <Eye size={13} color={p.text3} strokeWidth={2} />
+                  <AdminText weight="semiBold" tabular style={[TYPE.chip, { color: p.text3 }]}>
+                    {clicks[item.id] ?? 0}
+                  </AdminText>
+                </View>
+                <StatusChip good={item.published} label={item.published ? tc('live') : tc('draft')} />
+                <Pressable
+                  onPress={() => openEdit(item)}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  testID={`edit-${item.id}`}
+                  style={({ pressed }) => [styles.iconBtn, { backgroundColor: pressed ? p.surface3 : p.surface2 }]}
+                >
+                  <Pencil size={16} color={p.accent} strokeWidth={2.2} />
+                </Pressable>
+                <Pressable
+                  onPress={() => handleDelete(item.id)}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  testID={`delete-${item.id}`}
+                  style={({ pressed }) => [styles.iconBtn, { backgroundColor: pressed ? p.badBg : p.surface2 }]}
+                >
+                  <Trash2 size={16} color={p.bad} strokeWidth={2.2} />
+                </Pressable>
               </View>
-              <StatusChip good={item.published} label={item.published ? tc('live') : tc('draft')} />
-              <Pressable
-                onPress={() => openEdit(item)}
-                hitSlop={6}
-                accessibilityRole="button"
-                testID={`edit-${item.id}`}
-                style={({ pressed }) => [styles.iconBtn, { backgroundColor: pressed ? p.surface3 : p.surface2 }]}
-              >
-                <Pencil size={16} color={p.accent} strokeWidth={2.2} />
-              </Pressable>
-              <Pressable
-                onPress={() => handleDelete(item.id)}
-                hitSlop={6}
-                accessibilityRole="button"
-                testID={`delete-${item.id}`}
-                style={({ pressed }) => [styles.iconBtn, { backgroundColor: pressed ? p.badBg : p.surface2 }]}
-              >
-                <Trash2 size={16} color={p.bad} strokeWidth={2.2} />
-              </Pressable>
             </View>
           ))
         )}
       </Card>
 
-      <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
-          <View style={styles.overlay}>
-            <Pressable
-              style={[StyleSheet.absoluteFill, styles.scrim, { backgroundColor: p.toastBg }]}
-              onPress={() => setModalVisible(false)}
-              testID="course-modal-backdrop"
-            />
-            <View style={[styles.modal, { backgroundColor: p.surface, borderColor: p.border }]} testID="course-modal">
-              <View style={[styles.modalHeader, { flexDirection: rowDir }]}>
-                <AdminText weight="bold" accessibilityRole="header" style={[styles.modalTitle, { textAlign }]}>
-                  {editId ? tc('edit_title') : tc('new_title')}
-                </AdminText>
-                <Pressable onPress={() => setModalVisible(false)} hitSlop={10} testID="course-modal-close">
-                  <X size={22} color={p.text2} />
-                </Pressable>
-              </View>
+      <AdminSheet visible={modalVisible} onClose={() => setModalVisible(false)} closeLabel={tCommon('cancel')} testID="course-modal">
+        <View style={[styles.modalHeader, { flexDirection: rowDir }]}>
+          <AdminText weight="bold" accessibilityRole="header" style={[styles.modalTitle, { textAlign }]}>
+            {editId ? tc('edit_title') : tc('new_title')}
+          </AdminText>
+          <Pressable onPress={() => setModalVisible(false)} hitSlop={10} testID="course-modal-close">
+            <X size={22} color={p.text2} />
+          </Pressable>
+        </View>
 
-              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-                {/* The same fields as the pro's "Add your course" popup. */}
-                <CourseFormFields
-                  value={form.draft}
-                  onChange={(patch) => setForm((f) => ({ ...f, draft: { ...f.draft, ...patch } }))}
-                />
+        {/* The same fields as the pro's "Add your course" popup. */}
+        <CourseFormFields
+          value={form.draft}
+          onChange={(patch) => setForm((f) => ({ ...f, draft: { ...f.draft, ...patch } }))}
+        />
 
-                <View style={[styles.toggleRow, { flexDirection: rowDir, borderColor: p.border }]}>
-                  <AdminText weight="medium" style={TYPE.rowName}>{tc('published')}</AdminText>
-                  <Switch
-                    testID="published-switch"
-                    value={form.published}
-                    onValueChange={(v) => setForm((f) => ({ ...f, published: v }))}
-                    trackColor={{ true: p.good, false: p.surface3 }}
-                  />
-                </View>
+        <View style={[styles.toggleRow, { flexDirection: rowDir, borderColor: p.border }]}>
+          <AdminText weight="medium" style={TYPE.rowName}>{tc('published')}</AdminText>
+          <Switch
+            testID="published-switch"
+            value={form.published}
+            onValueChange={(v) => setForm((f) => ({ ...f, published: v }))}
+            trackColor={{ true: p.good, false: p.surface3 }}
+          />
+        </View>
 
-                <View style={[styles.saveRow, { flexDirection: rowDir }]}>
-                  {saving ? (
-                    <ActivityIndicator color={p.accent} testID="saving" />
-                  ) : (
-                    <PillButton variant="primary" label={tc('save')} onPress={handleSave} disabled={saving} testID="save-course" />
-                  )}
-                </View>
-              </ScrollView>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+        <View style={[styles.saveRow, { flexDirection: rowDir }]}>
+          {saving ? (
+            <ActivityIndicator color={p.accent} testID="saving" />
+          ) : (
+            <PillButton variant="primary" label={tc('save')} onPress={handleSave} disabled={saving} testID="save-course" />
+          )}
+        </View>
+      </AdminSheet>
     </AdminPage>
   );
 }
@@ -426,11 +418,11 @@ function StatusChip({ good, label }: { good: boolean; label: string }) {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
   row: {
-    alignItems: 'center', gap: 10,
+    alignItems: 'center', gap: 10, flexWrap: 'wrap', rowGap: 8,
     paddingVertical: SPACE.rowPadV, paddingHorizontal: SPACE.rowPadH, borderTopWidth: 1,
   },
+  controls: { alignItems: 'center', gap: 10, flexShrink: 0 },
   clicks: { alignItems: 'center', gap: 3, flexShrink: 0 },
   status: { borderRadius: RADIUS.pill, paddingVertical: 3, paddingHorizontal: 9, flexShrink: 0 },
   iconBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
@@ -439,10 +431,7 @@ const styles = StyleSheet.create({
   requestTop: { alignItems: 'flex-start', gap: 12 },
   requestText: { flex: 1, minWidth: 0, gap: 1 },
   desc: { marginTop: 3 },
-  actions: { gap: 7 },
-  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: SPACE.gutter },
-  scrim: { opacity: 0.45 },
-  modal: { width: '100%', maxWidth: 420, maxHeight: 600, borderRadius: RADIUS.card, borderWidth: 1, padding: 20 },
+  actions: { gap: 7, flexWrap: 'wrap' },
   modalHeader: { justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 10 },
   modalTitle: { fontSize: 20, letterSpacing: -0.3, flex: 1 },
   toggleRow: {

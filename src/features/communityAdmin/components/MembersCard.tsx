@@ -7,6 +7,7 @@ import { useAdminPalette, useAdminT, useScopedT } from '../i18n';
 import { EASE_OUT, HEEBO, MOTION, RADIUS, SPACE, TYPE } from '../theme';
 import { AdminText, Card, Chip, EmptyState, InitialsAvatar, PillButton, Row, WhoBlock } from './primitives';
 import { CollapseOut } from './CollapseOut';
+import { useIsPhone } from '../useIsPhone';
 
 export type MemberRowData = {
   userId: string;
@@ -114,6 +115,7 @@ function MemberRow({
 }) {
   const { t, rowDir, textAlign } = useAdminT();
   const { t: tt } = useScopedT('owner_transfer');
+  const isPhone = useIsPhone();
   const [armed, setArmed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -138,13 +140,19 @@ function MemberRow({
   }
 
   return (
-    <Row rowDir={rowDir} testID={`member-${member.userId}`}>
+    <Row rowDir={rowDir} wrap testID={`member-${member.userId}`}>
       <InitialsAvatar name={member.name} />
-      <WhoBlock name={member.name} meta={member.meta} textAlign={textAlign} />
-      {member.isOwner && <Chip label={t('owner_chip')} tone="accent" />}
-      {offered && <Chip label={tt('pending_chip')} tone="accent" />}
-      <ActivityBar fraction={member.activity} hot={member.aboveMedian} label={t('messages_a11y', { n: member.messages })} />
-      <Chip label={member.messages.toLocaleString('en-US')} tabular />
+      <WhoBlock name={member.name} meta={member.meta} metaLines={3} textAlign={textAlign} />
+      {/* The chips and the message count stay together and drop under the name on a phone; the
+          72px activity bar is a desktop nicety and is left out there, where it cost the name its width. */}
+      <View style={[styles.stats, { flexDirection: rowDir }]}>
+        {member.isOwner && <Chip label={t('owner_chip')} tone="accent" />}
+        {offered && <Chip label={tt('pending_chip')} tone="accent" />}
+        {!isPhone && (
+          <ActivityBar fraction={member.activity} hot={member.aboveMedian} label={t('messages_a11y', { n: member.messages })} />
+        )}
+        <Chip label={member.messages.toLocaleString('en-US')} tabular />
+      </View>
       {!member.isOwner && (
         <View style={[styles.actions, { flexDirection: rowDir }]}>
           {onMakeHost && (
@@ -205,7 +213,8 @@ const styles = StyleSheet.create({
   searchInput: { width: 120, fontSize: 12.5, padding: 0 },
   note: { fontSize: 12, paddingTop: 12, paddingHorizontal: SPACE.rowPadH },
   list: { marginTop: 10 },
-  actions: { gap: 7, flexShrink: 0 },
+  stats: { alignItems: 'center', gap: 8, flexShrink: 0 },
+  actions: { gap: 7, flexWrap: 'wrap' },
   track: { width: 72, height: 6, borderRadius: RADIUS.pill, overflow: 'hidden', flexShrink: 0 },
   fill: { height: '100%', borderRadius: RADIUS.pill },
 });

@@ -18,6 +18,11 @@ const mockFlagged = jest.fn((..._a: unknown[]) => Promise.resolve({ rows: [] as 
 const mockResolve = jest.fn((..._a: unknown[]) => Promise.resolve({ ok: true, outcome: 'completed', feeDue: 0 }));
 const mockPush = jest.fn();
 let mockTab: string | undefined;
+let mockW = 375;
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: () => ({ width: mockW, height: 667, scale: 2, fontScale: 1 }),
+}));
 
 jest.mock('react-native-reanimated', () => require('../../../testing/reanimatedMock').reanimatedMock());
 jest.mock('expo-linear-gradient', () => ({
@@ -76,6 +81,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockLang = 'en';
   mockTab = undefined;
+  mockW = 375;
   mockFlagged.mockImplementation(() => Promise.resolve({ rows: [] }));
   mockCollections = { reports: docs, adminActions: [], users: [] };
   serve();
@@ -344,6 +350,32 @@ describe('the disputes tab', () => {
     const plain = await renderPage();
     fireEvent.press(plain.getByTestId('filter-disputes'));
     expect(plain.queryByTestId('held-review-p1:pro1')).toBeNull();
+  });
+
+  it('at 375px the actions stack full-width, the held review and the pro\'s note wrap in full, and nothing is ellipsised', async () => {
+    const longNote = 'The professional wrote a long explanation of what happened on the day of the shoot. '.repeat(3).trim();
+    const heldText = 'A long review written by the client about how the shoot went, which must never be cut with an ellipsis. '.repeat(2).trim();
+    mockFlagged.mockImplementation(() => Promise.resolve({
+      rows: [{ ...row, note: longNote, disputes: [{ ...row.disputes[0], heldReview: { rating: 3, text: heldText, authorName: 'Cleo Client' } }] }],
+    }));
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('filter-disputes'));
+    const card = within(r.getByTestId('dispute-card-p1:pro1'));
+    for (const id of ['resolve-completed-p1:pro1', 'resolve-cancelled-p1:pro1', 'open-chat-p1:pro1']) {
+      expect(StyleSheet.flatten(r.getByTestId(id).props.style)).toMatchObject({ alignSelf: 'stretch' });
+    }
+    expect(card.getByText(longNote).props.numberOfLines).toBeUndefined();
+    const held = within(r.getByTestId('held-review-p1:pro1'));
+    expect(held.getByText(heldText).props.numberOfLines).toBeUndefined();
+    expect(held.getByText(heldText).props.selectable).toBe(true);
+  });
+
+  it('on a wide window the actions keep their natural width', async () => {
+    mockW = 1024;
+    mockFlagged.mockImplementation(() => Promise.resolve({ rows: [row] }));
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('filter-disputes'));
+    expect(StyleSheet.flatten(r.getByTestId('resolve-cancelled-p1:pro1').props.style).alignSelf).toBeUndefined();
   });
 
   it('opens the project chat', async () => {

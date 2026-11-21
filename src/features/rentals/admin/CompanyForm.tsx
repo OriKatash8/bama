@@ -157,6 +157,7 @@ export function CompanyForm({
               { value: 'manual', label: t('source_manual') },
             ]}
             value={sourceType}
+            scroll
             onChange={(v) => { setSourceType(v); setDetected(null); }}
             label={t('field_source_type')}
             testIDPrefix="company-source"

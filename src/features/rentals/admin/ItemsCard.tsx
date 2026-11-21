@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import {
   AdminText, Card, CardHead, EmptyState, PillButton, Segment, TABULAR, TYPE, useAdminPalette, useScopedT,
@@ -88,15 +88,14 @@ export function ItemsCard({
   return (
     <Card testID="items-card">
       <CardHead title={t('items_title')} sub={t('items_sub')} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.filters, { flexDirection: rowDir }]}>
         <Segment<Filter>
           options={FILTERS.map((f) => ({ value: f.value, label: `${t(f.key)} (${counts[f.value]})` }))}
           value={filter}
           onChange={(v) => { setFilter(v); setShown(PAGE); }}
           label={t('items_title')}
           testIDPrefix="items-filter"
+          scroll
         />
-      </ScrollView>
       {view.length === 0 ? (
         <EmptyState text={t('items_empty')} testID="items-empty" />
       ) : (
@@ -110,10 +109,10 @@ export function ItemsCard({
               )}
               <View style={styles.info}>
                 <AdminText weight="semiBold" numberOfLines={2} style={[TYPE.rowName, { textAlign }]}>{i.name}</AdminText>
-                <AdminText tabular numberOfLines={1} style={[TYPE.rowMeta, TABULAR, { color: p.text2, textAlign }]}>
+                <AdminText tabular numberOfLines={3} style={[TYPE.rowMeta, TABULAR, { color: p.text2, textAlign }]}>
                   {`${priceText(i)} · ${i.inStock ? t('in_stock') : t('out_of_stock')}`}
                 </AdminText>
-                <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3, textAlign }]} testID={`item-category-${i.id}`}>
+                <AdminText numberOfLines={3} style={[TYPE.rowMeta, { color: p.text3, textAlign }]} testID={`item-category-${i.id}`}>
                   {[categoryText(i), i.manualCategory ? t('manual_badge') : null,
                     i.externalCategories?.length ? t('store_category', { name: i.externalCategories.join(', ') }) : null]
                     .filter(Boolean).join(' · ')}

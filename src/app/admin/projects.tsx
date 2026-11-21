@@ -133,11 +133,12 @@ export default function ProjectsAdmin() {
               <Row
                 key={row.id}
                 rowDir={rowDir}
+                wrap
                 testID={`project-row-${row.id}`}
                 onPress={() => open(row)}
                 accessibilityLabel={`${row.title}, ${meta}`}
               >
-                <WhoBlock name={row.title || '—'} meta={meta} textAlign={textAlign} />
+                <WhoBlock name={row.title || '—'} meta={meta} metaLines={3} textAlign={textAlign} />
                 {row.chatId ? (
                   <StatusPill tone={tone} label={t(`status_${row.status}`)} />
                 ) : (
@@ -165,7 +166,7 @@ function StatusPill({ tone, label }: { tone: Tone; label: string }) {
           : [p.accentSoft, p.accent];
   return (
     <View style={[styles.statusPill, { backgroundColor: bg }]}>
-      <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.chip, { color: fg }]}>
+      <AdminText weight="semiBold" numberOfLines={2} style={[TYPE.chip, { color: fg }]}>
         {label}
       </AdminText>
     </View>

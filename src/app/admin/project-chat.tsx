@@ -117,12 +117,12 @@ export default function ProjectChatAdmin() {
               ) : (
                 <View key={m.id} testID={`msg-${m.id}`} style={[styles.bubble, { borderColor: p.border }]}>
                   <View style={[styles.bubbleHead, { flexDirection: rowDir }]}>
-                    <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.rowName, styles.grow, { textAlign }]}>
+                    <AdminText weight="semiBold" numberOfLines={2} style={[TYPE.rowName, styles.grow, { textAlign }]}>
                       {names[m.senderId] ?? ''}
                     </AdminText>
                     <AdminText tabular style={[TYPE.rowMeta, { color: p.text3 }]}>{fmtTime(m.timestamp?.seconds)}</AdminText>
                   </View>
-                  <AdminText style={[styles.text, { color: p.text, textAlign }]}>{body(m)}</AdminText>
+                  <AdminText selectable style={[styles.text, { color: p.text, textAlign }]}>{body(m)}</AdminText>
                 </View>
               ),
             )}

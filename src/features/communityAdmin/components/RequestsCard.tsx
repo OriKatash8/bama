@@ -58,7 +58,7 @@ export function RequestsCard({
           rows.map(({ item, leaving }) => (
             <View key={item.userId} testID={`request-col-${item.userId}`} style={twoColumns ? styles.half : styles.full}>
               <CollapseOut leaving={leaving} onGone={() => onGone(item.userId)}>
-                <Row rowDir={rowDir} testID={`request-${item.userId}`}>
+                <Row rowDir={rowDir} wrap testID={`request-${item.userId}`}>
                   <InitialsAvatar name={item.name} />
                   <WhoBlock
                     name={item.name}
@@ -106,5 +106,5 @@ const styles = StyleSheet.create({
   list: { marginTop: 10 },
   full: { width: '100%' },
   half: { width: '50%', minWidth: 0, overflow: 'hidden' },
-  actions: { gap: 7, flexShrink: 0 },
+  actions: { gap: 7, flexWrap: 'wrap' },
 });

@@ -7,7 +7,7 @@ import { useUiStore } from '@core/stores/uiStore';
 import { confirmDialog } from '@utils/confirmDialog';
 import { MIN_OFFER_PRICE, MAX_OFFER_PRICE } from '@core/constants/pricing';
 import {
-  AdminText, Card, CardHead, EmptyState, PillButton, RADIUS, SPACE, TYPE, useAdminPalette, useScopedT,
+  AdminText, Card, CardHead, EmptyState, PillButton, RADIUS, SPACE, TYPE, useAdminPalette, useIsPhone, useScopedT,
 } from '@features/admin/ui';
 import { HeldReviewNote } from './HeldReviewNote';
 import type { AdminDispute } from './useAdminDisputes';
@@ -53,6 +53,7 @@ export function DisputesPanel({
   const { t, rowDir, textAlign } = useScopedT('admin_reports');
   const { t: tf } = useScopedT('admin_fees');
   const { t: tCommon } = useScopedT('common');
+  const isPhone = useIsPhone();
   const [busy, setBusy] = useState<Record<string, boolean>>({});
   const [agreed, setAgreed] = useState<Record<string, string>>({});
 
@@ -172,9 +173,11 @@ export function DisputesPanel({
                 style={[styles.agreedInput, { borderColor: p.border, color: p.text, textAlign }]}
               />
 
-              <View style={[styles.actions, { flexDirection: rowDir }]}>
+              {/* Wraps with a gap; full-width stacked on a phone. */}
+              <View style={[styles.actions, isPhone ? styles.actionsStacked : { flexDirection: rowDir }]}>
                 {isBusy ? <ActivityIndicator size="small" color={p.accent} testID={`busy-${key}`} /> : null}
                 <PillButton
+                  block={isPhone}
                   variant="primary"
                   label={tf('resolve_completed')}
                   disabled={isBusy}
@@ -182,6 +185,7 @@ export function DisputesPanel({
                   onPress={resolveCompleted}
                 />
                 <PillButton
+                  block={isPhone}
                   label={tf('resolve_cancelled')}
                   disabled={isBusy}
                   testID={`resolve-cancelled-${key}`}
@@ -195,6 +199,7 @@ export function DisputesPanel({
                     the same way); there is no separate admin project page. */}
                 {d.chatId ? (
                   <PillButton
+                    block={isPhone}
                     label={t('dispute_open_chat')}
                     testID={`open-chat-${key}`}
                     onPress={() => router.push(`/admin/project-chat?chatId=${d.chatId}&projectId=${d.projectId}` as never)}
@@ -218,4 +223,5 @@ const styles = StyleSheet.create({
   note: { borderRadius: 12, paddingVertical: 8, paddingHorizontal: 10, gap: 2 },
   agreedInput: { borderWidth: 1, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, fontSize: 14, lineHeight: 21 },
   actions: { alignItems: 'center', flexWrap: 'wrap', gap: 8 },
+  actionsStacked: { flexDirection: 'column', alignItems: 'stretch', gap: 8 },
 });

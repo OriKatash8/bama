@@ -83,8 +83,8 @@ export function CompanyCard({
           <InitialsAvatar name={c.name} size={44} />
         )}
         <View style={styles.info}>
-          <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.cardTitle, { textAlign }]}>{c.name}</AdminText>
-          <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>{meta}</AdminText>
+          <AdminText weight="semiBold" numberOfLines={2} style={[TYPE.cardTitle, { textAlign }]}>{c.name}</AdminText>
+          <AdminText numberOfLines={2} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>{meta}</AdminText>
           <View style={[styles.chips, { flexDirection: rowDir }]}>
             <Pill {...state} testID={`company-state-${id}`} />
             {synced && <Pill {...sync} testID={`company-sync-status-${id}`} />}
@@ -97,12 +97,12 @@ export function CompanyCard({
           {numbers}
         </AdminText>
         {synced && (
-          <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
+          <AdminText selectable style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
             {`${c.sourceUrl} · ${t('last_sync', { when: fmtDateTime(c.lastSyncAt?.seconds) })}`}
           </AdminText>
         )}
         {!synced && (
-          <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3, textAlign }]} testID={`company-manual-updated-${id}`}>
+          <AdminText style={[TYPE.rowMeta, { color: p.text3, textAlign }]} testID={`company-manual-updated-${id}`}>
             {c.manualUpdatedAt ? t('last_updated', { when: fmtDateTime(c.manualUpdatedAt.seconds) }) : t('never_updated')}
           </AdminText>
         )}

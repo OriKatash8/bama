@@ -56,6 +56,7 @@ export default function AdminDashboardScreen() {
           onChange={setPeriod}
           label={t('period_a11y')}
           testIDPrefix="period"
+          scroll
         />
       }
     >

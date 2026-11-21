@@ -6,6 +6,12 @@ import he from '@core/i18n/translations/he.json';
 import { confirmDialog } from '@utils/confirmDialog';
 import AdminFeesScreen from '../fees';
 
+let mockW = 375;
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: () => ({ width: mockW, height: 667, scale: 2, fontScale: 1 }),
+}));
+
 /**
  * Fees & disputes, in the admin dashboard's design. The admin callables are
  * faked by name; the actions must still call them with the same arguments.
@@ -103,7 +109,7 @@ it('mirrors in Hebrew: the title aligns right and rows run right to left', async
   const r = await renderPage();
   expect(StyleSheet.flatten(r.getByText(H.title).props.style).textAlign).toBe('right');
   expect(StyleSheet.flatten(r.getByTestId('arrears-head-pro-1').props.style).flexDirection).toBe('row-reverse');
-  expect(StyleSheet.flatten(r.getByTestId('project-p1:pro-1').props.style).flexDirection).toBe('row-reverse');
+  expect(StyleSheet.flatten(r.getByTestId('project-top-p1:pro-1').props.style).flexDirection).toBe('row-reverse');
   expect(r.getByText(H.blocked)).toBeTruthy();
 });
 
@@ -307,4 +313,26 @@ it('two professionals disputing one project are two rows, each with its own pro,
   expect(b.getAllByText(E.reason_fee_disputed).length).toBeGreaterThan(0);
   expect(b.getByText('Flagged: 01/10/2026')).toBeTruthy();
   expect(a.queryByText('Professional: Bat')).toBeNull();
+});
+
+
+describe('at phone width', () => {
+  beforeEach(() => { mockW = 375; });
+  afterAll(() => { mockW = 375; });
+
+  it('arrears project rows put the buttons on their own line, full width; the tabs scroll', async () => {
+    const r = await renderPage();
+    for (const id of ['demand-p1:pro-1', 'paid-p1:pro-1']) {
+      expect(StyleSheet.flatten(r.getByTestId(id).props.style)).toMatchObject({ alignSelf: 'stretch' });
+    }
+    // The text sits in its own row above them, wrapping (3 lines allowed), not ellipsised to one.
+    expect(r.getByTestId('project-top-p1:pro-1')).toBeTruthy();
+    expect(r.getByTestId('tab-scroll')).toBeTruthy();
+  });
+
+  it('on a wide window the buttons keep their natural width', async () => {
+    mockW = 1024;
+    const r = await renderPage();
+    expect(StyleSheet.flatten(r.getByTestId('paid-p1:pro-1').props.style).alignSelf).toBeUndefined();
+  });
 });

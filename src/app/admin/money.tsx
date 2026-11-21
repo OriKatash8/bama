@@ -166,6 +166,7 @@ export default function MoneyAdmin() {
             onChange={setPeriod}
             label={tDash('period_a11y')}
             testIDPrefix="period"
+            scroll
           />
         }
       >
@@ -231,31 +232,34 @@ export default function MoneyAdmin() {
         />
         {viewingHidden ? (
           hiddenEntries.map((c) => (
-            <Row key={c.id} rowDir={rowDir} testID={`hidden-${c.id}`}>
+            <Row key={c.id} rowDir={rowDir} wrap testID={`hidden-${c.id}`}>
               <IconTile icon={Ban} tone="neutral" />
               <WhoBlock
                 name={`${t(`type_${c.kind}`)} · ${c.title || '—'}`}
                 meta={`${t('cancelled_by')} ${c.actorName || '—'}`}
                 textAlign={textAlign}
               />
-              <AdminText tabular numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3 }]}>
-                {fmtDate(c.ts)}
-              </AdminText>
-              <Pressable
-                onPress={() => void restoreCancellation(c.id)}
-                disabled={!!removing[`c-${c.id}`]}
-                hitSlop={6}
-                accessibilityRole="button"
-                accessibilityLabel={`${t('restore')} · ${c.title || '—'}`}
-                testID={`cancellation-restore-${c.id}`}
-                style={({ pressed }) => [styles.trashBtn, { backgroundColor: pressed ? p.surface3 : p.accentSoft }]}
-              >
-                {removing[`c-${c.id}`] ? (
-                  <ActivityIndicator size="small" color={p.accent} />
-                ) : (
-                  <RotateCcw size={16} color={p.accent} strokeWidth={2.2} />
-                )}
-              </Pressable>
+              {/* The date and the action stay together, and drop under the text on a phone. */}
+              <View style={[styles.rowControls, { flexDirection: rowDir }]}>
+                <AdminText tabular numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3 }]}>
+                  {fmtDate(c.ts)}
+                </AdminText>
+                <Pressable
+                  onPress={() => void restoreCancellation(c.id)}
+                  disabled={!!removing[`c-${c.id}`]}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${t('restore')} · ${c.title || '—'}`}
+                  testID={`cancellation-restore-${c.id}`}
+                  style={({ pressed }) => [styles.trashBtn, { backgroundColor: pressed ? p.surface3 : p.accentSoft }]}
+                >
+                  {removing[`c-${c.id}`] ? (
+                    <ActivityIndicator size="small" color={p.accent} />
+                  ) : (
+                    <RotateCcw size={16} color={p.accent} strokeWidth={2.2} />
+                  )}
+                </Pressable>
+              </View>
             </Row>
           ))
         ) : cancellations.length === 0 ? (
@@ -268,6 +272,7 @@ export default function MoneyAdmin() {
               <Row
                 key={c.id}
                 rowDir={rowDir}
+                wrap
                 testID={`cancellation-${c.id}`}
                 onPress={chatId ? () => router.push(`/admin/project-chat?chatId=${chatId}&projectId=${c.projectId}` as never) : undefined}
                 accessibilityLabel={chatId ? `${t(`type_${c.kind}`)} · ${c.title || '—'}` : undefined}
@@ -278,16 +283,18 @@ export default function MoneyAdmin() {
                   meta={`${t('cancelled_by')} ${c.actorName || '—'}`}
                   textAlign={textAlign}
                 />
-                <AdminText tabular numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3 }]}>
-                  {fmtDate(c.ts)}
-                </AdminText>
-                <TrashButton
-                  busy={!!removing[`c-${c.id}`]}
-                  onPress={() => void removeCancellation(c.id, c.title)}
-                  label={`${t('remove_cancellation')} · ${c.title || '—'}`}
-                  testID={`cancellation-remove-${c.id}`}
-                />
-                {chatId ? <Chevron size={18} color={p.text3} strokeWidth={2} /> : null}
+                <View style={[styles.rowControls, { flexDirection: rowDir }]}>
+                  <AdminText tabular numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3 }]}>
+                    {fmtDate(c.ts)}
+                  </AdminText>
+                  <TrashButton
+                    busy={!!removing[`c-${c.id}`]}
+                    onPress={() => void removeCancellation(c.id, c.title)}
+                    label={`${t('remove_cancellation')} · ${c.title || '—'}`}
+                    testID={`cancellation-remove-${c.id}`}
+                  />
+                  {chatId ? <Chevron size={18} color={p.text3} strokeWidth={2} /> : null}
+                </View>
               </Row>
             );
           })
@@ -370,24 +377,29 @@ function LargeRow({ row, busy, onMarkPaid }: { row: LargeEngagement; busy: boole
   return (
     <Row
       rowDir={rowDir}
+      wrap
       testID={`large-${row.projectId}-${row.professionalId}`}
       onPress={open}
       accessibilityLabel={open ? `${row.title || '—'} · ${meta}` : undefined}
     >
       <IconTile icon={Banknote} tone={tone} />
-      <WhoBlock name={row.title || '—'} meta={meta} textAlign={textAlign} />
-      <View style={[styles.stateChip, { backgroundColor: bg }]} testID={`large-state-${row.projectId}-${row.professionalId}`}>
-        <AdminText weight="semiBold" tabular numberOfLines={1} style={[TYPE.chip, { color: fg }]}>
-          {stateLabel}
-        </AdminText>
+      <WhoBlock name={row.title || '—'} meta={meta} metaLines={4} textAlign={textAlign} />
+      {/* The state, the pay action and the chevron stay together and drop under the text on a
+          phone: this row used to leave ~70px for the title and the facts beneath it. */}
+      <View style={[styles.rowControls, { flexDirection: rowDir }]}>
+        <View style={[styles.stateChip, { backgroundColor: bg }]} testID={`large-state-${row.projectId}-${row.professionalId}`}>
+          <AdminText weight="semiBold" tabular numberOfLines={2} style={[TYPE.chip, { color: fg }]}>
+            {stateLabel}
+          </AdminText>
+        </View>
+        <TrashButton
+          busy={busy}
+          onPress={onMarkPaid}
+          label={`${t('mark_paid')} · ${row.title || '—'}`}
+          testID={`large-pay-${row.projectId}-${row.professionalId}`}
+        />
+        {open ? <Chevron size={18} color={p.text3} strokeWidth={2} /> : null}
       </View>
-      <TrashButton
-        busy={busy}
-        onPress={onMarkPaid}
-        label={`${t('mark_paid')} · ${row.title || '—'}`}
-        testID={`large-pay-${row.projectId}-${row.professionalId}`}
-      />
-      {open ? <Chevron size={18} color={p.text3} strokeWidth={2} /> : null}
     </Row>
   );
 }
@@ -399,6 +411,7 @@ const styles = StyleSheet.create({
   failedText: { flex: 1 },
   stateChip: { borderRadius: RADIUS.pill, paddingVertical: 3, paddingHorizontal: 9, flexShrink: 0 },
   headSide: { alignItems: 'center', gap: 8 },
+  rowControls: { alignItems: 'center', gap: 10, flexShrink: 0 },
   hiddenToggle: { borderRadius: RADIUS.pill, borderWidth: 1, paddingVertical: 4, paddingHorizontal: 10 },
   trashBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   note: { alignItems: 'flex-start', gap: 12, padding: SPACE.cardPad },

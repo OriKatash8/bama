@@ -267,23 +267,24 @@ export default function CommunitiesAdmin() {
           <EmptyState text={k.ca('empty_requests')} testID="requests-empty" />
         ) : (
           requests.map((req) => (
-            <Row key={req.id} rowDir={rowDir} testID={`request-${req.id}`}>
+            <Row key={req.id} rowDir={rowDir} wrap testID={`request-${req.id}`}>
               <InitialsAvatar name={req.name} />
               <View style={styles.text}>
-                <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.rowName, { textAlign }]}>
+                <AdminText weight="semiBold" style={[TYPE.rowName, { textAlign }]}>
                   {req.name}
                 </AdminText>
+                {/* The full text: the admin decides to approve from it, so it must not be cut. */}
                 {!!req.description && (
-                  <AdminText numberOfLines={2} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
+                  <AdminText selectable style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
                     {req.description}
                   </AdminText>
                 )}
                 {getCommunityCategories(req).length > 0 && (
-                  <AdminText testID={`request-categories-${req.id}`} numberOfLines={2} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
+                  <AdminText testID={`request-categories-${req.id}`} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
                     {categoriesText(req)}
                   </AdminText>
                 )}
-                <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
+                <AdminText numberOfLines={2} style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
                   {`${k.users('by')} ${req.requesterName}`}
                 </AdminText>
               </View>
@@ -341,6 +342,8 @@ export default function CommunitiesAdmin() {
                     <WhoBlock
                       name={c.name}
                       meta={`${k.details('owner')}: ${ownerNames[c.ownerId] ?? c.ownerId} · ${k.ca('members_count', { n: count })}${getCommunityCategories(c).length ? ` · ${categoriesText(c)}` : ''}`}
+                      metaLines={4}
+                      selectableMeta
                       textAlign={textAlign}
                     />
                     <StatusPill active={active} label={k.users(active ? 'status_active' : 'status_suspended')} testID={`status-${c.id}`} />
@@ -408,9 +411,9 @@ export default function CommunitiesAdmin() {
                   {open && (
                     <View style={styles.members} testID={`members-${c.id}`}>
                       {(c.members ?? []).map((uid) => (
-                        <Row key={uid} rowDir={rowDir} testID={`member-${c.id}-${uid}`}>
+                        <Row key={uid} rowDir={rowDir} wrap testID={`member-${c.id}-${uid}`}>
                           <InitialsAvatar name={uid} size={30} />
-                          <WhoBlock name={uid} meta="" textAlign={textAlign} />
+                          <WhoBlock name={uid} meta="" selectableName textAlign={textAlign} />
                           <PillButton
                             variant="danger"
                             label={k.ca('remove')}
@@ -444,8 +447,9 @@ function StatusPill({ active, label, testID }: { active: boolean; label: string;
 
 const styles = StyleSheet.create({
   deleteBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  text: { flex: 1, minWidth: 0, gap: 1 },
-  actions: { gap: 7, flexShrink: 0 },
+  // A basis, not flex: 1: Approve / Reject wrap under the text on a phone instead of squeezing it.
+  text: { flexGrow: 1, flexShrink: 1, flexBasis: 140, minWidth: 0, gap: 1 },
+  actions: { gap: 7, flexWrap: 'wrap' },
   head: { alignItems: 'center', gap: 10, paddingTop: 16, paddingHorizontal: SPACE.rowPadH, flexWrap: 'wrap' },
   spacer: { flex: 1 },
   search: {

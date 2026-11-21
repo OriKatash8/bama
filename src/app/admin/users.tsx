@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Linking, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { TextInput } from '@components/ui/Text';
 import { useRouter } from 'expo-router';
 import { Phone, Search, ShieldAlert, ShieldBan, ShieldCheck, UserX, type LucideIcon } from 'lucide-react-native';
@@ -10,6 +10,7 @@ import { useUiStore } from '@core/stores/uiStore';
 import { formatPhoneForDisplay } from '@features/auth/utils/phone';
 import { HEEBO } from '@features/admin/ui';
 import {
+  AdminSheet,
   AdminPage,
   AdminText,
   Card,
@@ -261,7 +262,7 @@ export default function UsersAdmin() {
             <Card testID="user-card">
               <View style={[styles.who, { flexDirection: rowDir }]}>
                 <InitialsAvatar name={name} size={44} />
-                <WhoBlock name={name} meta={user.email ?? ''} textAlign={textAlign} />
+                <WhoBlock name={name} meta={user.email ?? ''} metaLines={3} selectableMeta textAlign={textAlign} />
                 <StatusPill tone={STATUS_TONE[status]} label={t(`status_${status}`)} />
               </View>
               {/* Their phone number: tap to call. */}
@@ -348,13 +349,13 @@ export default function UsersAdmin() {
                   <Row key={h.id} rowDir={rowDir} testID={`history-${h.id}`}>
                     <IconTile icon={ACTION_ICON[h.action] ?? UserX} tone={ACTION_TONE[h.action] ?? 'neutral'} />
                     <View style={styles.logText}>
-                      <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.rowName, { textAlign }]}>
+                      <AdminText weight="semiBold" numberOfLines={2} style={[TYPE.rowName, { textAlign }]}>
                         {`${t(h.action)} · ${fmtDate(h.createdAt?.seconds)}`}
                       </AdminText>
                       {!!h.reason && (
                         <AdminText style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>{h.reason}</AdminText>
                       )}
-                      <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
+                      <AdminText numberOfLines={2} style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
                         {`${t('by')} ${h.actorName}`}
                       </AdminText>
                     </View>
@@ -425,16 +426,13 @@ function StatusPill({ tone, label }: { tone: Tone; label: string }) {
   );
 }
 
-/** A centred card over a dimmed page; tapping outside closes it. */
+/** The shared admin sheet: fits the window, scrolls, lifts above the keyboard. */
 function Sheet({ visible, onClose, children, testID }: { visible: boolean; onClose: () => void; children: ReactNode; testID?: string }) {
-  const p = useAdminPalette();
+  const { t } = useScopedT('admin_users');
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.overlay} testID={testID}>
-        <Pressable style={[StyleSheet.absoluteFill, styles.scrim, { backgroundColor: p.shadow }]} onPress={onClose} accessible={false} />
-        <View style={[styles.sheet, { backgroundColor: p.surface, borderColor: p.border }]}>{children}</View>
-      </View>
-    </Modal>
+    <AdminSheet visible={visible} onClose={onClose} closeLabel={t('cancel')} testID={testID}>
+      {children}
+    </AdminSheet>
   );
 }
 
@@ -501,9 +499,6 @@ const styles = StyleSheet.create({
   reasonText: { fontSize: 13.5, lineHeight: 20 },
   actions: { flexWrap: 'wrap', gap: 8, marginTop: 16, paddingVertical: 14, paddingHorizontal: SPACE.rowPadH, borderTopWidth: 1 },
   logText: { flex: 1, minWidth: 0, gap: 1 },
-  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  scrim: { opacity: 0.45 },
-  sheet: { width: '100%', maxWidth: 440, borderRadius: RADIUS.card, borderWidth: 1, padding: 20, gap: 10 },
   sheetTitle: { fontSize: 19, letterSpacing: -0.3 },
   sheetHint: { fontSize: 13, lineHeight: 20 },
   sheetInput: { borderWidth: 1, borderRadius: 14, padding: 12, fontSize: 14, minHeight: 92, textAlignVertical: 'top' },

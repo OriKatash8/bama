@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Image } from 'react-native';
+import { View, StyleSheet, Pressable, ActivityIndicator, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { Pencil, ShoppingBag, Trash2 } from 'lucide-react-native';
@@ -115,15 +115,15 @@ export default function MarketplaceAdmin() {
           <IconTile icon={ShoppingBag} tone="neutral" />
         )}
         <View style={styles.info}>
-          <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.rowName, { textAlign }]}>
+          <AdminText weight="semiBold" numberOfLines={2} style={[TYPE.rowName, { textAlign }]}>
             {listing.productName}
           </AdminText>
-          <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
+          <AdminText numberOfLines={2} style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
             {listing.type === 'rental'
               ? `${t('rental')} · ₪${price}${t(PERIOD_SUFFIX_KEY[periodOf(listing)])}`
               : `${t('for_sale')} · ₪${price}`}
           </AdminText>
-          <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
+          <AdminText numberOfLines={3} style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
             {/* A rental belongs to a store: name the store, not who posted it. */}
             {[listing.type === 'rental' ? listing.storeName || '—' : listing.posterName, listing.location, fmtDate(listing.createdAt?.seconds)].join(' · ')}
           </AdminText>
@@ -190,15 +190,14 @@ export default function MarketplaceAdmin() {
           </Card>
 
           {/* 2nd-hand status filter: a pill segmented control with counts; scrolls sideways on narrow phones. */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.filterRow, { flexDirection: rowDir }]}>
-            <Segment<FilterTab>
-              options={FILTER_TABS.map((tab) => ({ value: tab, label: `${tabLabel(tab)} (${countOf(tab)})` }))}
-              value={filter}
-              onChange={setFilter}
-              label={tAdm('title')}
-              testIDPrefix="filter"
-            />
-          </ScrollView>
+          <Segment<FilterTab>
+            options={FILTER_TABS.map((tab) => ({ value: tab, label: `${tabLabel(tab)} (${countOf(tab)})` }))}
+            value={filter}
+            onChange={setFilter}
+            label={tAdm('title')}
+            testIDPrefix="filter"
+            scroll
+          />
 
           <Card testID="listings-card">
             <CardHead title={tabLabel(filter)} sub={t('second_hand')} side={<CountBadge n={filtered.length} testID="listings-count" />} />

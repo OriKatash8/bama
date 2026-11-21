@@ -6,7 +6,6 @@ import {
   Pressable,
   ActivityIndicator,
   Image,
-  Modal,
 } from 'react-native';
 import { TextInput } from '@components/ui/Text';
 import {
@@ -20,7 +19,7 @@ import { useUiStore } from '@core/stores/uiStore';
 import { confirmDialog } from '@utils/confirmDialog';
 import type { UserModeration } from '@core/types/user';
 import {
-  AdminPage, AdminText, Card, CardHead, EmptyState, InitialsAvatar, PillButton, Row, Segment, WhoBlock,
+  AdminPage, AdminSheet, AdminText, Card, CardHead, EmptyState, InitialsAvatar, PillButton, Row, Segment, WhoBlock,
   RADIUS, SPACE, TYPE, useAdminPalette, useScopedT,
 } from '@features/admin/ui';
 import { DisputesPanel } from '@features/admin/disputes/DisputesPanel';
@@ -275,19 +274,14 @@ export default function ReportsAdmin() {
     <>
       <AdminPage title={t('title')} subtitle={t('greeting')} testID="reports-page">
         {/* Filter: a pill segmented control, each option with its count. Scrolls sideways on narrow phones. */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.filterRow, { flexDirection: rowDir }]}
-        >
-          <Segment<FilterTab>
-            options={FILTER_TABS.map((tab) => ({ value: tab, label: `${t(`filter_${tab}`)} (${countOf(tab)})` }))}
-            value={filter}
-            onChange={setFilter}
-            label={t('title')}
-            testIDPrefix="filter"
-          />
-        </ScrollView>
+        <Segment<FilterTab>
+          options={FILTER_TABS.map((tab) => ({ value: tab, label: `${t(`filter_${tab}`)} (${countOf(tab)})` }))}
+          value={filter}
+          onChange={setFilter}
+          label={t('title')}
+          testIDPrefix="filter"
+          scroll
+        />
 
         {filter === 'disputes' ? (
           <DisputesPanel disputes={disputes} state={disputesState} onReload={reloadDisputes} />
@@ -302,11 +296,12 @@ export default function ReportsAdmin() {
                 const suspended = u.moderation.status === 'suspended';
                 const at = u.moderation.at as unknown as Timestamp | null;
                 return (
-                  <Row key={u.id} rowDir={rowDir} testID={`moderated-${u.id}`}>
+                  <Row key={u.id} rowDir={rowDir} wrap testID={`moderated-${u.id}`}>
                     <InitialsAvatar name={u.displayName || '?'} size={34} />
                     <WhoBlock
                       name={u.displayName || t('unknown_user')}
                       meta={`${u.moderation.reason} · ${u.moderation.actorName} · ${formatDate(at)}`}
+                      metaLines={4}
                       textAlign={textAlign}
                     />
                     <ModChip suspended={suspended} label={t(suspended ? 'status_suspended' : 'status_warned')} />
@@ -350,9 +345,9 @@ export default function ReportsAdmin() {
                       {report.type === 'user_blocked' ? t('kind_user_blocked') : t(`kind_${report.targetType}`)}
                     </AdminText>
                   )}
-                  <AdminText style={[styles.reason, { color: p.text2, textAlign }]}>{report.reason}</AdminText>
+                  <AdminText selectable style={[styles.reason, { color: p.text2, textAlign }]}>{report.reason}</AdminText>
                   {!!report.snippet && (
-                    <AdminText style={[styles.reason, { color: p.text2, textAlign }]} testID={`snippet-${report.id}`}>
+                    <AdminText selectable style={[styles.reason, { color: p.text2, textAlign }]} testID={`snippet-${report.id}`}>
                       {`${t('content_label')}: ${report.snippet}`}
                     </AdminText>
                   )}
@@ -438,52 +433,40 @@ export default function ReportsAdmin() {
         )}
       </AdminPage>
 
-      {/* Warn / Suspend reason modal */}
-      <Modal visible={!!modTarget} transparent animationType="fade" onRequestClose={() => setModTarget(null)}>
-        <View style={styles.overlay}>
-          <Pressable
-            style={[StyleSheet.absoluteFill, styles.scrim, { backgroundColor: p.shadow }]}
-            onPress={() => setModTarget(null)}
-            accessibilityRole="button"
-            accessibilityLabel={t('cancel')}
-          />
-          <Card style={styles.modalCard} testID="mod-modal">
-            <View style={styles.modalBody}>
-              <AdminText weight="bold" style={[styles.modalTitle, { textAlign }]}>
-                {modTarget?.action === 'suspend' ? t('suspend_user') : t('warn_user')}
-                {modTarget ? ` · ${reportedName(modTarget.report)}` : ''}
-              </AdminText>
-              <AdminText style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>{t('reason_hint')}</AdminText>
-              <TextInput
-                style={[
-                  styles.reasonInput,
-                  { color: p.text, borderColor: p.border, backgroundColor: p.surface2, textAlign },
-                ]}
-                value={modReason}
-                onChangeText={setModReason}
-                placeholder={t('reason_placeholder')}
-                placeholderTextColor={p.text3}
-                multiline
-                testID="mod-reason"
-              />
-              <View style={[styles.modalActions, { flexDirection: rowDir }]}>
-                <View style={styles.spacer} />
-                <PillButton label={t('cancel')} onPress={() => setModTarget(null)} testID="mod-cancel" />
-                {modBusy ? (
-                  <ActivityIndicator size="small" color={p.accent} testID="mod-busy" />
-                ) : (
-                  <PillButton
-                    label={modTarget?.action === 'suspend' ? t('suspend') : t('warn')}
-                    variant={modTarget?.action === 'suspend' ? 'danger' : 'primary'}
-                    onPress={submitModeration}
-                    testID="mod-submit"
-                  />
-                )}
-              </View>
-            </View>
-          </Card>
+      {/* Warn / Suspend reason modal: fits the window, scrolls, and lifts above the keyboard. */}
+      <AdminSheet visible={!!modTarget} onClose={() => setModTarget(null)} closeLabel={t('cancel')} testID="mod-modal">
+        <AdminText weight="bold" style={[styles.modalTitle, { textAlign }]}>
+          {modTarget?.action === 'suspend' ? t('suspend_user') : t('warn_user')}
+          {modTarget ? ` · ${reportedName(modTarget.report)}` : ''}
+        </AdminText>
+        <AdminText style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>{t('reason_hint')}</AdminText>
+        <TextInput
+          style={[
+            styles.reasonInput,
+            { color: p.text, borderColor: p.border, backgroundColor: p.surface2, textAlign },
+          ]}
+          value={modReason}
+          onChangeText={setModReason}
+          placeholder={t('reason_placeholder')}
+          placeholderTextColor={p.text3}
+          multiline
+          testID="mod-reason"
+        />
+        <View style={[styles.modalActions, { flexDirection: rowDir }]}>
+          <View style={styles.spacer} />
+          <PillButton label={t('cancel')} onPress={() => setModTarget(null)} testID="mod-cancel" />
+          {modBusy ? (
+            <ActivityIndicator size="small" color={p.accent} testID="mod-busy" />
+          ) : (
+            <PillButton
+              label={modTarget?.action === 'suspend' ? t('suspend') : t('warn')}
+              variant={modTarget?.action === 'suspend' ? 'danger' : 'primary'}
+              onPress={submitModeration}
+              testID="mod-submit"
+            />
+          )}
         </View>
-      </Modal>
+      </AdminSheet>
     </>
   );
 }
@@ -500,10 +483,6 @@ const styles = StyleSheet.create({
   actions: { alignItems: 'center', flexWrap: 'wrap', gap: 8 },
   spacer: { flexGrow: 1 },
 
-  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  scrim: { opacity: 0.45 },
-  modalCard: { width: '100%', maxWidth: 420 },
-  modalBody: { padding: SPACE.cardPad + 1, gap: 10 },
   modalTitle: { fontSize: 17, letterSpacing: -0.2 },
   reasonInput: {
     fontFamily: 'Heebo-Regular',

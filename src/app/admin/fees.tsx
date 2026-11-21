@@ -9,7 +9,7 @@ import { confirmDialog } from '@utils/confirmDialog';
 import { MIN_OFFER_PRICE, MAX_OFFER_PRICE } from '@core/constants/pricing';
 import {
   AdminPage, AdminText, Card, CardHead, EmptyState, IconTile, InitialsAvatar, PillButton, Segment,
-  StatGrid, StatTile, WhoBlock, RADIUS, SPACE, TYPE, useAdminPalette, useScopedT,
+  StatGrid, StatTile, WhoBlock, RADIUS, SPACE, TYPE, useAdminPalette, useIsPhone, useScopedT,
 } from '@features/admin/ui';
 import { HeldReviewNote, type HeldReview } from '@features/admin/disputes/HeldReviewNote';
 
@@ -126,6 +126,7 @@ export default function AdminFeesScreen() {
   const { t: tCommon } = useScopedT('common');
   const { t: tDash } = useScopedT('admin_dashboard');
   const { t: tCa } = useScopedT('community_admin');
+  const isPhone = useIsPhone();
 
   const [tab, setTab] = useState<Tab>('arrears');
   const [arrears, setArrears] = useState<ArrearsRow[]>([]);
@@ -250,6 +251,7 @@ export default function AdminFeesScreen() {
           onChange={setTab}
           label={t('title')}
           testIDPrefix="tab"
+          scroll
         />
       }
     >
@@ -360,21 +362,27 @@ export default function AdminFeesScreen() {
                       <View
                         key={key}
                         testID={`project-${key}`}
-                        style={[styles.projRow, { flexDirection: rowDir, backgroundColor: p.surface2 }]}
+                        style={[styles.projRow, { backgroundColor: p.surface2 }]}
                       >
-                        <IconTile icon={Receipt} tone="neutral" />
-                        <AdminText
-                          weight="semiBold"
-                          tabular
-                          numberOfLines={1}
-                          style={[TYPE.rowName, styles.grow, { textAlign }]}
-                        >
-                          {pr.title || pr.projectId} · ₪{pr.owed.toLocaleString()}
-                        </AdminText>
-                        <View style={[styles.actions, { flexDirection: rowDir }]}>
+                        {/* The text on its own line, wrapping: the amount used to be the end of a
+                            one-line string and was the part cut off. */}
+                        <View style={[styles.projTop, { flexDirection: rowDir }]} testID={`project-top-${key}`}>
+                          <IconTile icon={Receipt} tone="neutral" />
+                          <AdminText
+                            weight="semiBold"
+                            tabular
+                            numberOfLines={3}
+                            style={[TYPE.rowName, styles.grow, { textAlign }]}
+                          >
+                            {pr.title || pr.projectId} · ₪{pr.owed.toLocaleString()}
+                          </AdminText>
+                        </View>
+                        {/* The buttons on theirs: wrapping with a gap, and full-width stacked on a phone. */}
+                        <View style={[styles.actions, isPhone ? styles.actionsStacked : { flexDirection: rowDir }]}>
                           {isBusy ? <ActivityIndicator size="small" color={p.accent} testID={`busy-${key}`} /> : null}
                           {!pr.demandSentAt && (
                             <PillButton
+                              block={isPhone}
                               label={t('mark_demand')}
                               disabled={isBusy}
                               testID={`demand-${key}`}
@@ -389,6 +397,7 @@ export default function AdminFeesScreen() {
                             />
                           )}
                           <PillButton
+                            block={isPhone}
                             variant="primary"
                             label={t('mark_paid')}
                             disabled={isBusy}
@@ -440,7 +449,7 @@ export default function AdminFeesScreen() {
                         >
                           <IconTile icon={Receipt} tone={section === 'paid' ? 'good' : row.stale ? 'warn' : 'accent'} />
                           <View style={styles.grow}>
-                            <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.rowName, { textAlign }]}>
+                            <AdminText weight="semiBold" numberOfLines={2} style={[TYPE.rowName, { textAlign }]}>
                               {row.displayName || row.professionalId} · {row.title || row.projectId}
                             </AdminText>
                             <AdminText tabular style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
@@ -489,7 +498,7 @@ export default function AdminFeesScreen() {
                 >
                   <IconTile icon={AlertTriangle} tone={moneyIn ? 'bad' : 'warn'} />
                   <View style={styles.grow}>
-                    <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.rowName, { textAlign }]}>
+                    <AdminText weight="semiBold" numberOfLines={2} style={[TYPE.rowName, { textAlign }]}>
                       {row.displayName || row.professionalId} · {row.title || row.projectId}
                     </AdminText>
                     <AdminText weight="semiBold" style={[TYPE.rowMeta, styles.reason, { color: p.bad, textAlign }]}>
@@ -544,7 +553,7 @@ export default function AdminFeesScreen() {
               >
                 <IconTile icon={AlertTriangle} tone="warn" />
                 <View style={styles.grow}>
-                  <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.rowName, { textAlign }]}>
+                  <AdminText weight="semiBold" numberOfLines={2} style={[TYPE.rowName, { textAlign }]}>
                     {row.title || row.projectId}
                   </AdminText>
                   <AdminText weight="semiBold" style={[TYPE.rowMeta, styles.reason, { color: p.bad, textAlign }]}>
@@ -617,9 +626,10 @@ export default function AdminFeesScreen() {
                           editable={!isBusy}
                           style={[styles.agreedInput, { borderColor: p.border, color: p.text, textAlign }]}
                         />
-                        <View style={[styles.actions, { flexDirection: rowDir }]}>
+                        <View style={[styles.actions, isPhone ? styles.actionsStacked : { flexDirection: rowDir }]}>
                           {isBusy ? <ActivityIndicator size="small" color={p.accent} testID={`busy-${key}`} /> : null}
                           <PillButton
+                            block={isPhone}
                             variant="primary"
                             label={t('resolve_completed')}
                             disabled={isBusy}
@@ -627,6 +637,7 @@ export default function AdminFeesScreen() {
                             onPress={resolveCompleted}
                           />
                           <PillButton
+                            block={isPhone}
                             label={t('resolve_cancelled')}
                             disabled={isBusy}
                             testID={`resolve-cancelled-${key}`}
@@ -660,7 +671,7 @@ function StatusChip({ tone, label }: { tone: 'bad' | 'good'; label: string }) {
   const [bg, fg] = tone === 'bad' ? [p.badBg, p.bad] : [p.goodBg, p.good];
   return (
     <View style={[styles.status, { backgroundColor: bg }]}>
-      <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.chip, { color: fg }]}>
+      <AdminText weight="semiBold" numberOfLines={2} style={[TYPE.chip, { color: fg }]}>
         {label}
       </AdminText>
     </View>
@@ -678,8 +689,11 @@ const styles = StyleSheet.create({
   status: { borderRadius: RADIUS.pill, paddingVertical: 3, paddingHorizontal: 9, flexShrink: 1, maxWidth: '45%' },
   facts: { gap: 2 },
   total: { fontSize: 15, letterSpacing: -0.15 },
-  projRow: { alignItems: 'center', gap: 10, borderRadius: 14, paddingVertical: 8, paddingHorizontal: 10, flexWrap: 'wrap' },
-  actions: { gap: 7, alignItems: 'center', flexShrink: 0 },
+  projRow: { gap: 10, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 10 },
+  projTop: { alignItems: 'center', gap: 10 },
+  // Wraps with a gap; on a phone the buttons stack full-width instead (actionsStacked).
+  actions: { gap: 8, alignItems: 'center', flexWrap: 'wrap' },
+  actionsStacked: { flexDirection: 'column', alignItems: 'stretch', gap: 8 },
   flagRow: { alignItems: 'flex-start', gap: 12, paddingVertical: SPACE.rowPadV, paddingHorizontal: SPACE.rowPadH, borderTopWidth: 1 },
   reason: { marginTop: 1, marginBottom: 2 },
   note: { borderRadius: 12, paddingVertical: 8, paddingHorizontal: 10, marginTop: 6 },
