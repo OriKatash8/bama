@@ -201,6 +201,16 @@
       "recordedOn": "2026-11-21",
       "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
     },
+    "adminUserActivity": {
+      "region": "europe-west1",
+      "generation": 2,
+      "updateTime": "2026-11-21T12:10:58.218617709Z",
+      "treeSha": "ca0763f125746d08593aec58884fe648f08fceca",
+      "commit": "062601bb",
+      "how": "deploy",
+      "recordedOn": "2026-11-21",
+      "note": "adminUserActivity: admin-only user activity sections (062601bb)"
+    },
     "blockUser": {
       "region": "us-central1",
       "generation": 2,
@@ -714,12 +724,12 @@
     "onReviewCreate": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:56.982497539Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-21T12:22:27.319622603Z",
+      "treeSha": "fbbcd3bec7415ed5c878e6bcea7e8bbc024eda03",
+      "commit": "76bf1a46",
       "how": "deploy",
       "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "note": "onReviewCreate only updates (never recreates a deleted review) (76bf1a46)"
     },
     "onUserCreate": {
       "region": "us-central1",

@@ -173,6 +173,10 @@ try {
   exitCode = 1;
 } finally {
   console.log('\n4. Cleanup, then VERIFY it is gone:');
+  // onReviewCreate (a trigger) writes {published, visibleAt} onto every new review a few seconds after it is
+  // created, with a merge-set that RE-CREATES a document deleted in the meantime. Let it finish first, or
+  // cleanup deletes the review and the trigger quietly brings back a stub.
+  await new Promise((r) => setTimeout(r, 25_000));
   for (const path of [...created.docs].reverse()) await adminDb.doc(path).delete().catch(() => {});
   for (const uid of created.uids) await adminAuth.deleteUser(uid).catch(() => {});
   let leftovers = 0;

@@ -75,10 +75,16 @@ try {
     preDispute: { feeDue: 30, status: 'pending', baseAmount: 1000 }, providerRef: `ref-${STAMP}`, cardToken: SECRET, phone: '+972500000000',
     paymentLink: { processId: `${STAMP}-proc`, amount: 30, url: `https://example.invalid/${SECRET}`, createdAt: now },
   });
-  await seed(`reviews/${P}_${subject.uid}`, { projectId: P, professionalId: subject.uid, reviewerId: client.uid, authorId: client.uid, authorName: 'Probe Client', rating: 2, body: 'held text', published: false, heldForDispute: true, createdAt: now });
+  // A review is created, the onReviewCreate trigger publishes it a few seconds later, and a "didn't happen"
+  // contest then HOLDS it with an update. Seed it the same way: create, let the trigger finish, then hold.
+  const reviewPath = `reviews/${P}_${subject.uid}`;
+  await seed(reviewPath, { projectId: P, professionalId: subject.uid, reviewerId: client.uid, authorId: client.uid, authorName: 'Probe Client', rating: 2, body: 'held text', createdAt: now });
   await seed(`reports/${STAMP}-rep`, { reportedUserId: subject.uid, reporterId: client.uid, reason: 'probe report', status: 'pending', targetType: 'user', createdAt: now });
   await seed(`adminActions/${STAMP}-act`, { action: 'warn', targetUserId: subject.uid, actorName: 'Probe Admin', reason: 'probe warning', createdAt: now });
   await seed(`chats/${STAMP}-comm`, { type: 'community', name: 'Probe Community', ownerId: subject.uid, members: [subject.uid, client.uid], status: 'active', createdAt: now });
+
+  await new Promise((r) => setTimeout(r, 20_000)); // onReviewCreate has run by now
+  await adminDb.doc(reviewPath).update({ published: false, heldForDispute: true }); // the hold, as contestEngagement does it
 
   console.log('1. The admin gets each section, matching what was seeded:');
   const sections = {};
@@ -129,6 +135,10 @@ try {
   exitCode = 1;
 } finally {
   console.log('\n5. Cleanup, then VERIFY it is gone:');
+  // onReviewCreate (a trigger) writes {published, visibleAt} onto every new review a few seconds after it is
+  // created, with a merge-set that RE-CREATES a document deleted in the meantime. Let it finish first, or
+  // cleanup deletes the review and the trigger quietly brings back a stub.
+  await new Promise((r) => setTimeout(r, 25_000));
   for (const path of [...created.docs].reverse()) await adminDb.doc(path).delete().catch(() => {});
   for (const uid of created.uids) await adminAuth.deleteUser(uid).catch(() => {});
   let leftovers = 0;
