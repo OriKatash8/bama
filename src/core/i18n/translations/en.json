@@ -763,7 +763,7 @@
     "members_caption": "across all communities",
     "search_a11y": "Search communities by name or owner",
     "empty_search": "No communities match that search.",
-    "owner_placeholder": "New owner UID",
+    "owner_placeholder": "Or paste a user ID (not a member yet)",
     "set_owner": "Set",
     "delete_title": "Delete community?",
     "delete": "Delete",
@@ -949,7 +949,8 @@
     "kind_listing": "Listing",
     "kind_review": "Review",
     "kind_portfolio": "Portfolio item",
-    "content_label": "Content"
+    "content_label": "Content",
+    "reporter_label": "Reported by"
   },
   "admin_money": {
     "pending_now": "Right now",
@@ -2097,5 +2098,29 @@
     "retry": "Try again",
     "empty": "No usage data yet. Tap Refresh to collect it.",
     "no_data": "—"
+  },
+  "admin_people": {
+    "unknown_user": "Unknown user",
+    "details_title": "User details",
+    "more_details": "More details",
+    "email": "Email",
+    "phone": "Phone",
+    "no_phone": "No phone number",
+    "no_email": "No email",
+    "user_id": "User ID",
+    "joined": "Joined",
+    "standing": "Standing",
+    "standing_active": "Active",
+    "standing_warned": "Warned",
+    "standing_suspended": "Suspended",
+    "reason": "Reason",
+    "open_in_users": "Open in Users",
+    "make_owner": "Make owner",
+    "close": "Close",
+    "load_failed": "Could not load the user's details",
+    "owner_changed": "Ownership moved to {{name}}",
+    "removed_member": "{{name}} was removed from the community",
+    "make_owner_confirm": "Make {{name}} the owner of \"{{community}}\"? The community is handed over to them.",
+    "untitled_project": "Untitled project"
   }
 }

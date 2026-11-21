@@ -9,6 +9,9 @@ import { useLargeEngagements } from '@features/admin/useLargeEngagements';
 
 let mockLang = 'en';
 
+// The ⋮ person details read user documents; none of these tests open one.
+jest.mock('@core/firebase/firestore', () => ({ getDocument: jest.fn(() => Promise.resolve(null)) }));
+jest.mock('@core/firebase/functions', () => ({ callFunction: () => jest.fn(() => Promise.resolve({ users: [], truncated: false })) }));
 jest.mock('react-native-reanimated', () => require('../../../testing/reanimatedMock').reanimatedMock());
 jest.mock('expo-linear-gradient', () => ({
   LinearGradient: ({ children }: { children: React.ReactNode }) => children,

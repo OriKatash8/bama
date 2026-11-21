@@ -763,7 +763,7 @@
     "members_caption": "בכל הקהילות",
     "search_a11y": "חיפוש קהילות לפי שם או בעלים",
     "empty_search": "אין קהילות שתואמות לחיפוש.",
-    "owner_placeholder": "UID של הבעלים החדש",
+    "owner_placeholder": "או הדביקו מזהה משתמש (לא חבר/ה בקהילה)",
     "set_owner": "עדכון",
     "delete_title": "למחוק את הקהילה?",
     "delete": "מחיקה",
@@ -949,7 +949,8 @@
     "kind_listing": "מודעה",
     "kind_review": "ביקורת",
     "kind_portfolio": "פריט בתיק עבודות",
-    "content_label": "תוכן"
+    "content_label": "תוכן",
+    "reporter_label": "המדווח/ת"
   },
   "admin_money": {
     "pending_now": "כרגע",
@@ -2097,5 +2098,29 @@
     "retry": "נסה שוב",
     "empty": "עדיין אין נתוני שימוש. לחץ על רענן כדי לאסוף.",
     "no_data": "—"
+  },
+  "admin_people": {
+    "unknown_user": "משתמש לא ידוע",
+    "details_title": "פרטי משתמש",
+    "more_details": "פרטים נוספים",
+    "email": "אימייל",
+    "phone": "טלפון",
+    "no_phone": "אין מספר טלפון",
+    "no_email": "אין אימייל",
+    "user_id": "מזהה משתמש",
+    "joined": "הצטרפ/ה",
+    "standing": "מצב",
+    "standing_active": "פעיל/ה",
+    "standing_warned": "קיבל/ה אזהרה",
+    "standing_suspended": "מושעה",
+    "reason": "סיבה",
+    "open_in_users": "פתיחה במסך המשתמשים",
+    "make_owner": "הפוך לבעלים",
+    "close": "סגירה",
+    "load_failed": "לא הצלחנו לטעון את פרטי המשתמש",
+    "owner_changed": "הבעלות הועברה אל {{name}}",
+    "removed_member": "{{name}} הוסר/ה מהקהילה",
+    "make_owner_confirm": "להפוך את {{name}} לבעלים של \"{{community}}\"? הבעלות עוברת אליו/ה.",
+    "untitled_project": "פרויקט ללא שם"
   }
 }

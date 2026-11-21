@@ -18,6 +18,8 @@ const mockBack = jest.fn();
 const mockReplace = jest.fn();
 const mockToast = jest.fn();
 
+// The ⋮ person details read user documents; none of these tests open one.
+jest.mock('@core/firebase/firestore', () => ({ getDocument: jest.fn(() => Promise.resolve(null)) }));
 jest.mock('react-native-reanimated', () => require('../../../testing/reanimatedMock').reanimatedMock());
 jest.mock('expo-linear-gradient', () => ({
   LinearGradient: ({ children }: { children: React.ReactNode }) => children,

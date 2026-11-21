@@ -22,6 +22,8 @@ const mockBack = jest.fn();
 const mockReplace = jest.fn();
 const mockToast = jest.fn();
 
+// The ⋮ person details read user documents; none of these tests open one.
+jest.mock('@core/firebase/firestore', () => ({ getDocument: jest.fn(() => Promise.resolve(null)) }));
 jest.mock('react-native-reanimated', () => require('../../../testing/reanimatedMock').reanimatedMock());
 jest.mock('expo-linear-gradient', () => ({
   LinearGradient: ({ children }: { children: React.ReactNode }) => children,
@@ -334,5 +336,38 @@ describe('at phone width', () => {
     mockW = 1024;
     const r = await renderPage();
     expect(StyleSheet.flatten(r.getByTestId('paid-p1:pro-1').props.style).alignSelf).toBeUndefined();
+  });
+});
+
+describe('people are named, never shown by id, and have a ⋮', () => {
+  it('an arrears professional with no name reads "Unknown user", not the uid, and has a ⋮', async () => {
+    fns.adminListArrears.mockResolvedValue({ graceDays: 14, rows: [{ ...ARREARS.rows[0], professionalId: 'uid-9xq', displayName: '' }] });
+    const r = await renderPage();
+    const head = within(r.getByTestId('arrears-head-uid-9xq'));
+    expect(head.getByText(en.admin_people.unknown_user)).toBeTruthy();
+    expect(head.queryByText('uid-9xq')).toBeNull();
+    expect(r.getByTestId('more-uid-9xq')).toBeTruthy();
+  });
+
+  it('a named professional shows the full name and a ⋮ labelled with it', async () => {
+    const r = await renderPage();
+    expect(within(r.getByTestId('arrears-head-pro-1')).getByText('Moshe Levi')).toBeTruthy();
+    expect(r.getByLabelText(`${en.admin_people.more_details} · Moshe Levi`)).toBeTruthy();
+  });
+
+  it('a flagged project gives the professional and the client each a ⋮, and "Untitled project" instead of the id', async () => {
+    fns.adminListFlaggedProjects.mockResolvedValue({
+      rows: [{ ...FLAGGED.rows[0], title: '', clientId: 'client-7', clientName: '' }],
+    });
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('tab-flagged'));
+    const row = within(r.getByTestId('flagged-fp1:pro-2'));
+    expect(row.getByText(en.admin_people.untitled_project)).toBeTruthy();
+    expect(row.queryByText('fp1')).toBeNull();
+    expect(row.getByText('Professional: Yael')).toBeTruthy();
+    expect(row.getByText(`Client: ${en.admin_people.unknown_user}`)).toBeTruthy();
+    expect(row.queryByText(/client-7/)).toBeNull();
+    expect(r.getByTestId('user-more-pro-2')).toBeTruthy();
+    expect(r.getByTestId('user-more-client-7')).toBeTruthy();
   });
 });

@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { TextInput } from '@components/ui/Text';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Phone, Search, ShieldAlert, ShieldBan, ShieldCheck, UserX, type LucideIcon } from 'lucide-react-native';
 import { where } from 'firebase/firestore';
 import { getDocument, queryDocuments } from '@core/firebase/firestore';
@@ -73,6 +73,9 @@ export default function UsersAdmin() {
   const { t, rtl, rowDir, textAlign } = useScopedT('admin_users');
   const showToast = useUiStore((s) => s.showToast);
   const router = useRouter();
+  // `?uid=` opens that user on arrival: where "Open in Users" (the ⋮ details on other admin screens) lands.
+  const { uid: uidParam } = useLocalSearchParams<{ uid?: string }>();
+  const openedFromParam = useRef<string | null>(null);
 
   const [users, setUsers] = useState<ListedUser[]>([]);
   const [listState, setListState] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -118,6 +121,16 @@ export default function UsersAdmin() {
   }, []);
 
   useEffect(() => { void loadList(); }, [loadList]);
+
+  useEffect(() => {
+    if (!uidParam || listState !== 'ready' || openedFromParam.current === uidParam) return;
+    openedFromParam.current = uidParam;
+    const listed = users.find((u) => u.uid === uidParam);
+    if (listed) void openUser(listed);
+    else showToast(t('open_failed'), 'error');
+    // openUser/showToast/t are stable enough for a one-shot open per uid; the ref guards re-runs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uidParam, listState, users]);
 
   /** Open one user: their document by uid, plus their action history. */
   async function openUser(listed: ListedUser) {

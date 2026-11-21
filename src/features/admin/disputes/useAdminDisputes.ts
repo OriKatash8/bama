@@ -8,6 +8,7 @@ export type AdminDispute = {
   proId: string;
   proName: string;
   clientName: string;
+  clientId: string | null;
   title: string;
   chatId: string | null;
   /** 'didnt_happen' | 'fee_disputed' — the fee's own adminReview.reason. */
@@ -24,7 +25,7 @@ export type AdminDispute = {
 };
 
 type FlaggedRow = {
-  projectId: string; title: string; clientName: string; chatId?: string | null;
+  projectId: string; title: string; clientName: string; clientId?: string | null; chatId?: string | null;
   proId: string | null; proName: string; reason: string; note: string; flaggedAt: number | null;
   disputes?: {
     proId: string; proName: string; reason: string; baseAmount: number; feeDueIfCompleted: number;
@@ -41,6 +42,7 @@ export function disputesFrom(rows: FlaggedRow[] | undefined): AdminDispute[] {
     proId: d.proId,
     proName: d.proName || row.proName,
     clientName: row.clientName,
+    clientId: row.clientId ?? null,
     title: row.title,
     chatId: row.chatId ?? null,
     reason: d.reason || row.reason,

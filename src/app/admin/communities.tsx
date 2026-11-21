@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { TextInput } from '@components/ui/Text';
 import {
   collection, onSnapshot, updateDoc, doc,
-  query, where, orderBy, Timestamp, getDoc,
+  query, where, orderBy, Timestamp,
 } from 'firebase/firestore';
 import { ChevronDown, ChevronUp, Search, Trash2 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -34,6 +34,7 @@ import { HEEBO ,
   useAdminPalette,
   useScopedT,
 } from '@features/admin/ui';
+import { UserMoreButton, personName, useUserDirectory } from '@features/admin/people';
 
 type CommunityRequest = {
   id: string;
@@ -91,6 +92,7 @@ function usePageT() {
     proj: useScopedT('project_details').t,
     common: useScopedT('common').t,
     details: useScopedT('community_details').t,
+    people: useScopedT('admin_people').t,
   };
   return { ...own, tp: own.t, k };
 }
@@ -114,7 +116,10 @@ export default function CommunitiesAdmin() {
 
   const [requests, setRequests] = useState<CommunityRequest[]>([]);
   const [communities, setCommunities] = useState<Community[]>([]);
-  const [ownerNames, setOwnerNames] = useState<Record<string, string>>({});
+  // Everyone's full name from one directory call (adminListUsers), instead of a read per owner.
+  const directory = useUserDirectory();
+  const unknownUser = k.people('unknown_user');
+  const nameOf = (uid: string) => (directory.ready ? personName(directory.nameOf(uid), unknownUser, uid) : '…');
   const [expandedMembers, setExpandedMembers] = useState<Record<string, boolean>>({});
   const [deleting, setDeleting] = useState<Record<string, boolean>>({});
   const [newOwnerInput, setNewOwnerInput] = useState<Record<string, string>>({});
@@ -130,22 +135,10 @@ export default function CommunitiesAdmin() {
 
   useEffect(() => {
     const q = query(collection(db, 'chats'), where('type', '==', 'community'), orderBy('createdAt', 'desc'));
-    return onSnapshot(q, async (snap) => {
+    return onSnapshot(q, (snap) => {
       const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Community));
       setCommunities(list);
       setLoading(false);
-
-      const ownerIds = [...new Set(list.map((c) => c.ownerId))];
-      const names: Record<string, string> = {};
-      await Promise.all(
-        ownerIds.map(async (uid) => {
-          const userDoc = await getDoc(doc(db, 'users', uid));
-          if (userDoc.exists()) {
-            names[uid] = (userDoc.data() as { displayName?: string }).displayName ?? uid;
-          }
-        })
-      );
-      setOwnerNames((prev) => ({ ...prev, ...names }));
     });
   }, []);
 
@@ -192,7 +185,7 @@ export default function CommunitiesAdmin() {
   async function handleRemoveMember(communityId: string, memberId: string) {
     try {
       await adminCommunityAction({ communityId, action: 'remove_member', userId: memberId });
-      showToast(k.ca('toast_removed', { name: memberId }), 'success');
+      showToast(k.ca('toast_removed', { name: nameOf(memberId) }), 'success');
     } catch {
       showToast(tp('action_failed'), 'error');
     }
@@ -210,6 +203,29 @@ export default function CommunitiesAdmin() {
     }
   }
 
+  /** Members by full name (A to Z; unnamed last), so a long list can be scanned. */
+  const sortedMembers = (uids: string[]) =>
+    [...uids].sort((a, b) => {
+      const na = directory.nameOf(a);
+      const nb = directory.nameOf(b);
+      if (!na !== !nb) return na ? -1 : 1;
+      return na.localeCompare(nb, lang);
+    });
+
+  /** "Make owner" from a member's details: asks first (it hands the community over), then sets the uid server-side. */
+  async function handleMakeOwner(c: Community, uid: string, name: string) {
+    const ok = await confirmDialog(k.people('make_owner'), k.people('make_owner_confirm', { name, community: c.name }), {
+      confirm: k.people('make_owner'), cancel: k.common('cancel'),
+    });
+    if (!ok) return;
+    try {
+      await adminCommunityAction({ communityId: c.id, action: 'set_owner', userId: uid });
+      showToast(k.people('owner_changed', { name }), 'success');
+    } catch {
+      showToast(tp('action_failed'), 'error');
+    }
+  }
+
   function back() {
     if (router.canGoBack()) router.back();
     else router.replace('/admin/operations');
@@ -219,7 +235,7 @@ export default function CommunitiesAdmin() {
   const needle = search.trim().toLowerCase();
   const shown = needle
     ? communities.filter((c) =>
-        [c.name, ownerNames[c.ownerId] ?? '', c.ownerId].some((s) => (s ?? '').toLowerCase().includes(needle)))
+        [c.name, directory.nameOf(c.ownerId), c.ownerId].some((s) => (s ?? '').toLowerCase().includes(needle)))
     : communities;
 
   const suspended = communities.filter((c) => c.status === 'suspended').length;
@@ -341,15 +357,23 @@ export default function CommunitiesAdmin() {
                     <InitialsAvatar name={c.name} />
                     <WhoBlock
                       name={c.name}
-                      meta={`${k.details('owner')}: ${ownerNames[c.ownerId] ?? c.ownerId} · ${k.ca('members_count', { n: count })}${getCommunityCategories(c).length ? ` · ${categoriesText(c)}` : ''}`}
+                      meta={`${k.ca('members_count', { n: count })}${getCommunityCategories(c).length ? ` · ${categoriesText(c)}` : ''}`}
                       metaLines={4}
-                      selectableMeta
                       textAlign={textAlign}
                     />
                     <StatusPill active={active} label={k.users(active ? 'status_active' : 'status_suspended')} testID={`status-${c.id}`} />
                   </View>
 
-                  {/* Change owner */}
+                  {/* The owner by full name; the ⋮ shows everything else about them. */}
+                  <View style={[styles.ownerLine, { flexDirection: rowDir }]} testID={`owner-line-${c.id}`}>
+                    <AdminText weight="semiBold" style={[TYPE.rowMeta, { color: p.text3 }]}>{k.details('owner')}:</AdminText>
+                    <AdminText weight="semiBold" style={[TYPE.rowMeta, styles.grow, { color: p.text, textAlign }]} testID={`owner-name-${c.id}`}>
+                      {nameOf(c.ownerId)}
+                    </AdminText>
+                    <UserMoreButton uid={c.ownerId} name={nameOf(c.ownerId)} testID={`owner-more-${c.id}`} />
+                  </View>
+
+                  {/* Change owner: from a member's ⋮ → "Make owner"; this box is only for someone who is not a member yet. */}
                   <View style={[styles.ownerRow, { flexDirection: rowDir }]}>
                     <TextInput
                       placeholder={tp('owner_placeholder')}
@@ -410,18 +434,34 @@ export default function CommunitiesAdmin() {
 
                   {open && (
                     <View style={styles.members} testID={`members-${c.id}`}>
-                      {(c.members ?? []).map((uid) => (
-                        <Row key={uid} rowDir={rowDir} wrap testID={`member-${c.id}-${uid}`}>
-                          <InitialsAvatar name={uid} size={30} />
-                          <WhoBlock name={uid} meta="" selectableName textAlign={textAlign} />
-                          <PillButton
-                            variant="danger"
-                            label={k.ca('remove')}
-                            onPress={() => handleRemoveMember(c.id, uid)}
-                            testID={`remove-${c.id}-${uid}`}
-                          />
-                        </Row>
-                      ))}
+                      {sortedMembers(c.members ?? []).map((uid) => {
+                        const memberName = nameOf(uid);
+                        return (
+                          <Row key={uid} rowDir={rowDir} wrap testID={`member-${c.id}-${uid}`}>
+                            <InitialsAvatar name={memberName} size={30} />
+                            <WhoBlock name={memberName} meta="" textAlign={textAlign} />
+                            <PillButton
+                              variant="danger"
+                              label={k.ca('remove')}
+                              onPress={() => handleRemoveMember(c.id, uid)}
+                              testID={`remove-${c.id}-${uid}`}
+                            />
+                            <UserMoreButton
+                              uid={uid}
+                              name={memberName}
+                              testID={`member-more-${c.id}-${uid}`}
+                              actions={uid === c.ownerId ? undefined : (close) => (
+                                <PillButton
+                                  block
+                                  label={k.people('make_owner')}
+                                  onPress={() => { close(); void handleMakeOwner(c, uid, memberName); }}
+                                  testID={`make-owner-${c.id}-${uid}`}
+                                />
+                              )}
+                            />
+                          </Row>
+                        );
+                      })}
                     </View>
                   )}
                 </View>
@@ -466,6 +506,8 @@ const styles = StyleSheet.create({
   block: { borderTopWidth: 1, paddingTop: SPACE.rowPadV + 2 },
   blockHead: { alignItems: 'center', gap: 12, paddingHorizontal: SPACE.rowPadH },
   statusPill: { borderRadius: RADIUS.pill, paddingVertical: 3, paddingHorizontal: 10, flexShrink: 0 },
+  ownerLine: { alignItems: 'center', gap: 6, paddingTop: 10, paddingHorizontal: SPACE.rowPadH },
+  grow: { flex: 1, minWidth: 0 },
   ownerRow: { alignItems: 'center', gap: 8, paddingTop: 12, paddingHorizontal: SPACE.rowPadH },
   ownerInput: { flex: 1, minWidth: 0, borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: 14, height: 34, fontSize: 13 },
   controls: { alignItems: 'center', gap: 7, flexWrap: 'wrap', paddingVertical: 12, paddingHorizontal: SPACE.rowPadH },

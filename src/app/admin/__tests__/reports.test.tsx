@@ -420,3 +420,46 @@ describe('the disputes tab', () => {
     for (const k of Object.keys(en.admin_reports)) expect(H).toHaveProperty(k);
   });
 });
+
+
+describe('people are named, never shown by id, and have a ⋮', () => {
+  const row = {
+    projectId: 'p1', title: '', clientName: '', clientId: 'client-7', chatId: 'chat1',
+    proId: 'pro1', proName: '', reason: 'didnt_happen', note: 'n', flaggedAt: Date.UTC(2026, 10, 18),
+    disputes: [{ proId: 'pro1', proName: '', reason: 'didnt_happen', baseAmount: 3000, feeDueIfCompleted: 90 }],
+  };
+
+  it('a dispute card names the professional and the client, with a ⋮ each, and never their ids', async () => {
+    mockFlagged.mockImplementation(() => Promise.resolve({ rows: [row] }));
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('filter-disputes'));
+    const card = within(r.getByTestId('dispute-card-p1:pro1'));
+    expect(card.getByText(en.admin_fees.pro_label.replace('{{name}}', en.admin_people.unknown_user))).toBeTruthy();
+    expect(card.getByText(en.admin_fees.client_label.replace('{{name}}', en.admin_people.unknown_user))).toBeTruthy();
+    expect(card.queryByText(/pro1|client-7/)).toBeNull();
+    expect(r.getByTestId('user-more-pro1')).toBeTruthy();
+    expect(r.getByTestId('user-more-client-7')).toBeTruthy();
+  });
+
+  it('a report card has a ⋮ on the reported user and a "Reported by" line with its own ⋮; a deletion request has no user to show', async () => {
+    const r = await renderPage();
+    expect(r.getByTestId('report-more-r1')).toBeTruthy();
+    expect(within(r.getByTestId('reporter-r1')).getByText(/Rita Reporter/)).toBeTruthy();
+    expect(r.getByTestId('user-more-u1')).toBeTruthy(); // the reporter's own ⋮
+
+    mockCollections.reports = [{ id: 'r9', data: { type: 'community_deletion', communityName: 'Gaffers', reporterId: 'u1', reportedUserId: '', reportedUserName: '', reason: 'x', evidenceURLs: [], status: 'pending', createdAt: null } }];
+    serve();
+    const del = await renderPage();
+    expect(del.queryByTestId('report-more-r9')).toBeNull();
+  });
+
+  it('the warned & suspended rows have a ⋮, and an unnamed user reads "Unknown user"', async () => {
+    mockCollections.users = [{ id: 'u9', data: { displayName: '', moderation: { status: 'warned', reason: 'Spam', actorName: 'Dana', at: null } } }];
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('filter-users'));
+    const rowEl = within(r.getByTestId('moderated-u9'));
+    expect(rowEl.getByText(en.admin_people.unknown_user)).toBeTruthy();
+    expect(rowEl.queryByText('u9')).toBeNull();
+    expect(r.getByTestId('moderated-more-u9')).toBeTruthy();
+  });
+});

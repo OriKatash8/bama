@@ -26,7 +26,8 @@ jest.mock('expo-linear-gradient', () => ({
 }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 20, bottom: 0 }) }));
 const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) };
-jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
+let mockUidParam: string | undefined;
+jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchParams: () => ({ uid: mockUidParam }) }));
 jest.mock('@core/navigation/floatingTabBar', () => ({ useTabBarClearance: () => 80, FLOATING_TAB_BAR_BOTTOM: 24 }));
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: mockLang }),
@@ -66,6 +67,7 @@ const HISTORY = [
 beforeEach(() => {
   jest.clearAllMocks();
   mockLang = 'en';
+  mockUidParam = undefined;
   mockRouter.canGoBack.mockReturnValue(true);
   mockCallables.adminListUsers.mockResolvedValue({ users: LIST, truncated: false });
   mockCallables.moderateUser.mockResolvedValue({ success: true, actionId: 'x' });
@@ -168,6 +170,25 @@ describe('the list', () => {
     expect(r.getByText(E.list_failed)).toBeTruthy();
     await act(async () => { fireEvent.press(r.getByTestId('users-retry')); });
     expect(r.getByText('Noa Levi')).toBeTruthy();
+  });
+});
+
+describe('opened from another admin screen (?uid=, "Open in Users")', () => {
+  it('opens that user straight away, without the list', async () => {
+    mockUidParam = 'u1';
+    const r = await renderPage();
+    expect(getDoc).toHaveBeenCalledWith('users/u1');
+    expect(r.getByTestId('user-card')).toBeTruthy();
+    expect(within(r.getByTestId('user-card')).getByText('Noa Levi')).toBeTruthy();
+    expect(r.queryByTestId('users-list')).toBeNull();
+  });
+
+  it('opens it once, and says so when the user is not in the list', async () => {
+    mockUidParam = 'does-not-exist';
+    const r = await renderPage();
+    expect(mockToast).toHaveBeenCalledWith(E.open_failed, 'error');
+    expect(r.getByTestId('users-list')).toBeTruthy();
+    expect(getDoc).not.toHaveBeenCalledWith('users/does-not-exist');
   });
 });
 

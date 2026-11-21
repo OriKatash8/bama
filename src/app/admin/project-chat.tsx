@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Eye } from 'lucide-react-native';
 import { getDocument } from '@core/firebase/firestore';
+import { personName } from '@features/admin/people/personName';
 import { listenToMessages } from '@features/chat/services/chatService';
 import type { Message } from '@features/chat/types';
 import {
@@ -35,6 +36,7 @@ function fmtTime(seconds?: number): string {
 export default function ProjectChatAdmin() {
   const p = useAdminPalette();
   const { t, rowDir, textAlign } = useScopedT('admin_projects');
+  const { t: tPeople } = useScopedT('admin_people');
   const router = useRouter();
   const { chatId, projectId } = useLocalSearchParams<{ chatId: string; projectId?: string }>();
 
@@ -118,7 +120,7 @@ export default function ProjectChatAdmin() {
                 <View key={m.id} testID={`msg-${m.id}`} style={[styles.bubble, { borderColor: p.border }]}>
                   <View style={[styles.bubbleHead, { flexDirection: rowDir }]}>
                     <AdminText weight="semiBold" numberOfLines={2} style={[TYPE.rowName, styles.grow, { textAlign }]}>
-                      {names[m.senderId] ?? ''}
+                      {personName(names[m.senderId], tPeople('unknown_user'), m.senderId)}
                     </AdminText>
                     <AdminText tabular style={[TYPE.rowMeta, { color: p.text3 }]}>{fmtTime(m.timestamp?.seconds)}</AdminText>
                   </View>

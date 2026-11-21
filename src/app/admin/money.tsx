@@ -8,6 +8,7 @@ import { confirmDialog } from '@utils/confirmDialog';
 import { useCancellationLog } from '@features/admin/useCancellationLog';
 import { periodBuckets, type Period } from '@features/admin/periodBuckets';
 import { useLargeEngagements, type LargeEngagement, type LargeFeeState } from '@features/admin/useLargeEngagements';
+import { UserMoreButton, personName } from '@features/admin/people';
 import {
   AdminPage,
   AdminText,
@@ -55,6 +56,7 @@ export default function MoneyAdmin() {
   const large = useLargeEngagements();
   const showToast = useUiStore((s) => s.showToast);
   const { t: tCommon } = useScopedT('common');
+  const { t: tPeople } = useScopedT('admin_people');
   const [removing, setRemoving] = useState<Record<string, boolean>>({});
 
   /** Removes a cancellation from the list (hidden only — the project / audit record is untouched). */
@@ -98,7 +100,7 @@ export default function MoneyAdmin() {
     // confirmDialog, not Alert.alert — the latter no-ops on web, where admin runs.
     const ok = await confirmDialog(
       t('mark_paid'),
-      t('mark_paid_confirm', { amount: shekels(row.outstanding), name: row.proName || '—', title: row.title || '—' }),
+      t('mark_paid_confirm', { amount: shekels(row.outstanding), name: personName(row.proName, tPeople('unknown_user'), row.professionalId), title: row.title || tPeople('untitled_project') }),
       { confirm: tCommon('confirm'), cancel: tCommon('cancel') },
     );
     if (!ok) return;
@@ -355,6 +357,8 @@ function LargeRow({ row, busy, onMarkPaid }: { row: LargeEngagement; busy: boole
   const p = useAdminPalette();
   const router = useRouter();
   const { t, rtl, rowDir, textAlign } = useScopedT('admin_money');
+  const { t: tPeople } = useScopedT('admin_people');
+  const proLabel = personName(row.proName, tPeople('unknown_user'), row.professionalId);
   const Chevron = rtl ? ChevronLeft : ChevronRight;
   const tone = STATE_TONE[row.feeState];
   const [bg, fg] = {
@@ -366,7 +370,7 @@ function LargeRow({ row, busy, onMarkPaid }: { row: LargeEngagement; busy: boole
   const stateLabel =
     row.feeState === 'pending' ? t('state_pending', { amount: shekels(row.outstanding) }) : t(`state_${row.feeState}`);
   const meta = [
-    row.proName || '—',
+    proLabel,
     shekels(row.baseAmount),
     row.fee > 0 ? t('fee_of', { amount: shekels(row.fee) }) : null,
     t(row.active ? 'in_progress' : 'finished'),
@@ -392,6 +396,7 @@ function LargeRow({ row, busy, onMarkPaid }: { row: LargeEngagement; busy: boole
             {stateLabel}
           </AdminText>
         </View>
+        <UserMoreButton uid={row.professionalId} name={proLabel} testID={`large-more-${row.projectId}-${row.professionalId}`} />
         <TrashButton
           busy={busy}
           onPress={onMarkPaid}

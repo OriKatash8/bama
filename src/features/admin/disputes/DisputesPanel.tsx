@@ -9,6 +9,7 @@ import { MIN_OFFER_PRICE, MAX_OFFER_PRICE } from '@core/constants/pricing';
 import {
   AdminText, Card, CardHead, EmptyState, PillButton, RADIUS, SPACE, TYPE, useAdminPalette, useIsPhone, useScopedT,
 } from '@features/admin/ui';
+import { PersonLine, personName } from '@features/admin/people';
 import { HeldReviewNote } from './HeldReviewNote';
 import type { AdminDispute } from './useAdminDisputes';
 
@@ -54,6 +55,8 @@ export function DisputesPanel({
   const { t: tf } = useScopedT('admin_fees');
   const { t: tCommon } = useScopedT('common');
   const isPhone = useIsPhone();
+  const { t: tPeople } = useScopedT('admin_people');
+  const unknownUser = tPeople('unknown_user');
   const [busy, setBusy] = useState<Record<string, boolean>>({});
   const [agreed, setAgreed] = useState<Record<string, string>>({});
 
@@ -127,7 +130,7 @@ export function DisputesPanel({
         return (
           <Card key={key} testID={`dispute-card-${key}`}>
             <CardHead
-              title={d.title || d.projectId}
+              title={d.title || tPeople('untitled_project')}
               sub={t('dispute_submitted', { date: formatDate(d.submittedAt) })}
               side={(
                 <View style={[styles.chip, { backgroundColor: p.warnBg }]} testID={`dispute-status-${key}`}>
@@ -141,12 +144,20 @@ export function DisputesPanel({
               <AdminText weight="semiBold" style={[TYPE.rowMeta, { color: p.bad, textAlign }]} testID={`dispute-type-${key}`}>
                 {d.reason ? tf(`reason_${d.reason}`) : '—'}
               </AdminText>
-              <AdminText style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
-                {tf('pro_label', { name: d.proName || d.proId })}
-              </AdminText>
-              <AdminText style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>
-                {tf('client_label', { name: d.clientName || '—' })}
-              </AdminText>
+              <PersonLine
+                uid={d.proId}
+                name={personName(d.proName, unknownUser, d.proId)}
+                text={tf('pro_label', { name: personName(d.proName, unknownUser, d.proId) })}
+                color={p.text2}
+                testID={`dispute-pro-${key}`}
+              />
+              <PersonLine
+                uid={d.clientId}
+                name={personName(d.clientName, unknownUser, d.clientId)}
+                text={tf('client_label', { name: personName(d.clientName, unknownUser, d.clientId) })}
+                color={p.text2}
+                testID={`dispute-client-${key}`}
+              />
               <AdminText tabular style={[TYPE.rowMeta, { color: p.text2, textAlign }]} testID={`dispute-fee-${key}`}>
                 {tf('dispute_fee_if_completed', { amount: d.feeDueIfCompleted.toLocaleString() })}
               </AdminText>

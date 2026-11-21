@@ -5,6 +5,7 @@ import { arrayRemove, deleteDoc, doc, onSnapshot, updateDoc } from 'firebase/fir
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { createCommunityChat } from '@features/chat/services/chatService';
+import { resetUserDirectory } from '@features/admin/people/userDirectory';
 import CommunitiesAdmin from '../communities';
 
 /**
@@ -23,9 +24,17 @@ jest.mock('expo-linear-gradient', () => ({
   LinearGradient: ({ children }: { children: React.ReactNode }) => children,
 }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 20, bottom: 0 }) }));
+const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), back: mockBack, replace: mockReplace, canGoBack: () => mockCanGoBack }),
+  useRouter: () => ({ push: mockPush, back: mockBack, replace: mockReplace, canGoBack: () => mockCanGoBack }),
 }));
+// The ⋮ details read the user document and the (admin-readable) private contact doc.
+const mockGetDocument = jest.fn((path: string) => {
+  if (path === 'users/m1') return Promise.resolve({ displayName: 'Mia Member', createdAt: { seconds: 1_700_000_000 }, moderation: { status: 'warned', reason: 'Spam' } });
+  if (path === 'users/m1/private/contact') return Promise.resolve({ phone: '+972501234567' });
+  return Promise.resolve(null);
+});
+jest.mock('@core/firebase/firestore', () => ({ getDocument: (path: string) => mockGetDocument(path) }));
 jest.mock('@core/navigation/floatingTabBar', () => ({ useTabBarClearance: () => 80, FLOATING_TAB_BAR_BOTTOM: 24 }));
 jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: mockLang }),
@@ -37,11 +46,21 @@ jest.mock('@core/stores/uiStore', () => ({ useUiStore: (sel?: (s: object) => unk
 jest.mock('@core/firebase/config', () => ({ db: {} }));
 const mockDeleteCommunity = jest.fn((_data: unknown) => Promise.resolve({ ok: true }));
 const mockCommunityAction = jest.fn((_data: unknown) => Promise.resolve({ ok: true }));
+// Everyone's name and email come from ONE adminListUsers call (m3 has no name on purpose).
+const DIRECTORY = [
+  { uid: 'o1', displayName: 'Olive Owner', email: 'olive@example.com', disabled: false, createdAt: 1 },
+  { uid: 'o2', displayName: 'Sam Owner', email: 'sam@example.com', disabled: false, createdAt: 1 },
+  { uid: 'm1', displayName: 'Mia Member', email: 'mia@example.com', disabled: false, createdAt: 1 },
+  { uid: 'm2', displayName: 'Ben Member', email: 'ben@example.com', disabled: false, createdAt: 1 },
+  { uid: 'm3', displayName: '', email: 'nameless@example.com', disabled: false, createdAt: 1 },
+];
+const mockListUsers = jest.fn(() => Promise.resolve({ users: DIRECTORY, truncated: false }));
 jest.mock('@core/firebase/functions', () => ({
   callFunction: (name: string) => (data: unknown) =>
     name === 'adminDeleteCommunity' ? mockDeleteCommunity(data)
       : name === 'adminCommunityAction' ? mockCommunityAction(data)
-        : Promise.reject(new Error(`unexpected ${name}`)),
+        : name === 'adminListUsers' ? mockListUsers()
+          : Promise.reject(new Error(`unexpected ${name}`)),
 }));
 jest.mock('@features/chat/services/chatService', () => ({ createCommunityChat: jest.fn(() => Promise.resolve()) }));
 jest.mock('firebase/firestore', () => ({
@@ -54,8 +73,6 @@ jest.mock('firebase/firestore', () => ({
   deleteDoc: jest.fn(() => Promise.resolve()),
   doc: jest.fn((_db, ...path: string[]) => path.join('/')),
   arrayRemove: jest.fn((v: string) => ({ arrayRemove: v })),
-  getDoc: jest.fn((path: string) =>
-    Promise.resolve({ exists: () => true, data: () => ({ displayName: path === 'users/o1' ? 'Olive Owner' : 'Sam Owner' }) })),
   Timestamp: class {},
 }));
 
@@ -75,6 +92,7 @@ const snap = onSnapshot as jest.Mock;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  resetUserDirectory();
   mockLang = 'en';
   mockCanGoBack = true;
   snap.mockImplementation((q: string, next: (s: unknown) => void) => {
@@ -289,4 +307,86 @@ it('a 1.0.x request with only `category` still shows and approves as one categor
     fireEvent.press(r.getByTestId('approve-r3'));
   });
   expect(createCommunityChat).toHaveBeenCalledWith('Old client', 'From 1.0.x', 'q3', undefined, ['Editor']);
+});
+
+describe('people are shown by full name, never by uid, with a ⋮ for more details', () => {
+  const openMembers = async (r: Awaited<ReturnType<typeof renderPage>>) => {
+    fireEvent.press(r.getByTestId('members-toggle-c1'));
+    await act(async () => {});
+  };
+
+  it('members are listed by full name (A to Z), and no uid is shown as a label', async () => {
+    const r = await renderPage();
+    await openMembers(r);
+    const list = within(r.getByTestId('members-c1'));
+    expect(list.getByText('Ben Member')).toBeTruthy();
+    expect(list.getByText('Mia Member')).toBeTruthy();
+    expect(list.queryByText('m1')).toBeNull();
+    expect(list.queryByText('m2')).toBeNull();
+    // sorted by name: Ben before Mia (the DOM order of the member rows)
+    const ids = r.UNSAFE_root.findAll((n) => /^member-c1-m\d$/.test(n.props.testID ?? '') && n.props.accessible === false)
+      .map((n) => n.props.testID);
+    expect([...new Set(ids)]).toEqual(['member-c1-m2', 'member-c1-m1']);
+  });
+
+  it('a member with no name shows "Unknown user", not the uid', async () => {
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('members-toggle-c2'));
+    await act(async () => {});
+    const list = within(r.getByTestId('members-c2'));
+    expect(list.getByText(en.admin_people.unknown_user)).toBeTruthy();
+    expect(list.queryByText('m3')).toBeNull();
+  });
+
+  it('the owner is a full name with its own ⋮', async () => {
+    const r = await renderPage();
+    expect(within(r.getByTestId('owner-line-c1')).getByText('Olive Owner')).toBeTruthy();
+    expect(r.getByTestId('owner-more-c1')).toBeTruthy();
+  });
+
+  it('⋮ on a member opens their details: name, email, phone, id, standing, and "Open in Users"', async () => {
+    const r = await renderPage();
+    await openMembers(r);
+    await act(async () => { fireEvent.press(r.getByTestId('member-more-c1-m1')); });
+    await act(async () => {});
+    const d = (suffix: string) => r.getByTestId(`user-details-m1-${suffix}`);
+    expect(d('name').props.children).toBe('Mia Member');
+    expect(d('email').props.children).toBe('mia@example.com');
+    expect(d('uid').props.children).toBe('m1');
+    expect(mockGetDocument).toHaveBeenCalledWith('users/m1/private/contact');
+    expect(d('standing').props.children).toContain(en.admin_people.standing_warned);
+    await act(async () => { fireEvent.press(r.getByTestId('user-details-m1-open-users')); });
+    expect(mockPush).toHaveBeenCalledWith('/admin/users?uid=m1');
+  });
+
+  it('"Make owner" in the details asks first, then sets the owner by uid on the server', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(
+      (...a: unknown[]) => (a[2] as { onPress?: () => void }[])[1].onPress?.(),
+    );
+    const r = await renderPage();
+    await openMembers(r);
+    await act(async () => { fireEvent.press(r.getByTestId('member-more-c1-m1')); });
+    await act(async () => { fireEvent.press(r.getByTestId('make-owner-c1-m1')); });
+    expect(alert).toHaveBeenCalled();
+    expect(mockCommunityAction).toHaveBeenCalledWith({ communityId: 'c1', action: 'set_owner', userId: 'm1' });
+    expect(mockToast).toHaveBeenCalledWith(en.admin_people.owner_changed.replace('{{name}}', 'Mia Member'), 'success');
+    alert.mockRestore();
+  });
+
+  it('the current owner has no "Make owner" action', async () => {
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('members-toggle-c1'));
+    await act(async () => {});
+    // o1 is not a member in the fixture, so use the owner line's own details
+    await act(async () => { fireEvent.press(r.getByTestId('owner-more-c1')); });
+    expect(r.queryByTestId('make-owner-c1-o1')).toBeNull();
+  });
+
+  it('removing a member says who by name', async () => {
+    const r = await renderPage();
+    await openMembers(r);
+    await act(async () => { fireEvent.press(r.getByTestId('remove-c1-m1')); });
+    expect(mockToast).toHaveBeenCalledWith(en.community_admin.toast_removed.replace('{{name}}', 'Mia Member'), 'success');
+    expect(JSON.stringify(mockToast.mock.calls)).not.toContain('"m1"');
+  });
 });

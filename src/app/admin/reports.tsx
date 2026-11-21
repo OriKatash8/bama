@@ -22,6 +22,7 @@ import {
   AdminPage, AdminSheet, AdminText, Card, CardHead, EmptyState, InitialsAvatar, PillButton, Row, Segment, WhoBlock,
   RADIUS, SPACE, TYPE, useAdminPalette, useScopedT,
 } from '@features/admin/ui';
+import { PersonLine, UserMoreButton, personName } from '@features/admin/people';
 import { DisputesPanel } from '@features/admin/disputes/DisputesPanel';
 import { useAdminDisputes } from '@features/admin/disputes/useAdminDisputes';
 
@@ -297,14 +298,15 @@ export default function ReportsAdmin() {
                 const at = u.moderation.at as unknown as Timestamp | null;
                 return (
                   <Row key={u.id} rowDir={rowDir} wrap testID={`moderated-${u.id}`}>
-                    <InitialsAvatar name={u.displayName || '?'} size={34} />
+                    <InitialsAvatar name={personName(u.displayName, '?', u.id)} size={34} />
                     <WhoBlock
-                      name={u.displayName || t('unknown_user')}
+                      name={personName(u.displayName, t('unknown_user'), u.id)}
                       meta={`${u.moderation.reason} · ${u.moderation.actorName} · ${formatDate(at)}`}
                       metaLines={4}
                       textAlign={textAlign}
                     />
                     <ModChip suspended={suspended} label={t(suspended ? 'status_suspended' : 'status_warned')} />
+                    <UserMoreButton uid={u.id} name={personName(u.displayName, t('unknown_user'), u.id)} testID={`moderated-more-${u.id}`} />
                     {lifting[u.id] ? (
                       <ActivityIndicator size="small" color={p.accent} testID={`lifting-${u.id}`} />
                     ) : (
@@ -335,11 +337,27 @@ export default function ReportsAdmin() {
                 {/* Head: reported user (or the community) over reporter · date, status on the far side. */}
                 <CardHead
                   title={reportedName(report)}
-                  sub={`${resolvedNames[report.reporterId] || '—'} · ${formatDate(report.createdAt)}`}
-                  side={<StatusChip status={statusOf(report)} label={t(`status_${statusOf(report)}`)} />}
+                  sub={`${personName(resolvedNames[report.reporterId], t('unknown_user'), report.reporterId)} · ${formatDate(report.createdAt)}`}
+                  side={(
+                    <View style={[styles.headSide, { flexDirection: rowDir }]}>
+                      <StatusChip status={statusOf(report)} label={t(`status_${statusOf(report)}`)} />
+                      {/* The reported user, by name above; the ⋮ shows who they are. A deletion request has no user. */}
+                      {report.type !== 'community_deletion' && report.reportedUserId ? (
+                        <UserMoreButton uid={report.reportedUserId} name={reportedName(report)} testID={`report-more-${report.id}`} />
+                      ) : null}
+                    </View>
+                  )}
                 />
 
                 <View style={[styles.body, { borderTopColor: p.border }]}>
+                  {!!report.reporterId && (
+                    <PersonLine
+                      uid={report.reporterId}
+                      name={personName(resolvedNames[report.reporterId], t('unknown_user'), report.reporterId)}
+                      text={`${t('reporter_label')}: ${personName(resolvedNames[report.reporterId], t('unknown_user'), report.reporterId)}`}
+                      testID={`reporter-${report.id}`}
+                    />
+                  )}
                   {(report.type === 'user_blocked' || (report.targetType && report.targetType !== 'user')) && (
                     <AdminText weight="semiBold" style={[TYPE.rowMeta, { color: p.text, textAlign }]} testID={`kind-${report.id}`}>
                       {report.type === 'user_blocked' ? t('kind_user_blocked') : t(`kind_${report.targetType}`)}
@@ -473,6 +491,7 @@ export default function ReportsAdmin() {
 
 const styles = StyleSheet.create({
   trashBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  headSide: { alignItems: 'center', gap: 6 },
   filterRow: { flexGrow: 1 },
   spinner: { marginTop: 40 },
   chip: { borderRadius: RADIUS.pill, paddingVertical: 3, paddingHorizontal: 9, flexShrink: 0 },

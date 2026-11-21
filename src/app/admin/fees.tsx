@@ -11,6 +11,7 @@ import {
   AdminPage, AdminText, Card, CardHead, EmptyState, IconTile, InitialsAvatar, PillButton, Segment,
   StatGrid, StatTile, WhoBlock, RADIUS, SPACE, TYPE, useAdminPalette, useIsPhone, useScopedT,
 } from '@features/admin/ui';
+import { PersonLine, UserMoreButton, personName } from '@features/admin/people';
 import { HeldReviewNote, type HeldReview } from '@features/admin/disputes/HeldReviewNote';
 
 type ArrearsProject = {
@@ -31,7 +32,7 @@ type DisputeRow = {
 type FlaggedRow = {
   projectId: string; title: string; status: string; reason: string;
   proId: string | null; proName: string; clientName: string;
-  flaggedAt: number | null; note: string;
+  flaggedAt: number | null; note: string; clientId?: string;
   /** Absent from a server that predates resolveFeeDispute. */
   disputes?: DisputeRow[];
 };
@@ -127,6 +128,10 @@ export default function AdminFeesScreen() {
   const { t: tDash } = useScopedT('admin_dashboard');
   const { t: tCa } = useScopedT('community_admin');
   const isPhone = useIsPhone();
+  const { t: tPeople } = useScopedT('admin_people');
+  // A person or a project is never shown by its id: a missing name reads "Unknown user" / "Untitled project".
+  const unknownUser = tPeople('unknown_user');
+  const untitled = tPeople('untitled_project');
 
   const [tab, setTab] = useState<Tab>('arrears');
   const [arrears, setArrears] = useState<ArrearsRow[]>([]);
@@ -308,7 +313,7 @@ export default function AdminFeesScreen() {
             <EmptyState text={t('empty_arrears')} testID="arrears-empty" />
           ) : (
             arrears.map((row) => {
-              const name = row.displayName || row.professionalId;
+              const name = personName(row.displayName, unknownUser, row.professionalId);
               // Repeat debtors stand out: 2+ fees with money still owed.
               const openFees = row.projects.filter((pr) => pr.owed > 0).length;
               const manyOpen = openFees >= MANY_OPEN_FEES;
@@ -335,6 +340,7 @@ export default function AdminFeesScreen() {
                       tone={row.blocked ? 'bad' : 'good'}
                       label={t(row.blocked ? 'blocked' : 'not_blocked')}
                     />
+                    <UserMoreButton uid={row.professionalId} name={name} testID={`more-${row.professionalId}`} />
                   </View>
                   {manyOpen && (
                     <View style={{ flexDirection: rowDir }}>
@@ -374,7 +380,7 @@ export default function AdminFeesScreen() {
                             numberOfLines={3}
                             style={[TYPE.rowName, styles.grow, { textAlign }]}
                           >
-                            {pr.title || pr.projectId} · ₪{pr.owed.toLocaleString()}
+                            {pr.title || untitled} · ₪{pr.owed.toLocaleString()}
                           </AdminText>
                         </View>
                         {/* The buttons on theirs: wrapping with a gap, and full-width stacked on a phone. */}
@@ -450,7 +456,7 @@ export default function AdminFeesScreen() {
                           <IconTile icon={Receipt} tone={section === 'paid' ? 'good' : row.stale ? 'warn' : 'accent'} />
                           <View style={styles.grow}>
                             <AdminText weight="semiBold" numberOfLines={2} style={[TYPE.rowName, { textAlign }]}>
-                              {row.displayName || row.professionalId} · {row.title || row.projectId}
+                              {personName(row.displayName, unknownUser, row.professionalId)} · {row.title || untitled}
                             </AdminText>
                             <AdminText tabular style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
                               {section === 'paid'
@@ -462,6 +468,7 @@ export default function AdminFeesScreen() {
                               <AdminText style={[TYPE.rowMeta, { color: p.bad, textAlign }]}>{t('link_stale')}</AdminText>
                             ) : null}
                           </View>
+                          <UserMoreButton uid={row.professionalId} name={personName(row.displayName, unknownUser, row.professionalId)} testID={`more-link-${key}`} />
                         </View>
                       );
                     })
@@ -499,7 +506,7 @@ export default function AdminFeesScreen() {
                   <IconTile icon={AlertTriangle} tone={moneyIn ? 'bad' : 'warn'} />
                   <View style={styles.grow}>
                     <AdminText weight="semiBold" numberOfLines={2} style={[TYPE.rowName, { textAlign }]}>
-                      {row.displayName || row.professionalId} · {row.title || row.projectId}
+                      {personName(row.displayName, unknownUser, row.professionalId)} · {row.title || untitled}
                     </AdminText>
                     <AdminText weight="semiBold" style={[TYPE.rowMeta, styles.reason, { color: p.bad, textAlign }]}>
                       {t(`charge_reason_${row.reason}`)}
@@ -531,6 +538,7 @@ export default function AdminFeesScreen() {
                       />
                     </View>
                   </View>
+                  <UserMoreButton uid={row.professionalId} name={personName(row.displayName, unknownUser, row.professionalId)} testID={`more-charge-${key}`} />
                 </View>
               );
             })
@@ -554,7 +562,7 @@ export default function AdminFeesScreen() {
                 <IconTile icon={AlertTriangle} tone="warn" />
                 <View style={styles.grow}>
                   <AdminText weight="semiBold" numberOfLines={2} style={[TYPE.rowName, { textAlign }]}>
-                    {row.title || row.projectId}
+                    {row.title || untitled}
                   </AdminText>
                   <AdminText weight="semiBold" style={[TYPE.rowMeta, styles.reason, { color: p.bad, textAlign }]}>
                     {row.reason ? t(`reason_${row.reason}`) : row.reason}
@@ -562,14 +570,20 @@ export default function AdminFeesScreen() {
                   <AdminText tabular style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
                     {t('flagged_at', { date: formatDate(row.flaggedAt, rtl) })}
                   </AdminText>
-                  {!!row.proName && (
-                    <AdminText style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
-                      {t('pro_label', { name: row.proName })}
-                    </AdminText>
+                  {!!row.proId && (
+                    <PersonLine
+                      uid={row.proId}
+                      name={personName(row.proName, unknownUser, row.proId)}
+                      text={t('pro_label', { name: personName(row.proName, unknownUser, row.proId) })}
+                      testID={`flagged-pro-${row.projectId}:${row.proId}`}
+                    />
                   )}
-                  <AdminText style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
-                    {t('client_label', { name: row.clientName })}
-                  </AdminText>
+                  <PersonLine
+                    uid={row.clientId}
+                    name={personName(row.clientName, unknownUser, row.clientId)}
+                    text={t('client_label', { name: personName(row.clientName, unknownUser, row.clientId) })}
+                    testID={`flagged-client-${row.projectId}:${row.proId ?? ''}`}
+                  />
                   {!!row.note && (
                     <View style={[styles.note, { backgroundColor: p.surface2 }]}>
                       <AdminText style={[styles.body, { color: p.text2, textAlign }]}>{row.note}</AdminText>
@@ -605,7 +619,7 @@ export default function AdminFeesScreen() {
                         style={[styles.dispute, { backgroundColor: p.surface2 }]}
                       >
                         <AdminText weight="semiBold" style={[TYPE.rowName, { textAlign }]}>
-                          {t('dispute_head', { name: d.proName || d.proId })}
+                          {t('dispute_head', { name: personName(d.proName || row.proName, unknownUser, d.proId) })}
                         </AdminText>
                         {!!d.reason && (
                           <AdminText style={[TYPE.rowMeta, { color: p.bad, textAlign }]}>
