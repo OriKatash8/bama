@@ -119,8 +119,8 @@ describe('what the project looks like while a contest is open', () => {
     expect(d.adminReviewPending).toBe(true);
   });
 
-  it('a request the client REJECTED (never completed) still holds the project open', () => {
-    const d = deriveProjectState([{ professionalId: 'a', engagementStatus: 'disputed' }] as never, now);
+  it('a request the client REJECTED (marked endRejected) still holds the project open', () => {
+    const d = deriveProjectState([{ professionalId: 'a', engagementStatus: 'disputed', endRejected: true }] as never, now);
     expect(d.isComplete).toBe(false);
   });
 });

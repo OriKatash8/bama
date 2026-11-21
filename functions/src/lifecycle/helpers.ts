@@ -269,6 +269,10 @@ export type FeeDoc = {
   /** The fee as it stood the moment the professional contested it, so a dispute
    *  resolved as 'completed' can put back what `didnt_happen` zeroed. */
   preDispute?: { feeDue: number; status: FeeSettlementStatus | null; baseAmount: number };
+  /** True only on an engagement the CLIENT rejected the end of (respondToEngagementEnd,
+   *  accept=false): nothing was delivered, so the project stays open on it. A contest
+   *  (contestEngagement) never sets it. Cleared by resolveFeeDispute. */
+  endRejected?: boolean;
   /** Set by resolveFeeDispute. */
   agreedAmount?: number;
   resolvedAt?: admin.firestore.Timestamp;

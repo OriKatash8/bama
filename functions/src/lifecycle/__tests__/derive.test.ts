@@ -36,8 +36,8 @@ describe('deriveProjectState — the project rolls up from its engagements', () 
     expect(d.reason).toBe('no engagements');
   });
 
-  it('ONE dispute holds the project open however many others finished', () => {
-    const d = deriveProjectState([e('completed'), e('completed'), e('disputed')], now);
+  it('ONE client-rejected end holds the project open however many others finished', () => {
+    const d = deriveProjectState([e('completed'), e('completed'), e('disputed', { endRejected: true })], now);
     expect(d.isComplete).toBe(false);
     expect(d.reason).toContain('disputed');
   });
@@ -45,7 +45,7 @@ describe('deriveProjectState — the project rolls up from its engagements', () 
   it('reports disputed even when every other engagement is terminal', () => {
     // 'disputed' is not in the terminal set, so the open-count branch would also
     // catch it — but the reason has to say WHY, and "still open" would be wrong.
-    expect(deriveProjectState([e('disputed')], now).reason).toContain('disputed');
+    expect(deriveProjectState([e('disputed', { endRejected: true })], now).reason).toContain('disputed');
   });
 
   it('treats a missing engagementStatus as open, never as terminal', () => {
@@ -99,9 +99,9 @@ describe('adminReviewPending — any engagement raises it', () => {
   });
 
   it('is reported independently of completeness', () => {
-    // A flagged engagement on an otherwise-finished project still needs the flag
-    // surfaced, even though the dispute already holds isComplete false.
-    const d = deriveProjectState([e('disputed', { adminReviewPending: true })], now);
+    // A flagged engagement still needs the flag surfaced whether or not it holds the
+    // project open (here a client-rejected end does).
+    const d = deriveProjectState([e('disputed', { adminReviewPending: true, endRejected: true })], now);
     expect(d.isComplete).toBe(false);
     expect(d.adminReviewPending).toBe(true);
   });
@@ -448,5 +448,24 @@ describe('a dispute must not overwrite the project flag, and a stale release rea
     );
     expect(d.isComplete).toBe(true);
     expect(d.disputedIds).toEqual(['a']);
+  });
+});
+
+
+describe('the client-rejected marker decides what holds the project open', () => {
+  const future = ts(now + 2 * DAY);
+
+  it('a rejected finish/withdrawal (endRejected) holds the project open, even with an old completion stamp', () => {
+    // THE edge: completed once (stamp stays), re-hired, asked to finish again, client rejected.
+    const d = deriveProjectState(
+      [e('disputed', { professionalId: 'a', chargeDueAt: future, endRejected: true }), e('completed', { professionalId: 'b', chargeDueAt: future })], now,
+    );
+    expect(d.isComplete).toBe(false);
+    expect(d.reason).toContain('disputed');
+  });
+
+  it('a contest (no marker) never holds it open, with or without a completion stamp', () => {
+    expect(deriveProjectState([e('disputed', { professionalId: 'a', chargeDueAt: future })], now).isComplete).toBe(true);
+    expect(deriveProjectState([e('disputed', { professionalId: 'a', disputeWindowEndsAt: future })], now).isComplete).toBe(true);
   });
 });

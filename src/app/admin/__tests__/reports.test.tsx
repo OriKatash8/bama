@@ -325,6 +325,27 @@ describe('the disputes tab', () => {
     expect(card.getByText(E.dispute_status_open)).toBeTruthy();
   });
 
+  it('shows the held review on the card (stars, text, author) and nothing when none is held', async () => {
+    const held = { rating: 1, text: 'Never showed up', authorName: 'Cleo' };
+    mockFlagged.mockImplementation(() => Promise.resolve({
+      rows: [{ ...row, disputes: [{ ...row.disputes[0], heldReview: held }] }],
+    }));
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('filter-disputes'));
+    const note = within(r.getByTestId('held-review-p1:pro1'));
+    expect(note.getByText(E.held_review_title)).toBeTruthy();
+    expect(note.getByTestId('held-review-p1:pro1-stars').props.accessibilityLabel).toBe('1/5');
+    expect(note.getAllByTestId('star-filled')).toHaveLength(1);
+    expect(note.getAllByTestId('star-empty')).toHaveLength(4);
+    expect(note.getByText('Never showed up')).toBeTruthy();
+    expect(note.getByText(E.held_review_author.replace('{{name}}', 'Cleo'))).toBeTruthy();
+
+    mockFlagged.mockImplementation(() => Promise.resolve({ rows: [row] }));
+    const plain = await renderPage();
+    fireEvent.press(plain.getByTestId('filter-disputes'));
+    expect(plain.queryByTestId('held-review-p1:pro1')).toBeNull();
+  });
+
   it('opens the project chat', async () => {
     mockFlagged.mockImplementation(() => Promise.resolve({ rows: [row] }));
     const r = await renderPage();

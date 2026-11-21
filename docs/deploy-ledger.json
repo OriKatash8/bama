@@ -84,12 +84,12 @@
     "adminListFlaggedProjects": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-10-02T04:49:25.794702250Z",
-      "treeSha": "cda4946e8d01e55a3f217f4bb8fa1de0db4c3550",
-      "commit": "14b0df34",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-11-20T11:51:29.655759528Z",
+      "treeSha": "20e28b287344b7720aa61a53e8e14835e7e3e6ec",
+      "commit": "84915494",
+      "how": "deploy",
+      "recordedOn": "2026-11-20",
+      "note": "disputes: project stays completed, re-hire reset, review hold, admin push (84915494)"
     },
     "adminListLargeEngagements": {
       "region": "us-central1",
@@ -254,12 +254,12 @@
     "completeAllEngagements": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-10-03T10:23:04.629442821Z",
-      "treeSha": "359463fed5ba8042c71976478e641534433e5ea6",
-      "commit": "35993033",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-11-20T11:51:29.756684958Z",
+      "treeSha": "20e28b287344b7720aa61a53e8e14835e7e3e6ec",
+      "commit": "84915494",
+      "how": "deploy",
+      "recordedOn": "2026-11-20",
+      "note": "disputes: project stays completed, re-hire reset, review hold, admin push (84915494)"
     },
     "compressVideo": {
       "region": "europe-west1",
@@ -274,32 +274,32 @@
     "confirmCandidate": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-10-02T02:08:59.655328260Z",
-      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
-      "commit": "76f1e025",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-11-20T11:51:29.398552598Z",
+      "treeSha": "20e28b287344b7720aa61a53e8e14835e7e3e6ec",
+      "commit": "84915494",
+      "how": "deploy",
+      "recordedOn": "2026-11-20",
+      "note": "disputes: project stays completed, re-hire reset, review hold, admin push (84915494)"
     },
     "confirmCompletion": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-10-03T10:23:02.841100330Z",
-      "treeSha": "359463fed5ba8042c71976478e641534433e5ea6",
-      "commit": "35993033",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-11-20T11:51:29.434117602Z",
+      "treeSha": "20e28b287344b7720aa61a53e8e14835e7e3e6ec",
+      "commit": "84915494",
+      "how": "deploy",
+      "recordedOn": "2026-11-20",
+      "note": "disputes: project stays completed, re-hire reset, review hold, admin push (84915494)"
     },
     "contestEngagement": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-08T22:03:06.987124815Z",
-      "treeSha": "a5007f23b56a9f71cb2b1b7a1ad89332f41ef0c4",
-      "commit": "2eb9cb67",
+      "updateTime": "2026-11-20T11:51:31.283533040Z",
+      "treeSha": "20e28b287344b7720aa61a53e8e14835e7e3e6ec",
+      "commit": "84915494",
       "how": "deploy",
-      "recordedOn": "2026-11-08",
-      "note": "Early payment (Pay now inside the contest window): new requestMyPaymentLinkNow; contestEngagement/disputeFeeByPro refuse a paid fee, run in a transaction and supersede a live link; paymentLinkConfirm flags payments on contested fees; feeChargeCron shares the changed link code. Functions only, from feature/payment-early 6f229f4f."
+      "recordedOn": "2026-11-20",
+      "note": "disputes: project stays completed, re-hire reset, review hold, admin push (84915494)"
     },
     "createCardSaveSession": {
       "region": "europe-west1",
@@ -384,12 +384,12 @@
     "disputeFeeByPro": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-08T22:03:06.204161097Z",
-      "treeSha": "a5007f23b56a9f71cb2b1b7a1ad89332f41ef0c4",
-      "commit": "2eb9cb67",
+      "updateTime": "2026-11-20T11:51:31.508960087Z",
+      "treeSha": "20e28b287344b7720aa61a53e8e14835e7e3e6ec",
+      "commit": "84915494",
       "how": "deploy",
-      "recordedOn": "2026-11-08",
-      "note": "Early payment (Pay now inside the contest window): new requestMyPaymentLinkNow; contestEngagement/disputeFeeByPro refuse a paid fee, run in a transaction and supersede a live link; paymentLinkConfirm flags payments on contested fees; feeChargeCron shares the changed link code. Functions only, from feature/payment-early 6f229f4f."
+      "recordedOn": "2026-11-20",
+      "note": "disputes: project stays completed, re-hire reset, review hold, admin push (84915494)"
     },
     "fakeCompleteCardSave": {
       "region": "europe-west1",
@@ -424,12 +424,12 @@
     "freeSlot": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-10-02T02:09:00.469434415Z",
-      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
-      "commit": "76f1e025",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-11-20T11:51:30.759808651Z",
+      "treeSha": "20e28b287344b7720aa61a53e8e14835e7e3e6ec",
+      "commit": "84915494",
+      "how": "deploy",
+      "recordedOn": "2026-11-20",
+      "note": "disputes: project stays completed, re-hire reset, review hold, admin push (84915494)"
     },
     "getAccountDeletionStatus": {
       "region": "us-central1",
@@ -484,22 +484,22 @@
     "hireProfessional": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-10-03T06:17:08.667368848Z",
-      "treeSha": "f055d7d9512b7aded08c11ba89833d116fc1856b",
-      "commit": "abb4e491",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-11-20T11:51:29.890169217Z",
+      "treeSha": "20e28b287344b7720aa61a53e8e14835e7e3e6ec",
+      "commit": "84915494",
+      "how": "deploy",
+      "recordedOn": "2026-11-20",
+      "note": "disputes: project stays completed, re-hire reset, review hold, admin push (84915494)"
     },
     "lifecycleCron": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-05T15:49:19.423030246Z",
-      "treeSha": "d4cfcd1eac68c42bfbbf565ce67f6981fb879f9f",
-      "commit": "baef1d15",
+      "updateTime": "2026-11-20T11:51:29.869721511Z",
+      "treeSha": "20e28b287344b7720aa61a53e8e14835e7e3e6ec",
+      "commit": "84915494",
       "how": "deploy",
-      "recordedOn": "2026-11-05",
-      "note": "Payment links (grow_link via Make), paymentProvider still none (inert): paymentLinkConfirm + adminListPaymentLinks new; feeChargeCron (link branch, binds MAKE_* secrets), adminListChargeIssues/adminAcknowledgeChargeIssue (link reviews), getMyPaymentMethod (linkMode), lifecycleCron (knows grow_link, stub stays off), onNotificationCreate (fee_link essential). Deployed from a clean tree of fd915ec7 (feature/payment-links = main + payment links); rules cf9bcdf2 -> d59ca3ff, fees.paidBy index, /pay-return hosting the same day."
+      "recordedOn": "2026-11-20",
+      "note": "disputes: project stays completed, re-hire reset, review hold, admin push (84915494)"
     },
     "markDemandSent": {
       "region": "us-central1",
@@ -514,12 +514,12 @@
     "markEngagementComplete": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-10-02T02:09:13.440270755Z",
-      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
-      "commit": "76f1e025",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-11-20T11:51:29.681769616Z",
+      "treeSha": "20e28b287344b7720aa61a53e8e14835e7e3e6ec",
+      "commit": "84915494",
+      "how": "deploy",
+      "recordedOn": "2026-11-20",
+      "note": "disputes: project stays completed, re-hire reset, review hold, admin push (84915494)"
     },
     "markFeePaid": {
       "region": "us-central1",
@@ -644,12 +644,12 @@
     "onNotificationCreate": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-05T15:49:31.747Z",
-      "treeSha": "d4cfcd1eac68c42bfbbf565ce67f6981fb879f9f",
-      "commit": "baef1d15",
+      "updateTime": "2026-11-20T11:51:20.405Z",
+      "treeSha": "20e28b287344b7720aa61a53e8e14835e7e3e6ec",
+      "commit": "84915494",
       "how": "deploy",
-      "recordedOn": "2026-11-05",
-      "note": "Payment links (grow_link via Make), paymentProvider still none (inert): paymentLinkConfirm + adminListPaymentLinks new; feeChargeCron (link branch, binds MAKE_* secrets), adminListChargeIssues/adminAcknowledgeChargeIssue (link reviews), getMyPaymentMethod (linkMode), lifecycleCron (knows grow_link, stub stays off), onNotificationCreate (fee_link essential). Deployed from a clean tree of fd915ec7 (feature/payment-links = main + payment links); rules cf9bcdf2 -> d59ca3ff, fees.paidBy index, /pay-return hosting the same day."
+      "recordedOn": "2026-11-20",
+      "note": "disputes: project stays completed, re-hire reset, review hold, admin push (84915494)"
     },
     "onPriceOfferAccepted": {
       "region": "us-central1",
@@ -714,12 +714,12 @@
     "onReviewCreate": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-10-02T02:08:50.691006448Z",
-      "treeSha": "392d8cdebec29d784841c895036975807e9356c3",
-      "commit": "76f1e025",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-11-20T11:51:19.738836311Z",
+      "treeSha": "20e28b287344b7720aa61a53e8e14835e7e3e6ec",
+      "commit": "84915494",
+      "how": "deploy",
+      "recordedOn": "2026-11-20",
+      "note": "disputes: project stays completed, re-hire reset, review hold, admin push (84915494)"
     },
     "onUserCreate": {
       "region": "us-central1",
@@ -754,12 +754,12 @@
     "rejectCandidate": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-10-03T06:17:07.851572309Z",
-      "treeSha": "f055d7d9512b7aded08c11ba89833d116fc1856b",
-      "commit": "abb4e491",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-11-20T11:51:29.510937572Z",
+      "treeSha": "20e28b287344b7720aa61a53e8e14835e7e3e6ec",
+      "commit": "84915494",
+      "how": "deploy",
+      "recordedOn": "2026-11-20",
+      "note": "disputes: project stays completed, re-hire reset, review hold, admin push (84915494)"
     },
     "removeMyPaymentMethod": {
       "region": "europe-west1",
@@ -814,12 +814,12 @@
     "resolveFeeDispute": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-10-02T04:49:23.758389973Z",
-      "treeSha": "cda4946e8d01e55a3f217f4bb8fa1de0db4c3550",
-      "commit": "14b0df34",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-11-20T11:51:29.557117185Z",
+      "treeSha": "20e28b287344b7720aa61a53e8e14835e7e3e6ec",
+      "commit": "84915494",
+      "how": "deploy",
+      "recordedOn": "2026-11-20",
+      "note": "disputes: project stays completed, re-hire reset, review hold, admin push (84915494)"
     },
     "respondOwnershipTransfer": {
       "region": "europe-west1",
@@ -834,12 +834,12 @@
     "respondToEngagementEnd": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-10-03T10:23:05.751872371Z",
-      "treeSha": "359463fed5ba8042c71976478e641534433e5ea6",
-      "commit": "35993033",
-      "how": "baseline",
-      "recordedOn": "2026-10-06",
-      "note": "Baseline created 2026-10-06: the state found in production that day. NOT individually verified at the time each function was deployed; the 2026-09-30 deploy had gone unrecorded for a week, which is why this ledger exists."
+      "updateTime": "2026-11-20T11:51:29.041880986Z",
+      "treeSha": "20e28b287344b7720aa61a53e8e14835e7e3e6ec",
+      "commit": "84915494",
+      "how": "deploy",
+      "recordedOn": "2026-11-20",
+      "note": "disputes: project stays completed, re-hire reset, review hold, admin push (84915494)"
     },
     "respondToPaymentRequest": {
       "region": "us-central1",

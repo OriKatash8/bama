@@ -219,6 +219,30 @@ describe('resolving a contested engagement', () => {
     expect(row.getByText('If resolved as completed: ₪30 owed')).toBeTruthy();
   });
 
+  it('shows the held review (stars, text, author) on the dispute card, and nothing when none is held', async () => {
+    fns.adminListFlaggedProjects.mockResolvedValue({
+      rows: [{
+        ...FLAGGED.rows[0],
+        disputes: [{
+          ...DISPUTED.rows[0].disputes[0],
+          heldReview: { rating: 2, text: 'He never came to the shoot', authorName: 'Cleo' },
+        }],
+      }],
+    });
+    const r = await renderPage();
+    fireEvent.press(r.getByTestId('tab-flagged'));
+    const card = within(r.getByTestId(`dispute-${KEY}`));
+    expect(card.getByText(en.admin_reports.held_review_title)).toBeTruthy();
+    expect(card.getByTestId(`held-review-${KEY}-stars`).props.accessibilityLabel).toBe('2/5');
+    expect(card.getAllByTestId('star-filled')).toHaveLength(2);
+    expect(card.getAllByTestId('star-empty')).toHaveLength(3);
+    expect(card.getByText('He never came to the shoot')).toBeTruthy();
+    expect(card.getByText(en.admin_reports.held_review_author.replace('{{name}}', 'Cleo'))).toBeTruthy();
+
+    const none = await openFlagged();
+    expect(none.queryByTestId(`held-review-${KEY}`)).toBeNull();
+  });
+
   it('completed with no price restores the fee: confirms with the amount, then calls resolveFeeDispute', async () => {
     const r = await openFlagged();
     await act(async () => { fireEvent.press(r.getByTestId(`resolve-completed-${KEY}`)); });

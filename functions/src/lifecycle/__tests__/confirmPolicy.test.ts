@@ -25,7 +25,7 @@ it('after a confirmation the disputed engagement still holds the project open', 
   // What confirmCompletionInternal leaves behind: the others completed, the disputed one untouched.
   const after = [
     { professionalId: 'a', engagementStatus: 'completed' },
-    { professionalId: 'b', engagementStatus: 'disputed' },
+    { professionalId: 'b', engagementStatus: 'disputed', endRejected: true },
   ] as never[];
   const state = deriveProjectState(after as never, Date.UTC(2026, 9, 3));
   expect(state.isComplete).toBe(false);

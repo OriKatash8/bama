@@ -42,7 +42,7 @@ describe('the fee-evasion guard', () => {
     // delivered and then claimed to be leaving is caught by the client's reject,
     // and the engagement must not reach a terminal state that would let the
     // project close around the unresolved fee.
-    const d = deriveProjectState([eng('disputed'), eng('completed')], now);
+    const d = deriveProjectState([eng('disputed', { endRejected: true }), eng('completed')], now);
     expect(d.isComplete).toBe(false);
     expect(d.reason).toContain('disputed');
   });
@@ -106,7 +106,7 @@ describe('complete-all skips what it must not touch', () => {
     // The project is held open, but that is the dispute's doing. The other
     // engagements are already terminal and were charged normally.
     const d = deriveProjectState(
-      [eng('completed'), eng('completed'), eng('disputed')], now,
+      [eng('completed'), eng('completed'), eng('disputed', { endRejected: true })], now,
     );
     expect(d.isComplete).toBe(false);
     expect(d.reason).toContain('1 engagement(s) disputed');

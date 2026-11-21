@@ -1,4 +1,4 @@
-import { flaggedRowsFor } from '../adminViews';
+import { heldReviewOf, flaggedRowsFor } from '../adminViews';
 
 /**
  * adminListFlaggedProjects' rows: one per flagged ENGAGEMENT, each from that
@@ -49,4 +49,27 @@ it('a project flagged with no flagged engagement still shows one row from the pr
   const rows = flaggedRowsFor('p3', { ...project, adminReview: { reason: 'completion_unanswered', proId: 'px', at: ts(T) } }, []);
   expect(rows).toHaveLength(1);
   expect(rows[0]).toMatchObject({ proId: 'px', reason: 'completion_unanswered', flaggedAt: T, disputes: [] });
+});
+
+describe('heldReviewOf — the review a "didn\'t happen" dispute is holding back', () => {
+  const doc = (data: Record<string, unknown>) => ({ data: () => data });
+
+  it('returns stars, text and author of the held review', () => {
+    expect(heldReviewOf([doc({ heldForDispute: true, published: false, rating: 2, body: 'He never came', authorName: 'Cleo' })]))
+      .toEqual({ rating: 2, text: 'He never came', authorName: 'Cleo' });
+  });
+
+  it('reads the text from `text` when `body` is absent, and tolerates a missing author', () => {
+    expect(heldReviewOf([doc({ heldForDispute: true, rating: 4, text: 'ok' })]))
+      .toEqual({ rating: 4, text: 'ok', authorName: '' });
+  });
+
+  it('is null when nothing is held: no review, a published one, or an amount dispute', () => {
+    expect(heldReviewOf([])).toBeNull();
+    expect(heldReviewOf([doc({ published: true, rating: 5, body: 'great' })])).toBeNull();
+  });
+
+  it('picks the held one among several', () => {
+    expect(heldReviewOf([doc({ published: true, rating: 5 }), doc({ heldForDispute: true, rating: 1, body: 'x' })])?.rating).toBe(1);
+  });
 });

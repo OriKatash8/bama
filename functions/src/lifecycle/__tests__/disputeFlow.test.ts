@@ -1,5 +1,5 @@
 import { mockDb, Timestamp } from '../../payments/__fixtures__/memoryHelpers';
-import { contestEngagement, disputeFeeByPro } from '../completion';
+import { contestEngagement, disputeFeeByPro, respondToEngagementEnd } from '../completion';
 import { resolveFeeDispute } from '../disputeResolution';
 import { applyDerivedProjectState } from '../derive';
 import { buildHireFeeUpdate } from '../feeRehire';
@@ -144,6 +144,7 @@ describe('reject → re-hire → complete → dispute → resolve', () => {
     it('keeps the project completed and flagged, and holds the review', async () => {
       await call(contestEngagement, asPro({ reason: 'didnt_happen', note: 'cancelled on the day' }));
       expect(fee()).toMatchObject({ engagementStatus: 'disputed', adminReviewPending: true });
+      expect(fee()).not.toHaveProperty('endRejected'); // a contest is not a client-rejected finish
       expect(project()).toMatchObject({
         status: 'completed', adminReviewPending: true, completion: { state: 'confirmed' },
         slotHolders: ['pro1'], // the slot stays held while the dispute is open
@@ -193,6 +194,75 @@ describe('reject → re-hire → complete → dispute → resolve', () => {
       await call(disputeFeeByPro, asPro({}));
       expect(project()).toMatchObject({ status: 'completed', adminReviewPending: true });
       expect(mockDb.read(REVIEW)).toMatchObject({ published: true });
+    });
+  });
+
+  describe('one dispute per engagement (resolvedAt guard)', () => {
+    beforeEach(async () => { await rehire(); await complete(); });
+
+    it('after an admin resolves "completed" inside the window, the pro cannot contest again', async () => {
+      await call(contestEngagement, asPro({ reason: 'amount_disputed' }));
+      await call(resolveFeeDispute, asAdmin({ outcome: 'completed' }));
+      expect(fee().resolvedAt).toBeDefined();
+      const before = fee();
+      // The 4-day window is still open (a quick resolution leaves it so) — only the guard stops this.
+      await expect(call(contestEngagement, asPro({ reason: 'didnt_happen' })))
+        .rejects.toMatchObject({ message: 'dispute-resolved' });
+      await expect(call(disputeFeeByPro, asPro({}))).rejects.toMatchObject({ message: 'dispute-resolved' });
+      expect(fee()).toEqual(before);
+    });
+
+    it('a re-hire as a NEW join clears resolvedAt, so the new engagement can be contested', async () => {
+      await call(contestEngagement, asPro({ reason: 'amount_disputed' }));
+      await call(resolveFeeDispute, asAdmin({ outcome: 'cancelled' }));
+      expect(fee().resolvedAt).toBeDefined();
+      await rehire();
+      expect(fee()).not.toHaveProperty('resolvedAt');
+      await complete();
+      await expect(call(contestEngagement, asPro({ reason: 'amount_disputed' }))).resolves.toMatchObject({ ok: true });
+    });
+
+    it('a continuing second role (completed → re-hired) keeps resolvedAt', async () => {
+      await call(contestEngagement, asPro({ reason: 'amount_disputed' }));
+      await call(resolveFeeDispute, asAdmin({ outcome: 'completed' }));
+      const update = buildHireFeeUpdate({
+        proId: 'pro1', projectId: 'p1', amount: 30, existing: mockDb.snap(FEE), feeRate: 0.03, minFeeApplied: 6,
+      });
+      expect(update).not.toHaveProperty('resolvedAt');
+      expect(update).not.toHaveProperty('resolvedOutcome');
+    });
+  });
+
+  describe('a client-rejected finish (the endRejected marker)', () => {
+    /** Completed once (the window stamp stays), re-hired for a second role, asked to finish again. */
+    async function askedToFinishAgain() {
+      await rehire();
+      await complete();
+      await mockDb.doc(FEE).update({
+        engagementStatus: 'end_requested_by_pro',
+        completion: { state: 'requested', source: 'pro', endKind: 'finished', requestedAt: Timestamp.fromMillis(Date.now()) },
+      });
+      await mockDb.doc(PROJECT).update({ status: 'open' });
+    }
+    const reject = () => call(respondToEngagementEnd, {
+      auth: { uid: 'c1' }, data: { projectId: 'p1', professionalId: 'pro1', accept: false, reason: 'not done' },
+    });
+
+    it('is written by the client rejecting, and the project stays open on it', async () => {
+      await askedToFinishAgain();
+      await reject();
+      expect(fee()).toMatchObject({ engagementStatus: 'disputed', endRejected: true, adminReviewPending: true });
+      // The old completion stamp (chargeDueAt) must not make this look like a contest.
+      expect(fee().chargeDueAt).toBeDefined();
+      expect(project()).toMatchObject({ status: 'open', adminReviewPending: true });
+    });
+
+    it('resolveFeeDispute clears the marker', async () => {
+      await askedToFinishAgain();
+      await reject();
+      await call(resolveFeeDispute, asAdmin({ outcome: 'cancelled' }));
+      expect(fee()).not.toHaveProperty('endRejected');
+      expect(fee().adminReviewPending).toBe(false);
     });
   });
 

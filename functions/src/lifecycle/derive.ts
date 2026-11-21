@@ -107,7 +107,7 @@ export function everCompleted(
 export function deriveProjectState(
   engagements: readonly Pick<
     FeeDoc,
-    'professionalId' | 'engagementStatus' | 'chargeDueAt' | 'disputeWindowEndsAt' | 'adminReviewPending' | 'completion' | 'releaseReason'
+    'professionalId' | 'engagementStatus' | 'chargeDueAt' | 'disputeWindowEndsAt' | 'adminReviewPending' | 'endRejected' | 'completion' | 'releaseReason'
   >[],
   now: number = Date.now(),
 ): DerivedProjectState {
@@ -183,13 +183,13 @@ export function deriveProjectState(
     return { ...base, isComplete: false, reason: 'no engagements', completionState: 'none' as const };
   }
 
-  // A 'disputed' engagement that NEVER COMPLETED is a different dispute: the client
-  // rejected the professional's request to finish or to withdraw (the same status,
-  // 'fee_disputed' / 'withdrawal_rejected'). Nothing was delivered or confirmed, so it
-  // is unfinished business and holds the project open, as before. What separates it
-  // from a contest is that a contested engagement carries the dispute window stamped
-  // at completion (everCompleted).
-  const stuck = engagements.filter((e) => e.engagementStatus === 'disputed' && !everCompleted(e));
+  // An engagement the CLIENT rejected the end of (the same 'disputed' status, marked
+  // `endRejected` by respondToEngagementEnd and by nothing else) is unfinished
+  // business: nothing was delivered or confirmed, so it holds the project open. The
+  // marker is explicit on purpose. Inferring it from "never completed" misclassified
+  // a professional who completed, was re-hired, asked to finish again and was
+  // rejected: the old completion stamp made that look like a contest.
+  const stuck = engagements.filter((e) => e.engagementStatus === 'disputed' && e.endRejected === true);
   if (stuck.length > 0) {
     return {
       ...base,

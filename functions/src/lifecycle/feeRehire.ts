@@ -32,7 +32,7 @@ export const REHIRE_RESET_FIELDS = [
   'completion', 'chargeDueAt', 'disputeWindowEndsAt', 'completionDueAt', 'feeDue',
   // dispute and review
   'disputedAt', 'disputeReason', 'preDispute', 'adminReview', 'adminReviewPending',
-  'agreedAmount', 'resolvedAt', 'resolvedOutcome',
+  'agreedAmount', 'resolvedAt', 'resolvedOutcome', 'endRejected',
   // overdue and demand
   'overdueAt', 'dueNotifiedAt', 'overdueWarnedAt', 'overdueBlockNotifiedAt',
   'demandSentAt', 'endDatePromptedAt',

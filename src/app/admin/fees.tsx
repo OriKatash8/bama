@@ -11,6 +11,7 @@ import {
   AdminPage, AdminText, Card, CardHead, EmptyState, IconTile, InitialsAvatar, PillButton, Segment,
   StatGrid, StatTile, WhoBlock, RADIUS, SPACE, TYPE, useAdminPalette, useScopedT,
 } from '@features/admin/ui';
+import { HeldReviewNote, type HeldReview } from '@features/admin/disputes/HeldReviewNote';
 
 type ArrearsProject = {
   projectId: string; title: string; owed: number; demandSentAt: number | null;
@@ -24,6 +25,8 @@ type ArrearsRow = {
 type DisputeRow = {
   proId: string; proName: string; reason: string;
   baseAmount: number; feeDueIfCompleted: number;
+  /** The client's review a "didn't happen" dispute is holding back. */
+  heldReview?: HeldReview | null;
 };
 type FlaggedRow = {
   projectId: string; title: string; status: string; reason: string;
@@ -603,6 +606,7 @@ export default function AdminFeesScreen() {
                         <AdminText tabular style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
                           {t('dispute_fee_if_completed', { amount: d.feeDueIfCompleted.toLocaleString() })}
                         </AdminText>
+                        <HeldReviewNote review={d.heldReview} testID={`held-review-${key}`} />
                         <TextInput
                           testID={`agreed-${key}`}
                           value={agreed[key] ?? ''}

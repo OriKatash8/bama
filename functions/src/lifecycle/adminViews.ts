@@ -159,6 +159,25 @@ type DisputeRow = {
   feeRate: number;
 };
 
+/** A client's review held back by a "didn't happen" dispute, as the admin sees it. */
+export type HeldReview = { rating: number; text: string; authorName: string };
+
+/**
+ * The review held for a dispute, from the review docs of one project + professional.
+ * Pure. Only a review marked `heldForDispute` counts: an amount dispute holds nothing,
+ * and a published review is not "held". The text lives in `body` (and `text`, which
+ * the client also writes).
+ */
+export function heldReviewOf(docs: readonly { data(): Record<string, unknown> }[]): HeldReview | null {
+  const held = docs.map((d) => d.data()).find((r) => r.heldForDispute === true);
+  if (!held) return null;
+  return {
+    rating: typeof held.rating === 'number' ? held.rating : 0,
+    text: String(held.body ?? held.text ?? ''),
+    authorName: String(held.authorName ?? ''),
+  };
+}
+
 /** One contested engagement, in the admin's terms. Pure. */
 export function disputeRowOf(proId: string, fee: FeeDoc): DisputeRow {
   // The same function resolveFeeDispute prices with, so the admin sees exactly
@@ -269,6 +288,21 @@ export const adminListFlaggedProjects = onCall(async (request) => {
   const users = await Promise.all([...ids].map((id) => db.doc(`users/${id}`).get()));
   const nameOf = new Map(users.map((u) => [u.id, (u.data()?.displayName as string) ?? '']));
 
+  // The review a "didn't happen" dispute is holding back, so the admin can weigh the
+  // dispute with it in front of them. Equality-only (no index); one small read per
+  // dispute, and a failure shows no review rather than failing the whole list.
+  const heldBy = new Map<string, HeldReview | null>();
+  await Promise.all(rows.flatMap((r) => r.disputes.map(async (d) => {
+    try {
+      const snap = await db.collection('reviews')
+        .where('projectId', '==', r.projectId).where('professionalId', '==', d.proId).get();
+      heldBy.set(`${r.projectId}:${d.proId}`, heldReviewOf(snap.docs));
+    } catch (err) {
+      console.error('[adminListFlaggedProjects] held review lookup failed', r.projectId, d.proId, err);
+      heldBy.set(`${r.projectId}:${d.proId}`, null);
+    }
+  })));
+
   // Newest flag first — an unanswered completion goes stale, not better.
   rows.sort((a, b) => (b.flaggedAt ?? 0) - (a.flaggedAt ?? 0));
 
@@ -277,7 +311,11 @@ export const adminListFlaggedProjects = onCall(async (request) => {
       ...r,
       proName: r.proId ? nameOf.get(r.proId) ?? '' : '',
       clientName: nameOf.get(r.clientId) ?? '',
-      disputes: r.disputes.map((d) => ({ ...d, proName: nameOf.get(d.proId) ?? '' })),
+      disputes: r.disputes.map((d) => ({
+        ...d,
+        proName: nameOf.get(d.proId) ?? '',
+        heldReview: heldBy.get(`${r.projectId}:${d.proId}`) ?? null,
+      })),
     })),
   };
 });

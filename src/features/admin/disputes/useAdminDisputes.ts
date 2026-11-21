@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { callFunction } from '@core/firebase/functions';
+import type { HeldReview } from './HeldReviewNote';
 
 /** One contested engagement, as `adminListFlaggedProjects` returns it. */
 export type AdminDispute = {
@@ -18,12 +19,17 @@ export type AdminDispute = {
   baseAmount: number;
   /** What resolving as 'completed' with no corrected price leaves owing. */
   feeDueIfCompleted: number;
+  /** The client's review a "didn't happen" dispute is holding back, if any. */
+  heldReview: HeldReview | null;
 };
 
 type FlaggedRow = {
   projectId: string; title: string; clientName: string; chatId?: string | null;
   proId: string | null; proName: string; reason: string; note: string; flaggedAt: number | null;
-  disputes?: { proId: string; proName: string; reason: string; baseAmount: number; feeDueIfCompleted: number }[];
+  disputes?: {
+    proId: string; proName: string; reason: string; baseAmount: number; feeDueIfCompleted: number;
+    heldReview?: HeldReview | null;
+  }[];
 };
 
 const listFlagged = callFunction<Record<string, never>, { rows: FlaggedRow[] }>('adminListFlaggedProjects');
@@ -42,6 +48,7 @@ export function disputesFrom(rows: FlaggedRow[] | undefined): AdminDispute[] {
     submittedAt: row.flaggedAt,
     baseAmount: d.baseAmount,
     feeDueIfCompleted: d.feeDueIfCompleted,
+    heldReview: d.heldReview ?? null,
   })));
 }
 

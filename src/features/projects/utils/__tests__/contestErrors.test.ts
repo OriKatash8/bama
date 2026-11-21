@@ -5,6 +5,7 @@ describe('contestErrorKey', () => {
     ['contest-window-closed', 'engagement.contest_error_window_closed'],
     ['no-charge-window', 'engagement.contest_error_window_closed'],
     ['already-disputed', 'engagement.contest_error_already_disputed'],
+    ['dispute-resolved', 'engagement.contest_error_already_resolved'],
     ['fee-already-paid', 'engagement.contest_error_already_paid'],
     ['no-engagement', 'engagement.contest_error_not_allowed'],
     ['something unexpected', 'engagement.contest_error'],

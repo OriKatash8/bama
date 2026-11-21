@@ -10,6 +10,7 @@ export function contestErrorKey(err: unknown): string {
   if (msg.includes('contest-window-closed') || msg.includes('no-charge-window')) {
     return 'engagement.contest_error_window_closed';
   }
+  if (msg.includes('dispute-resolved')) return 'engagement.contest_error_already_resolved';
   if (msg.includes('already-disputed')) return 'engagement.contest_error_already_disputed';
   if (msg.includes('fee-already-paid')) return 'engagement.contest_error_already_paid';
   const code = String((err as { code?: string })?.code ?? '');

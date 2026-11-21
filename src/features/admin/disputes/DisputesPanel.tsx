@@ -9,6 +9,7 @@ import { MIN_OFFER_PRICE, MAX_OFFER_PRICE } from '@core/constants/pricing';
 import {
   AdminText, Card, CardHead, EmptyState, PillButton, RADIUS, SPACE, TYPE, useAdminPalette, useScopedT,
 } from '@features/admin/ui';
+import { HeldReviewNote } from './HeldReviewNote';
 import type { AdminDispute } from './useAdminDisputes';
 
 /** The SAME callable the Fees screen's dispute card uses: no second resolution path. */
@@ -157,6 +158,8 @@ export function DisputesPanel({
                   {d.note || t('dispute_no_reason')}
                 </AdminText>
               </View>
+
+              <HeldReviewNote review={d.heldReview} testID={`held-review-${key}`} />
 
               <TextInput
                 testID={`agreed-${key}`}

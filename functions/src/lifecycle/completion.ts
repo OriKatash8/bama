@@ -638,6 +638,13 @@ async function contestFeeAtomically(
     if (eng.engagementStatus === 'disputed') {
       throw new HttpsError('failed-precondition', 'already-disputed');
     }
+    // One dispute per engagement: once an admin has resolved it the professional
+    // cannot contest it again, even inside the window (which a quick resolution
+    // leaves open). A re-hire as a NEW join clears `resolvedAt` (feeRehire.ts); a
+    // continuing second role keeps it.
+    if (eng.resolvedAt) {
+      throw new HttpsError('failed-precondition', 'dispute-resolved');
+    }
     // The window is the charge date. Past it the money has moved (or would have),
     // and a contest becomes a support conversation rather than a state change.
     const dueAt = contestWindowEndsAt(eng)?.toMillis();
@@ -845,6 +852,10 @@ export const respondToEngagementEnd = onCall(async (request) => {
     const note = boundedReason(request.data?.reason);
     await engRef.update({
       engagementStatus: 'disputed',
+      // THE marker of a client-rejected finish/withdrawal, written by this path and
+      // no other. derive.ts holds the project open on it (and only on it): a contest
+      // is also 'disputed' but happens AFTER completion and must not.
+      endRejected: true,
       adminReviewPending: true,
       adminReview: {
         // A rejected withdrawal and a rejected completion are different claims

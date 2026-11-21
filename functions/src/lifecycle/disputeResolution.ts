@@ -91,6 +91,7 @@ export const resolveFeeDispute = onCall(async (request) => {
     const common: Update = {
       adminReviewPending: false,
       adminReview: FieldValue.delete(),
+      endRejected: FieldValue.delete(),
       resolvedAt: FieldValue.serverTimestamp(),
       resolvedOutcome: outcome,
       slotActive: false,
