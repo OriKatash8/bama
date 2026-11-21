@@ -192,6 +192,52 @@ describe('opened from another admin screen (?uid=, "Open in Users")', () => {
   });
 });
 
+describe('the moderation history', () => {
+  it('is titled "Moderation history" / "היסטוריית אכיפה"', async () => {
+    const en_ = await renderPage();
+    await openUser(en_);
+    expect(within(en_.getByTestId('history-card')).getByText('Moderation history')).toBeTruthy();
+    expect(E.action_history).toBe('Moderation history');
+    expect(H.action_history).toBe('היסטוריית אכיפה');
+    mockLang = 'he';
+    const he_ = await renderPage();
+    await openUser(he_);
+    expect(within(he_.getByTestId('history-card')).getByText('היסטוריית אכיפה')).toBeTruthy();
+  });
+
+  it('a FAILED read shows an error with a retry, never "No actions recorded"', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    queryDocs.mockRejectedValueOnce(new Error('permission-denied'));
+    const r = await renderPage();
+    await openUser(r);
+    expect(r.getByTestId('user-card')).toBeTruthy(); // the user still opened
+    expect(r.getByTestId('history-error')).toBeTruthy();
+    expect(within(r.getByTestId('history-card')).getByText(E.history_failed)).toBeTruthy();
+    expect(r.queryByTestId('history-empty')).toBeNull();
+    expect(r.queryByText(E.no_actions)).toBeNull();
+  });
+
+  it('retry reloads it, and the history then shows (newest first)', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    queryDocs.mockRejectedValueOnce(new Error('offline'));
+    const r = await renderPage();
+    await openUser(r);
+    expect(r.getByTestId('history-retry')).toBeTruthy();
+    await act(async () => { fireEvent.press(r.getByTestId('history-retry')); });
+    expect(r.queryByTestId('history-error')).toBeNull();
+    expect(r.getByTestId('history-a1')).toBeTruthy();
+    expect(r.getByTestId('history-a2')).toBeTruthy();
+  });
+
+  it('a user with nothing recorded still says "No actions recorded" (a real empty list)', async () => {
+    queryDocs.mockResolvedValueOnce([]);
+    const r = await renderPage();
+    await openUser(r);
+    expect(r.getByTestId('history-empty')).toBeTruthy();
+    expect(r.queryByTestId('history-error')).toBeNull();
+  });
+});
+
 describe('a user', () => {
   it('tapping a user opens all their details and history, newest first', async () => {
     const r = await renderPage();

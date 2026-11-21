@@ -90,6 +90,8 @@ export default function UsersAdmin() {
   const [opening, setOpening] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [history, setHistory] = useState<AdminAction[]>([]);
+  /** 'error' is its own state: a failed read must never render as "no actions recorded". */
+  const [historyState, setHistoryState] = useState<'loading' | 'ok' | 'error'>('loading');
   /** The open user's phone (users/{uid}/private/contact — admin-readable); null when they have none. */
   const [phone, setPhone] = useState<string | null>(null);
 
@@ -104,9 +106,18 @@ export default function UsersAdmin() {
   const status: Status = user?.moderation?.status ?? 'active';
 
   async function loadHistory(uid: string) {
-    const items = await queryDocuments<AdminAction>('adminActions', where('targetUserId', '==', uid));
-    items.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
-    setHistory(items);
+    setHistoryState('loading');
+    try {
+      const items = await queryDocuments<AdminAction>('adminActions', where('targetUserId', '==', uid));
+      items.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
+      setHistory(items);
+      setHistoryState('ok');
+    } catch (e) {
+      // Not swallowed into an empty list: the card says it could not load, and offers a retry.
+      console.error('[admin/users] moderation history load failed:', e);
+      setHistory([]);
+      setHistoryState('error');
+    }
   }
 
   const loadList = useCallback(async () => {
@@ -155,6 +166,7 @@ export default function UsersAdmin() {
     setUser(null);
     setPhone(null);
     setHistory([]);
+    setHistoryState('loading');
   }
 
   function goBack() {
@@ -352,10 +364,19 @@ export default function UsersAdmin() {
               </View>
             </Card>
 
-            {/* Action history */}
+            {/* Moderation history: the warnings, suspensions and lifts recorded against this user. */}
             <Card testID="history-card">
-              <CardHead title={t('action_history')} side={history.length > 0 ? <Chip label={String(history.length)} tabular /> : undefined} />
-              {history.length === 0 ? (
+              <CardHead title={t('action_history')} side={historyState === 'ok' && history.length > 0 ? <Chip label={String(history.length)} tabular /> : undefined} />
+              {historyState === 'loading' ? (
+                <View style={styles.listBusy}>
+                  <ActivityIndicator size="small" color={p.accent} testID="history-loading" />
+                </View>
+              ) : historyState === 'error' ? (
+                <View style={[styles.listError, { alignItems: rtl ? 'flex-end' : 'flex-start' }]} testID="history-error">
+                  <AdminText style={[TYPE.rowMeta, { color: p.bad, textAlign }]}>{t('history_failed')}</AdminText>
+                  <PillButton variant="primary" label={t('retry')} onPress={() => user && void loadHistory(user.id)} testID="history-retry" />
+                </View>
+              ) : history.length === 0 ? (
                 <EmptyState text={t('no_actions')} testID="history-empty" />
               ) : (
                 history.map((h) => (

@@ -865,7 +865,7 @@
     "unsuspend": "ביטול השעיה",
     "clear_warning": "הסרת אזהרה",
     "message": "הודעה ממערכת BAMA",
-    "action_history": "היסטוריית פעולות",
+    "action_history": "היסטוריית אכיפה",
     "no_actions": "לא נרשמו פעולות.",
     "action_applied": "הפעולה בוצעה",
     "action_failed": "הפעולה נכשלה",
@@ -881,7 +881,8 @@
     "send": "שליחה",
     "msg_required": "יש להזין הודעה",
     "msg_sent": "ההודעה נשלחה ממערכת BAMA",
-    "msg_failed": "השליחה נכשלה"
+    "msg_failed": "השליחה נכשלה",
+    "history_failed": "לא הצלחנו לטעון את היסטוריית האכיפה. רשימה ריקה כאן לא אומרת שאין פעולות."
   },
   "admin_reports": {
     "community_deletion": "בקשה למחיקת קהילה",

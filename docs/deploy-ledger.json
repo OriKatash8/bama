@@ -294,12 +294,12 @@
     "contestEngagement": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:54.765190360Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-21T11:43:05.906272746Z",
+      "treeSha": "7a826919506e5e91cfb76813b9302040cf8db7cb",
+      "commit": "16ccc18e",
       "how": "deploy",
       "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "note": "contest requires a completed engagement (not-completed) (16ccc18e)"
     },
     "createCardSaveSession": {
       "region": "europe-west1",
@@ -384,12 +384,12 @@
     "disputeFeeByPro": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:44.510942918Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-21T11:43:00.801581186Z",
+      "treeSha": "7a826919506e5e91cfb76813b9302040cf8db7cb",
+      "commit": "16ccc18e",
       "how": "deploy",
       "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "note": "contest requires a completed engagement (not-completed) (16ccc18e)"
     },
     "fakeCompleteCardSave": {
       "region": "europe-west1",

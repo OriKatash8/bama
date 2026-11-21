@@ -865,7 +865,7 @@
     "unsuspend": "Unsuspend",
     "clear_warning": "Clear warning",
     "message": "Message from BAMA System",
-    "action_history": "Action history",
+    "action_history": "Moderation history",
     "no_actions": "No actions recorded.",
     "action_applied": "Action applied",
     "action_failed": "Action failed",
@@ -881,7 +881,8 @@
     "send": "Send",
     "msg_required": "A message is required",
     "msg_sent": "Message sent from BAMA System",
-    "msg_failed": "Failed to send"
+    "msg_failed": "Failed to send",
+    "history_failed": "Couldn't load the moderation history. An empty list here does not mean there are none."
   },
   "admin_reports": {
     "community_deletion": "Community deletion request",
