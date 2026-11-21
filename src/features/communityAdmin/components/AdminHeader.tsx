@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   Easing,
@@ -122,23 +122,33 @@ export function RangeSegment({ value, onChange }: { value: RangeDays; onChange: 
   );
 }
 
-/** Pill segmented control: the selected option sits on the surface with a small shadow. Mirrors in Hebrew. */
+/**
+ * Pill segmented control: the selected option sits on the surface with a small shadow. Mirrors in Hebrew.
+ *
+ * `scroll` lets a control with many or long options scroll sideways when it is wider than
+ * its space (a phone), instead of overflowing the card. In Hebrew the row runs right to left,
+ * so it is scrolled to the right edge on layout: otherwise the first option, which sits on
+ * the right, starts off-screen.
+ */
 export function Segment<T extends string | number>({
   options,
   value,
   onChange,
   label,
   testIDPrefix,
+  scroll,
 }: {
   options: { value: T; label: string }[];
   value: T;
   onChange: (v: T) => void;
   label: string;
   testIDPrefix: string;
+  scroll?: boolean;
 }) {
   const p = useAdminPalette();
   const { rowDir } = useAdminT();
-  return (
+  const scrollRef = useRef<ScrollView>(null);
+  const control = (
     <View
       accessibilityRole="radiogroup"
       accessibilityLabel={label}
@@ -162,6 +172,20 @@ export function Segment<T extends string | number>({
         );
       })}
     </View>
+  );
+  if (!scroll) return control;
+  return (
+    <ScrollView
+      ref={scrollRef}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.segScroll}
+      contentContainerStyle={styles.segScrollContent}
+      onContentSizeChange={() => { if (rowDir === 'row-reverse') scrollRef.current?.scrollToEnd({ animated: false }); }}
+      testID={`${testIDPrefix}-scroll`}
+    >
+      {control}
+    </ScrollView>
   );
 }
 
@@ -207,6 +231,9 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 13.5, marginTop: 4 },
   headSide: { alignItems: 'center', gap: 12, flexWrap: 'wrap' },
   live: { alignItems: 'center', gap: 6 },
+  // flexShrink lets the scroller be narrower than its content inside a row; maxWidth keeps it in the card.
+  segScroll: { flexGrow: 0, flexShrink: 1, maxWidth: '100%' },
+  segScrollContent: { flexGrow: 1 },
   seg: { padding: 2, gap: 2, borderRadius: RADIUS.pill, borderWidth: 1 },
   segBtn: { paddingVertical: 5, paddingHorizontal: 12, borderRadius: RADIUS.pill },
   dotWrap: { width: 7, height: 7 },

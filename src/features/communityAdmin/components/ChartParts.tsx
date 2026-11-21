@@ -200,7 +200,8 @@ const styles = StyleSheet.create({
   headText: { flexGrow: 1, flexShrink: 1, flexWrap: 'wrap', alignItems: 'baseline', columnGap: 10, rowGap: 2 },
   title: { flexShrink: 0 },
   sub: { flexShrink: 1 },
-  side: { flexShrink: 0 },
+  // Shrinkable, so a scrollable Segment in a chart card's side fits a phone instead of overflowing.
+  side: { flexShrink: 1, maxWidth: '100%' },
   swatch: { width: 10, height: 10, borderRadius: 3 },
   legend: { gap: 14, flexWrap: 'wrap', alignItems: 'center', paddingTop: 10, paddingHorizontal: SPACE.rowPadH },
   legendItem: { alignItems: 'center', gap: 6 },

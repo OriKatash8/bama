@@ -104,6 +104,7 @@ export function PillButton({
   disabled,
   testID,
   accessibilityLabel,
+  block,
 }: {
   label: string;
   onPress: () => void;
@@ -111,6 +112,8 @@ export function PillButton({
   disabled?: boolean;
   testID?: string;
   accessibilityLabel?: string;
+  /** Full width and centred, for the stacked button column on a phone. */
+  block?: boolean;
 }) {
   const p = useAdminPalette();
   const [hovered, setHovered] = useState(false);
@@ -134,6 +137,7 @@ export function PillButton({
               : { backgroundColor: hot ? p.borderStrong : p.surface3 };
         return [
           styles.pill,
+          block && styles.pillBlock,
           look,
           { opacity: disabled ? 0.4 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] },
         ];
@@ -198,9 +202,13 @@ export function Row({
   testID,
   onPress,
   accessibilityLabel,
+  wrap,
 }: {
   children: ReactNode;
   rowDir: 'row' | 'row-reverse';
+  /** Let trailing chips and buttons drop to a second line when they do not fit beside
+   *  the text (a phone), instead of squeezing the text to nothing. */
+  wrap?: boolean;
   testID?: string;
   /** Makes the whole row a button (e.g. open this user). */
   onPress?: () => void;
@@ -219,6 +227,7 @@ export function Row({
       onHoverOut={() => setHovered(false)}
       style={[
         styles.row,
+        wrap && styles.rowWrap,
         { flexDirection: rowDir, borderTopColor: p.border, backgroundColor: hovered ? p.surface2 : 'transparent' },
       ]}
     >
@@ -227,34 +236,48 @@ export function Row({
   );
 }
 
-/** Name over meta, both single-line with an ellipsis. */
+/**
+ * Name over meta. Both WRAP (2 lines by default) rather than ellipsising: on a 375px
+ * phone a one-line name or meta was cut mid-word in every list built on this. Raise
+ * `metaLines` for a meta that carries several facts. `selectableMeta` makes the meta
+ * copyable, for ids, emails and URLs.
+ */
 export function WhoBlock({
   name,
   meta,
   textAlign,
   badge,
+  nameLines = 2,
+  metaLines = 2,
+  selectableMeta,
+  selectableName,
 }: {
   name: string;
   meta: string;
   textAlign: 'left' | 'right';
+  nameLines?: number;
+  metaLines?: number;
+  selectableMeta?: boolean;
+  /** For a name that is really an id (a uid shown for want of a profile): copyable. */
+  selectableName?: boolean;
   /** An optional third line, e.g. whether a requester has a professional profile. */
   badge?: { text: string; color: string; testID?: string };
 }) {
   const p = useAdminPalette();
   return (
     <View style={styles.who}>
-      <AdminText weight="semiBold" numberOfLines={1} style={[TYPE.rowName, { textAlign }]}>
+      <AdminText weight="semiBold" numberOfLines={nameLines} selectable={selectableName} style={[TYPE.rowName, { textAlign }]}>
         {name}
       </AdminText>
       {meta ? (
-        <AdminText numberOfLines={1} style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
+        <AdminText numberOfLines={metaLines} selectable={selectableMeta} style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
           {meta}
         </AdminText>
       ) : null}
       {badge ? (
         <AdminText
           weight="semiBold"
-          numberOfLines={1}
+          numberOfLines={2}
           testID={badge.testID}
           style={[TYPE.rowMeta, { color: badge.color, textAlign }]}
         >
@@ -280,6 +303,7 @@ const styles = StyleSheet.create({
   avatar: { alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   avatarText: { fontSize: 13, letterSpacing: 0.2 },
   pill: { borderRadius: RADIUS.pill, paddingVertical: 6, paddingHorizontal: 14, flexShrink: 0 },
+  pillBlock: { alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center', paddingVertical: 10 },
   chip: { borderRadius: RADIUS.pill, paddingVertical: 3, paddingHorizontal: 9, flexShrink: 0 },
   badge: {
     minWidth: 20,
@@ -296,7 +320,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACE.rowPadH,
     borderTopWidth: 1,
   },
-  who: { flex: 1, minWidth: 0 },
+  // A basis (not flex: 1 = basis 0): in a wrapping Row the text keeps at least ~140px and the
+  // buttons beside it wrap under it; in a normal Row it shrinks exactly as before.
+  who: { flexGrow: 1, flexShrink: 1, flexBasis: 140, minWidth: 0 },
+  rowWrap: { flexWrap: 'wrap', rowGap: 8 },
   empty: { paddingVertical: 26, paddingHorizontal: 18, borderTopWidth: 1, alignItems: 'center' },
   emptyText: { fontSize: 13, textAlign: 'center' },
 });

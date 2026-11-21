@@ -78,7 +78,7 @@ export function AdminTitle({ title, subtitle, side }: { title: string; subtitle?
         {subtitle ? <AdminText style={[styles.subtitle, { color: p.text2, textAlign }]}>{subtitle}</AdminText> : null}
       </View>
       {/* On a phone the control wraps under the title; it stays on the far side, as on web. */}
-      {side ? <View style={farEnd(rowDir)} testID="title-side">{side}</View> : null}
+      {side ? <View style={[farEnd(rowDir), styles.titleSide]} testID="title-side">{side}</View> : null}
     </View>
   );
 }
@@ -231,7 +231,7 @@ export function CardHead({ title, sub, side }: { title: string; sub?: string; si
   return (
     <View style={[styles.cardHead, { flexDirection: rowDir }]}>
       <View style={styles.cardHeadText}>
-        <AdminText weight="semiBold" accessibilityRole="header" numberOfLines={1} style={[TYPE.cardTitle, { textAlign }]}>
+        <AdminText weight="semiBold" accessibilityRole="header" numberOfLines={2} style={[TYPE.cardTitle, { textAlign }]}>
           {title}
         </AdminText>
         {sub ? (
@@ -262,10 +262,14 @@ const styles = StyleSheet.create({
   head: { alignItems: 'flex-end', flexWrap: 'wrap', gap: 16, paddingTop: 26, paddingBottom: 4 },
   headText: { flexGrow: 1, flexShrink: 1, minWidth: 220 },
   subtitle: { fontSize: 13.5, marginTop: 4 },
+  // maxWidth/flexShrink: a scrollable Segment in `side` must be able to be narrower than its content.
+  titleSide: { maxWidth: '100%', flexShrink: 1 },
   grid: { gap: SPACE.cardGap },
   gridRow: { gap: SPACE.cardGap },
   iconTile: { width: 36, height: 36, borderRadius: RADIUS.card / 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   row: { alignItems: 'center', gap: 12, paddingVertical: SPACE.rowPadV, paddingHorizontal: SPACE.rowPadH, borderTopWidth: 1 },
-  cardHead: { alignItems: 'center', gap: 10, paddingTop: 16, paddingBottom: 12, paddingHorizontal: SPACE.rowPadH },
-  cardHeadText: { flex: 1, minWidth: 0 },
+  // Wraps: a wide `side` (a segment, a chip, two pills) drops under the title on a phone instead
+  // of squeezing it to nothing. The text block's basis is what makes the wrap happen.
+  cardHead: { alignItems: 'center', gap: 10, paddingTop: 16, paddingBottom: 12, paddingHorizontal: SPACE.rowPadH, flexWrap: 'wrap' },
+  cardHeadText: { flexGrow: 1, flexShrink: 1, flexBasis: 160, minWidth: 0 },
 });
