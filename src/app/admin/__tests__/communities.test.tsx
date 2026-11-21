@@ -54,13 +54,19 @@ const DIRECTORY = [
   { uid: 'm2', displayName: 'Ben Member', email: 'ben@example.com', disabled: false, createdAt: 1 },
   { uid: 'm3', displayName: '', email: 'nameless@example.com', disabled: false, createdAt: 1 },
 ];
+const CALM_SUMMARY = {
+  moderation: { actions: 0, reportsReceived: 0, reportsFiled: 0 }, projects: { asClient: 0, asProfessional: 0 },
+  fees: { records: 0, open: 0, owed: 0, blockedFrom: null }, disputes: { open: 0, resolved: 0 },
+  reviews: { received: 0, given: 0, held: 0 }, communities: { owned: 0, member: 0 },
+};
 const mockListUsers = jest.fn(() => Promise.resolve({ users: DIRECTORY, truncated: false }));
 jest.mock('@core/firebase/functions', () => ({
   callFunction: (name: string) => (data: unknown) =>
     name === 'adminDeleteCommunity' ? mockDeleteCommunity(data)
       : name === 'adminCommunityAction' ? mockCommunityAction(data)
         : name === 'adminListUsers' ? mockListUsers()
-          : Promise.reject(new Error(`unexpected ${name}`)),
+          : name === 'adminUserActivity' ? Promise.resolve({ section: 'summary', summary: CALM_SUMMARY })
+            : Promise.reject(new Error(`unexpected ${name}`)),
 }));
 jest.mock('@features/chat/services/chatService', () => ({ createCommunityChat: jest.fn(() => Promise.resolve()) }));
 jest.mock('firebase/firestore', () => ({

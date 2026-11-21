@@ -138,6 +138,7 @@ export class MemoryDb {
       switch (op) {
         case '==': return actual === v;
         case 'in': return (v as any[]).includes(actual);
+        case 'array-contains': return Array.isArray(actual) && actual.includes(v);
         case '>': return actual !== undefined && num(actual) > num(v);
         case '>=': return actual !== undefined && num(actual) >= num(v);
         case '<': return actual !== undefined && num(actual) < num(v);
@@ -155,6 +156,7 @@ export class MemoryDb {
           .map((p) => ({ ...this.snap(p), ref: this.doc(p) }));
         return { docs, empty: docs.length === 0, size: docs.length };
       },
+      count: () => ({ get: async () => { const n = (await q.get()).docs.length; return { data: () => ({ count: n }) }; } }),
     };
     return q;
   };

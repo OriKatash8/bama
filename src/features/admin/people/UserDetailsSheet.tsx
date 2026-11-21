@@ -8,6 +8,7 @@ import { useAdminPalette, useScopedT } from '@features/communityAdmin/i18n';
 import { SPACE, TYPE } from '@features/communityAdmin/theme';
 import { AdminSheet } from '../ui/AdminSheet';
 import { personName } from './personName';
+import { useActivitySummary, type ActivitySection, type ActivitySummary } from '../activity/activityApi';
 import { useUserDirectory } from './userDirectory';
 
 type UserDoc = {
@@ -49,6 +50,8 @@ export function UserDetailsSheet({
   const router = useRouter();
   const { t, rowDir, textAlign } = useScopedT('admin_people');
   const directory = useUserDirectory(visible);
+  const { t: tAct } = useScopedT('admin_activity');
+  const activity = useActivitySummary(uid, visible);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
 
   useEffect(() => {
@@ -79,9 +82,9 @@ export function UserDetailsSheet({
   const status = doc?.moderation?.status;
   const standing = t(status === 'suspended' ? 'standing_suspended' : status === 'warned' ? 'standing_warned' : 'standing_active');
 
-  function openInUsers() {
+  function openInUsers(section?: ActivitySection) {
     onClose();
-    router.push(`/admin/users?uid=${encodeURIComponent(uid)}` as never);
+    router.push(`/admin/users?uid=${encodeURIComponent(uid)}${section ? `&section=${section}` : ''}` as never);
   }
 
   return (
@@ -117,12 +120,46 @@ export function UserDetailsSheet({
         testID={`${testID}-standing`}
       />
 
+      <ActivityLine summary={activity} t={tAct} onOpen={openInUsers} />
+
       <View style={styles.actions}>
         {typeof actions === 'function' ? actions(onClose) : actions}
-        <PillButton variant="primary" label={t('open_in_users')} onPress={openInUsers} block testID={`${testID}-open-users`} />
+        <PillButton variant="primary" label={t('open_in_users')} onPress={() => openInUsers()} block testID={`${testID}-open-users`} />
         <PillButton label={t('close')} onPress={onClose} block testID={`${testID}-close`} />
       </View>
     </AdminSheet>
+  );
+}
+
+/** What deserves a look, in one line, from the same summary the Users tabs show. */
+function ActivityLine({
+  summary, t, onOpen,
+}: { summary: ActivitySummary | null | 'error'; t: (key: string, vars?: Record<string, string | number>) => string; onOpen: (s?: ActivitySection) => void }) {
+  const p = useAdminPalette();
+  const { textAlign } = useScopedT('admin_people');
+  if (!summary) return <AdminText style={[TYPE.rowMeta, { color: p.text3, textAlign }]} testID="activity-line-loading">{t('summary_loading')}</AdminText>;
+  if (summary === 'error') return <AdminText style={[TYPE.rowMeta, { color: p.text3, textAlign }]} testID="activity-line-failed">{t('summary_failed')}</AdminText>;
+  const actions = summary.moderation.actions;
+  const against = summary.moderation.reportsReceived;
+  const parts = [
+    summary.fees.owed > 0 ? t('summary_owed', { n: summary.fees.owed.toLocaleString() }) : null,
+    summary.disputes.open > 0 ? t('summary_disputes', { n: summary.disputes.open }) : null,
+    actions > 0 ? t('summary_actions', { n: actions }) : null,
+    against > 0 ? t('summary_reports', { n: against }) : null,
+  ].filter(Boolean) as string[];
+  // The tab most worth opening first.
+  const first: ActivitySection = summary.disputes.open > 0 ? 'disputes' : summary.fees.owed > 0 ? 'fees' : 'moderation';
+  return (
+    <View style={styles.row}>
+      <AdminText
+        weight="semiBold"
+        testID="activity-line"
+        style={[TYPE.rowMeta, { color: parts.length ? p.warn : p.text3, textAlign }]}
+      >
+        {parts.length ? parts.join(' · ') : t('summary_none')}
+      </AdminText>
+      <PillButton label={t('open_activity')} onPress={() => onOpen(first)} block testID="activity-open" />
+    </View>
   );
 }
 

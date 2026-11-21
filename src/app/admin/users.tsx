@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { TextInput } from '@components/ui/Text';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Phone, Search, ShieldAlert, ShieldBan, ShieldCheck, UserX, type LucideIcon } from 'lucide-react-native';
-import { where } from 'firebase/firestore';
-import { getDocument, queryDocuments } from '@core/firebase/firestore';
+import { Phone, Search } from 'lucide-react-native';
+import { getDocument } from '@core/firebase/firestore';
+import { UserActivity } from '@features/admin/activity/UserActivity';
+import { SECTION_ORDER, type ActivitySection } from '@features/admin/activity/activityApi';
 import { callFunction } from '@core/firebase/functions';
 import { useUiStore } from '@core/stores/uiStore';
 import { formatPhoneForDisplay } from '@features/auth/utils/phone';
@@ -17,7 +18,6 @@ import {
   CardHead,
   Chip,
   EmptyState,
-  IconTile,
   InitialsAvatar,
   PillButton,
   Row,
@@ -30,7 +30,7 @@ import {
   type Tone,
 } from '@features/admin/ui';
 import type { User } from '@core/types/user';
-import type { AdminAction, AdminActionType } from '@core/types/admin';
+import type { AdminActionType } from '@core/types/admin';
 
 type ModerateArgs = { targetUid: string; action: AdminActionType; reason?: string; reportId?: string };
 type ModerateResult = { success: boolean; actionId: string };
@@ -47,13 +47,6 @@ const sendSystemMessage = callFunction<{ targetUid: string; text: string }, { ch
 
 type Status = 'active' | 'warned' | 'suspended';
 const STATUS_TONE: Record<Status, Tone> = { active: 'good', warned: 'warn', suspended: 'bad' };
-const ACTION_TONE: Record<AdminActionType, Tone> = {
-  warn: 'warn',
-  suspend: 'bad',
-  unsuspend: 'good',
-  clear_warning: 'good',
-};
-
 function fmtDate(seconds?: number): string {
   if (!seconds) return '—';
   const d = new Date(seconds * 1000);
@@ -74,7 +67,8 @@ export default function UsersAdmin() {
   const showToast = useUiStore((s) => s.showToast);
   const router = useRouter();
   // `?uid=` opens that user on arrival: where "Open in Users" (the ⋮ details on other admin screens) lands.
-  const { uid: uidParam } = useLocalSearchParams<{ uid?: string }>();
+  const { uid: uidParam, section: sectionRaw } = useLocalSearchParams<{ uid?: string; section?: string }>();
+  const sectionParam = (SECTION_ORDER as string[]).includes(sectionRaw ?? '') ? (sectionRaw as ActivitySection) : undefined;
   const openedFromParam = useRef<string | null>(null);
 
   const [users, setUsers] = useState<ListedUser[]>([]);
@@ -89,9 +83,8 @@ export default function UsersAdmin() {
   }, [users, term]);
   const [opening, setOpening] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [history, setHistory] = useState<AdminAction[]>([]);
-  /** 'error' is its own state: a failed read must never render as "no actions recorded". */
-  const [historyState, setHistoryState] = useState<'loading' | 'ok' | 'error'>('loading');
+  /** Bumped after a warn / suspend / lift from this screen, so the activity tabs reload. */
+  const [activityKey, setActivityKey] = useState(0);
   /** The open user's phone (users/{uid}/private/contact — admin-readable); null when they have none. */
   const [phone, setPhone] = useState<string | null>(null);
 
@@ -104,21 +97,6 @@ export default function UsersAdmin() {
   const [sendingMsg, setSendingMsg] = useState(false);
 
   const status: Status = user?.moderation?.status ?? 'active';
-
-  async function loadHistory(uid: string) {
-    setHistoryState('loading');
-    try {
-      const items = await queryDocuments<AdminAction>('adminActions', where('targetUserId', '==', uid));
-      items.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
-      setHistory(items);
-      setHistoryState('ok');
-    } catch (e) {
-      // Not swallowed into an empty list: the card says it could not load, and offers a retry.
-      console.error('[admin/users] moderation history load failed:', e);
-      setHistory([]);
-      setHistoryState('error');
-    }
-  }
 
   const loadList = useCallback(async () => {
     setListState('loading');
@@ -143,7 +121,7 @@ export default function UsersAdmin() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uidParam, listState, users]);
 
-  /** Open one user: their document by uid, plus their action history. */
+  /** Open one user: their document by uid. Their activity loads by section, below. */
   async function openUser(listed: ListedUser) {
     setOpening(listed.uid);
     try {
@@ -154,7 +132,6 @@ export default function UsersAdmin() {
       const contact = await getDocument<{ phone?: string }>(`users/${listed.uid}/private/contact`).catch(() => null);
       setPhone(typeof contact?.phone === 'string' && contact.phone ? contact.phone : null);
       setUser({ ...doc, email: listed.email ?? undefined });
-      await loadHistory(listed.uid);
     } catch {
       showToast(t('open_failed'), 'error');
     } finally {
@@ -165,8 +142,6 @@ export default function UsersAdmin() {
   function backToList() {
     setUser(null);
     setPhone(null);
-    setHistory([]);
-    setHistoryState('loading');
   }
 
   function goBack() {
@@ -184,7 +159,7 @@ export default function UsersAdmin() {
       // impossible now that the field is gone.
       const refreshed = await getDocument<User>(`users/${user.id}`);
       if (refreshed) setUser({ ...refreshed, email: user.email });
-      await loadHistory(user.id);
+      setActivityKey((k) => k + 1);
     } catch (e) {
       showToast((e as { message?: string })?.message ?? t('action_failed'), 'error');
     } finally {
@@ -364,39 +339,9 @@ export default function UsersAdmin() {
               </View>
             </Card>
 
-            {/* Moderation history: the warnings, suspensions and lifts recorded against this user. */}
-            <Card testID="history-card">
-              <CardHead title={t('action_history')} side={historyState === 'ok' && history.length > 0 ? <Chip label={String(history.length)} tabular /> : undefined} />
-              {historyState === 'loading' ? (
-                <View style={styles.listBusy}>
-                  <ActivityIndicator size="small" color={p.accent} testID="history-loading" />
-                </View>
-              ) : historyState === 'error' ? (
-                <View style={[styles.listError, { alignItems: rtl ? 'flex-end' : 'flex-start' }]} testID="history-error">
-                  <AdminText style={[TYPE.rowMeta, { color: p.bad, textAlign }]}>{t('history_failed')}</AdminText>
-                  <PillButton variant="primary" label={t('retry')} onPress={() => user && void loadHistory(user.id)} testID="history-retry" />
-                </View>
-              ) : history.length === 0 ? (
-                <EmptyState text={t('no_actions')} testID="history-empty" />
-              ) : (
-                history.map((h) => (
-                  <Row key={h.id} rowDir={rowDir} testID={`history-${h.id}`}>
-                    <IconTile icon={ACTION_ICON[h.action] ?? UserX} tone={ACTION_TONE[h.action] ?? 'neutral'} />
-                    <View style={styles.logText}>
-                      <AdminText weight="semiBold" numberOfLines={2} style={[TYPE.rowName, { textAlign }]}>
-                        {`${t(h.action)} · ${fmtDate(h.createdAt?.seconds)}`}
-                      </AdminText>
-                      {!!h.reason && (
-                        <AdminText style={[TYPE.rowMeta, { color: p.text2, textAlign }]}>{h.reason}</AdminText>
-                      )}
-                      <AdminText numberOfLines={2} style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
-                        {`${t('by')} ${h.actorName}`}
-                      </AdminText>
-                    </View>
-                  </Row>
-                ))
-              )}
-            </Card>
+            {/* Their activity, one lazily loaded section at a time: moderation (actions and reports),
+                projects, payments, disputes, reviews, communities. */}
+            <UserActivity uid={user.id} initialSection={sectionParam} refreshKey={activityKey} />
           </>
         )}
       </AdminPage>
@@ -439,13 +384,6 @@ export default function UsersAdmin() {
     </View>
   );
 }
-
-const ACTION_ICON: Record<AdminActionType, LucideIcon> = {
-  warn: ShieldAlert,
-  suspend: ShieldBan,
-  unsuspend: ShieldCheck,
-  clear_warning: ShieldCheck,
-};
 
 /** The moderation status, tinted good / warn / bad. */
 function StatusPill({ tone, label }: { tone: Tone; label: string }) {

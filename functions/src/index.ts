@@ -8,6 +8,7 @@ export * from './notifications';
 export * from './video';
 export * from './moderation';
 export * from './moderation/lookup';
+export * from './moderation/userActivity';
 export * from './moderation/blocking';
 export * from './moderation/reportAlert';
 export * from './system';

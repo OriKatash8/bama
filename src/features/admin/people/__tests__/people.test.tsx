@@ -14,6 +14,7 @@ let mockLang = 'en';
 const mockPush = jest.fn();
 const mockListUsers = jest.fn();
 const mockGetDocument = jest.fn();
+const mockActivity = jest.fn();
 
 jest.mock('react-native-reanimated', () => require('../../../../testing/reanimatedMock').reanimatedMock());
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 20, bottom: 0 }) }));
@@ -22,7 +23,8 @@ jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: mockLang }),
 }));
 jest.mock('@core/firebase/functions', () => ({
-  callFunction: (name: string) => () => (name === 'adminListUsers' ? mockListUsers() : Promise.reject(new Error(name))),
+  callFunction: (name: string) => (args: unknown) =>
+    (name === 'adminListUsers' ? mockListUsers() : name === 'adminUserActivity' ? mockActivity(args) : Promise.reject(new Error(name))),
 }));
 jest.mock('@core/firebase/firestore', () => ({ getDocument: (path: string) => mockGetDocument(path) }));
 
@@ -31,11 +33,19 @@ const DIRECTORY = [
   { uid: 'u2', displayName: '', email: 'nameless@example.com', disabled: false, createdAt: 1 },
 ];
 
+const SUMMARY = {
+  moderation: { actions: 2, reportsReceived: 1, reportsFiled: 0 }, projects: { asClient: 1, asProfessional: 1 },
+  fees: { records: 1, open: 1, owed: 90, blockedFrom: null }, disputes: { open: 1, resolved: 0 },
+  reviews: { received: 0, given: 0, held: 0 }, communities: { owned: 0, member: 0 },
+};
+const CALM = { ...SUMMARY, moderation: { actions: 0, reportsReceived: 0, reportsFiled: 0 }, fees: { records: 0, open: 0, owed: 0, blockedFrom: null }, disputes: { open: 0, resolved: 0 } };
+
 beforeEach(() => {
   jest.clearAllMocks();
   resetUserDirectory();
   mockLang = 'en';
   mockListUsers.mockResolvedValue({ users: DIRECTORY, truncated: false });
+  mockActivity.mockResolvedValue({ section: 'summary', summary: SUMMARY });
   mockGetDocument.mockImplementation((path: string) => {
     if (path === 'users/u1') return Promise.resolve({ displayName: 'Noa Levi', createdAt: { seconds: 1_700_000_000 } });
     if (path === 'users/u1/private/contact') return Promise.resolve({ phone: '+972501234567' });
@@ -106,6 +116,7 @@ describe('the ⋮ details', () => {
     await act(async () => {});
     expect(mockListUsers).not.toHaveBeenCalled();
     expect(mockGetDocument).not.toHaveBeenCalled();
+    expect(mockActivity).not.toHaveBeenCalled();
   });
 
   it('shows name, email, phone, id, joined and standing, each copyable where it is a value', async () => {
@@ -151,6 +162,44 @@ describe('the ⋮ details', () => {
     mockGetDocument.mockRejectedValue(new Error('denied'));
     const r = await open();
     expect(r.getByText(en.admin_people.load_failed)).toBeTruthy();
+  });
+
+  describe('the activity line', () => {
+    it('says what deserves a look, in one line, from ONE summary call', async () => {
+      const r = await open();
+      expect(mockActivity).toHaveBeenCalledTimes(1);
+      expect(mockActivity).toHaveBeenCalledWith({ uid: 'u1', section: 'summary' });
+      const line = r.getByTestId('activity-line').props.children as string;
+      expect(line).toContain(en.admin_activity.summary_owed.replace('{{n}}', '90'));
+      expect(line).toContain(en.admin_activity.summary_disputes.replace('{{n}}', '1'));
+      expect(line).toContain(en.admin_activity.summary_actions.replace('{{n}}', '2'));
+      expect(line).toContain(en.admin_activity.summary_reports.replace('{{n}}', '1'));
+    });
+
+    it('"Open full activity" lands on the tab most worth opening: disputes first, then payments, else moderation', async () => {
+      const r = await open();
+      await act(async () => { fireEvent.press(r.getByTestId('activity-open')); });
+      expect(mockPush).toHaveBeenCalledWith('/admin/users?uid=u1&section=disputes');
+
+      mockActivity.mockResolvedValue({ section: 'summary', summary: { ...SUMMARY, disputes: { open: 0, resolved: 0 } } });
+      const owes = await open();
+      await act(async () => { fireEvent.press(owes.getByTestId('activity-open')); });
+      expect(mockPush).toHaveBeenLastCalledWith('/admin/users?uid=u1&section=fees');
+
+      mockActivity.mockResolvedValue({ section: 'summary', summary: CALM });
+      const calm = await open();
+      expect(calm.getByText(en.admin_activity.summary_none)).toBeTruthy();
+      await act(async () => { fireEvent.press(calm.getByTestId('activity-open')); });
+      expect(mockPush).toHaveBeenLastCalledWith('/admin/users?uid=u1&section=moderation');
+    });
+
+    it('a failed summary says so and the rest of the sheet still works', async () => {
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+      mockActivity.mockRejectedValue(new Error('offline'));
+      const r = await open();
+      expect(r.getByTestId('activity-line-failed')).toBeTruthy();
+      expect(r.getByTestId('user-details-u1-email').props.children).toBe('noa@example.com');
+    });
   });
 
   it('is translated: every English key has a Hebrew one', () => {
