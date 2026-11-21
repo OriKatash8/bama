@@ -266,7 +266,7 @@ describe('the professional sees their OWN engagement and nobody else’s', () =>
   });
 });
 
-describe('the contest is offered to one professional and to nobody else', () => {
+describe('the contest is NOT on the project card any more (it moved to the chat, beside the balance button)', () => {
   /** Completed, inside the charge window — the only state that offers a contest. */
   const completed = {
     professionalId: 'pro-1', feeStatus: 'owed', feeRate: 0.03,
@@ -288,14 +288,11 @@ describe('the contest is offered to one professional and to nobody else', () => 
     return r;
   }
 
-  it('offers it to the professional whose engagement it is, with the deadline', async () => {
+  it('does not offer it on the card, not even to the professional whose engagement it is', async () => {
     mockViewer.uid = 'pro-1';
-    const { queryAllByText } = await renderScreen();
-    expect(queryAllByText(en.engagement.contest)).toHaveLength(1);
-    // The deadline is spelled out rather than left to be inferred from a button
-    // that will one day quietly stop appearing.
-    const prefix = en.engagement.contest_window.split('{{')[0].trim();
-    expect(queryAllByText(new RegExp(prefix))).toHaveLength(1);
+    const { queryByText } = await renderScreen();
+    expect(queryByText(en.engagement.contest)).toBeNull();
+    expect(queryByText(new RegExp(en.engagement.contest_window.split('{{')[0].trim()))).toBeNull();
   });
 
   it('offers the CLIENT nothing, on any row, even though a fee is live', async () => {

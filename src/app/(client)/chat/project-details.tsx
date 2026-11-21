@@ -62,14 +62,10 @@ import { reviewableProIds } from '@features/reviews/utils/reviewTargets';
 import { requestRemoval, acceptRemoval, listenToRemovalRequests, listenToMyRemovalRequest } from '@features/chat/services/removalService';
 import { listenToProjectFee } from '@features/pricing/services/feesService';
 import {
-  canDispute, markEngagementComplete, canMarkComplete, contestEngagement,
+  markEngagementComplete, canMarkComplete,
 } from '@features/projects/services/completionService';
-import { afterConfirmCompletion, contestWindowEndsAt } from '@features/projects/utils/completion';
-import { contestErrorKey } from '@features/projects/utils/contestErrors';
+import { afterConfirmCompletion } from '@features/projects/utils/completion';
 import { CompleteEngagementSheet } from '@features/projects/components/CompleteEngagementSheet';
-import {
-  ContestEngagementSheet, type ContestReason,
-} from '@features/projects/components/ContestEngagementSheet';
 import { endDateFromDeadline } from '@features/crew/utils/endDate';
 import { mergeCrewSlots } from '@features/noticeboard/matching';
 import { chatGroupOf } from '@features/chat/utils/chatGroup';
@@ -354,7 +350,6 @@ export default function ProjectDetailsScreen() {
   // where a professional accepts a charge, and confirmDialog is window.confirm
   // on web — unlocalisable, and with nowhere to put the amount.
   const [completeSheetOpen, setCompleteSheetOpen] = useState(false);
-  const [contestSheetOpen, setContestSheetOpen] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
   // Report user
@@ -600,42 +595,8 @@ export default function ProjectDetailsScreen() {
     }
   }
 
-  /**
-   * The professional contests their own completed engagement, inside the window
-   * that ends when the fee is charged.
-   *
-   * Not framed as undoing anything: the project stays closed and the reviews stay
-   * published either way. What the two reasons change is the FEE — `didnt_happen`
-   * voids it, `amount_disputed` holds it for an admin — and the sheet says which
-   * beside each option, because a choice whose consequences are off screen is not
-   * one the professional actually made.
-   */
-  async function handleContest(reason: ContestReason, note: string) {
-    if (!projectId || proActionBusy) return;
-    setProActionBusy(true);
-    try {
-      await contestEngagement({ projectId, reason, ...(note ? { note } : {}) });
-      // The contest RE-TAKES the slot the completion released, server-side. The
-      // optimistic write mirrors only what this screen renders; the slot count
-      // comes from the project document and arrives on its own.
-      setMyFee((prev) => (prev
-        ? {
-            ...prev,
-            engagementStatus: 'disputed' as const,
-            // didnt_happen voids the fee outright. Showing the old amount beside
-            // "with our team" would say the opposite of what just happened.
-            ...(reason === 'didnt_happen' ? { feeDue: 0, status: 'not_owed' as const } : {}),
-          }
-        : prev));
-      setContestSheetOpen(false);
-      showToast(t('engagement.contest_sent'), 'success');
-    } catch (err) {
-      console.error('[completion] contestEngagement failed:', err);
-      showToast(t(contestErrorKey(err)), 'error');
-    } finally {
-      setProActionBusy(false);
-    }
-  }
+  // The contest ('there is a problem') lives in the CHAT of a finished project, beside the
+  // balance button (features/projects/components/ContestFromChat), not on this card.
 
   function handleReviewsComplete() {
     setShowReviewFlow(false);
@@ -1549,16 +1510,6 @@ export default function ProjectDetailsScreen() {
                   ? myFee?.engagementStatus ?? undefined
                   : undefined
               }
-              onContest={
-                !isClient && professionalId === currentUserId && canDispute(myFee)
-                  ? () => setContestSheetOpen(true)
-                  : undefined
-              }
-              contestWindowEndsAt={
-                !isClient && professionalId === currentUserId && canDispute(myFee)
-                  ? contestWindowEndsAt(myFee) ?? undefined
-                  : undefined
-              }
               // The client sees this pro's number once the pro's part has ended —
               // the derived list is all the client can read of that (§6).
               phoneFor={{ projectId, userId: professionalId, eligible: isClient && (project.endedEngagementIds ?? []).includes(professionalId) }}
@@ -1901,16 +1852,6 @@ export default function ProjectDetailsScreen() {
         submitting={proActionBusy}
         onConfirm={handleMarkEngagementComplete}
         onClose={() => setCompleteSheetOpen(false)}
-      />
-      )}
-
-      {!isClient && (
-      <ContestEngagementSheet
-        visible={contestSheetOpen}
-        projectTitle={project.title ?? ''}
-        submitting={proActionBusy}
-        onConfirm={handleContest}
-        onClose={() => setContestSheetOpen(false)}
       />
       )}
 
@@ -2741,8 +2682,6 @@ function MemberRow({
   payment,
   onUpdate,
   engagementStatus,
-  onContest,
-  contestWindowEndsAt,
   phoneFor,
   onPressProfile,
 }: {
@@ -2763,13 +2702,6 @@ function MemberRow({
   /** THIS engagement's status. Absent on every row but the viewing
    *  professional's own — the client must never see it (spec §6). */
   engagementStatus?: ProjectFee['engagementStatus'];
-  /** Opens the contest sheet. Same scoping, and only inside the window that ends
-   *  when the fee is charged. */
-  onContest?: () => void;
-  /** When that window closes, in ms. Read from the engagement's own `chargeDueAt`
-   *  — the field the server enforces against — so the deadline shown is the
-   *  deadline applied. Same scoping again. */
-  contestWindowEndsAt?: number;
   /** Whose phone number this card may show, and whether the viewer can already
    *  tell it is allowed (the pro's part has ended). The server decides for real. */
   phoneFor?: { projectId: string | undefined; userId: string; eligible: boolean };
@@ -2783,14 +2715,13 @@ function MemberRow({
   const isClient = badge !== undefined;
   const contact = useRevealedPhone(phoneFor?.projectId, phoneFor?.userId ?? '', !!phoneFor?.eligible);
   const canUpdate = !!onUpdate && (!!payment?.individualOffer || !!payment?.bundleId);
-  const canContest = !!onContest;
   const awaitingClient = engagementStatus === 'end_requested_by_pro';
   const isEngagementDone = engagementStatus === 'completed';
   const isContested = engagementStatus === 'disputed';
   // Report lives in the action bar, under the separator line, so it keeps the bar
   // alive on its own (the client's view of a professional often has nothing else).
   // A card with no action and no report still renders no bar and no line.
-  const showActions = canUpdate || canContest || awaitingClient
+  const showActions = canUpdate || awaitingClient
     || isEngagementDone || isContested || !!onRemove || isPendingRemoval || !!onReport;
   return (
     <View style={styles.memberCard}>
@@ -2906,16 +2837,6 @@ function MemberRow({
               </AppText>
             </View>
           ) : null}
-          {/* Beside the done chip, not instead of it: the engagement IS complete
-              and the contest does not undo that — it only puts the fee in front
-              of a human before it is charged. */}
-          {canContest && (
-            <TouchableOpacity style={styles.contestPill} onPress={onContest} activeOpacity={0.85}>
-              <AppText weight="semiBold" style={styles.contestPillText}>
-                {t('engagement.contest')}
-              </AppText>
-            </TouchableOpacity>
-          )}
           {canUpdate && (
             <TouchableOpacity style={[styles.updatePill, { backgroundColor: modeAccent }]} onPress={() => onUpdate!()} activeOpacity={0.85}>
               <Pencil size={13} color="#ffffff" strokeWidth={2.2} />
@@ -2956,23 +2877,6 @@ function MemberRow({
         </View>
       )}
 
-      {/* The deadline, spelled out rather than left to be inferred from a button
-          that will quietly stop appearing. It is the engagement's own
-          `chargeDueAt` — the same value the callable refuses past — so what the
-          row promises and what the server allows cannot drift apart. */}
-      {canContest && contestWindowEndsAt !== undefined && (
-        <AppText
-          weight="regular"
-          style={[styles.contestWindow, { textAlign: rtl ? 'right' : 'left' }]}
-        >
-          {t('engagement.contest_window', {
-            date: new Date(contestWindowEndsAt).toLocaleDateString(
-              lang === 'he' ? 'he-IL' : 'en-US',
-              { day: 'numeric', month: 'short' },
-            ),
-          })}
-        </AppText>
-      )}
     </View>
   );
 }
@@ -3192,15 +3096,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8, paddingVertical: 4,
   },
   engagementContestedText: { color: DISPUTE_RED, fontSize: 11 },
-  // Outlined rather than filled: raising an issue is a quieter act than the two
-  // filled pills beside it, and must not compete with them for the tap.
-  contestPill: {
-    flexShrink: 0,
-    borderWidth: 1, borderColor: DISPUTE_RED, borderRadius: 10,
-    paddingHorizontal: 15, paddingVertical: 6,
-  },
-  contestPillText: { fontSize: 13, color: DISPUTE_RED },
-  contestWindow: { fontSize: 11, color: '#000000', paddingHorizontal: 14, paddingBottom: 10 },
   dateConsequence: { fontSize: 12, color: '#000000', lineHeight: 17, paddingHorizontal: 4 },
   closeNowBody: { fontSize: 13, color: '#00000099', lineHeight: 19, marginBottom: 4 },
   /** Amber, as in the builder: "no end date" is the answer with a consequence

@@ -87,6 +87,7 @@ import { ensureVideoWithinLimit, exceedsDuration, getVideoSeconds } from '@core/
 import { canTrimVideo, openVideoTrimmer, cleanTrimmedFiles } from '@core/video/trimVideo';
 import { MAX_CHAT_VIDEO_SECONDS } from '@core/constants/video';
 import { listenToProjectFee } from '@features/pricing/services/feesService';
+import { ContestFromChat, contestWindowNote } from '@features/projects/components/ContestFromChat';
 import { showsOnBalance } from '@features/pricing/utils/balance';
 import type { ProjectFee } from '@core/types/project';
 import { addMission } from '../services/missionService';
@@ -1589,6 +1590,8 @@ export function ChatRoomScreen({ chatId }: Props) {
   // gate (`outstandingFee(...) > 0`) as the first. Same predicate as the
   // screen's own row filter, so the door and the room cannot disagree.
   const balanceReachable = showsOnBalance(myProjectFee);
+  const contestNote = contestWindowNote(myProjectFee, language);
+  const canContestFromChat = contestNote !== null;
   const readOnlyLabel = chatReadOnlyReason === 'completed' || projectCompleted
     ? t('chats.completed_read_only')
     : t('chats.system_read_only');
@@ -2549,16 +2552,26 @@ export function ChatRoomScreen({ chatId }: Props) {
           </AppText>
           {/* The composer is gone, so the pay action lives here — a completed
               chat is precisely when the fee is due, and it must stay reachable. */}
-          {balanceReachable && chatProjectId && (
-            <TouchableOpacity
-              style={[chatStyles.payFromChatBtn, { backgroundColor: modeAccent }]}
-              onPress={() => router.push(`/settings/payment?projectId=${chatProjectId}` as never)}
-              activeOpacity={0.85}
-            >
-              <AppText weight="bold" style={chatStyles.payFromChatText}>
-                {t('project_details.pay_fee')}
-              </AppText>
-            </TouchableOpacity>
+          {chatProjectId && (balanceReachable || canContestFromChat) && (
+            <View style={[chatStyles.footerActions, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
+              {balanceReachable && (
+                <TouchableOpacity
+                  style={[chatStyles.payFromChatBtn, { backgroundColor: modeAccent }]}
+                  onPress={() => router.push(`/settings/payment?projectId=${chatProjectId}` as never)}
+                  activeOpacity={0.85}
+                >
+                  <AppText weight="bold" style={chatStyles.payFromChatText}>
+                    {t('project_details.pay_fee')}
+                  </AppText>
+                </TouchableOpacity>
+              )}
+              {/* Beside the balance button: the fee is here, so is the way to challenge it.
+                  Only the professional whose own completed engagement is still contestable. */}
+              <ContestFromChat projectId={chatProjectId} projectTitle={chatName} fee={myProjectFee} />
+            </View>
+          )}
+          {!!contestNote && (
+            <AppText style={{ color: '#8890b0', fontSize: 12, textAlign: 'center' }}>{contestNote}</AppText>
           )}
         </View>
       )}
@@ -3449,6 +3462,7 @@ const styles = StyleSheet.create({
 
 const chatStyles = StyleSheet.create({
   // Colour: the mode accent, set inline — purple for the client, blue for the pro.
+  footerActions: { alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 10 },
   payFromChatBtn: {
     borderRadius: 999,
     paddingHorizontal: 22, paddingVertical: 9,
