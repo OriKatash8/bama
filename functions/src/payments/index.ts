@@ -4,7 +4,8 @@ export {
   getMyPaymentMethod, createCardSaveSession, removeMyPaymentMethod, fakeCompleteCardSave,
 } from './paymentMethods';
 export { feeChargeCron } from './feeChargeCron';
-export { paymentWebhook } from './paymentWebhook';
+// NOT exported: paymentWebhook (./paymentWebhook). Withheld until a provider is wired to it
+// (scripts/deploy-drift-allowlist.json); not re-exporting it is what keeps a full deploy from shipping it.
 export { paymentLinkConfirm } from './paymentLinkConfirm';
 export {
   adminListChargeIssues, adminAcknowledgeChargeIssue, adminListPaymentLinks,

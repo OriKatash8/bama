@@ -1,20 +1,20 @@
 {
-  "_readme": "Functions exported from functions/src but intentionally NOT deployed. Each entry needs name, reason and addedOn (YYYY-MM-DD). check-deploy-drift.mjs fails on a malformed entry, one older than 60 days, a name that is no longer exported, or a name that is now deployed. See scripts/lib/driftAllowlist.mjs.",
+  "_readme": "Functions exported from functions/src but intentionally NOT deployed. Each entry needs name, reason and addedOn (YYYY-MM-DD). check-deploy-drift.mjs fails on a malformed entry, one older than 60 days, a name that is no longer exported, or a name that is now deployed. See scripts/lib/driftAllowlist.mjs. A withheld function must ALSO stay out of functions/src/index.ts (Firebase deploys exactly what index.ts exports); functions/src/__tests__/withheldFunctions.test.ts fails if one is re-exported there.",
   "functionsNotDeployed": [
     {
       "name": "resolveCommunityInvite",
-      "reason": "Public, unauthenticated invite resolver. Deploys with the web landing task (waiting on the real domain); nothing in the app calls it. Its IP rate key is unverified until deployed.",
-      "addedOn": "2026-09-13"
+      "reason": "Public, unauthenticated invite resolver. Deleted from production 2026-11-21 and withheld from functions/src/index.ts so a full deploy cannot ship it; nothing in the app, hosting or landing page calls it. Re-export it (communities section of index.ts) in the web landing task, with its IP rate key verified, and remove this entry.",
+      "addedOn": "2026-11-21"
     },
     {
       "name": "callClaude",
-      "reason": "Hardened (task registry, per-uid burst+daily quotas) but UNDEPLOYED on purpose: the three hooks that call it (useGenerateTitle, useAiCrewSuggestion, useAiCrewRecommendation) are exported from src/features/crew/hooks and imported by NOTHING, so no screen invokes it. An authenticated endpoint spending the platform's Anthropic key with zero legitimate callers is liability without upside. Deploy it in the same change that ships the UI.",
-      "addedOn": "2026-09-26"
+      "reason": "Authenticated endpoint spending the platform's Anthropic key. Deleted from production 2026-11-21 and withheld from functions/src/index.ts so a full deploy cannot ship it: the hooks that call it (useGenerateTitle, useAiCrewSuggestion, useAiCrewRecommendation) are imported by no screen, so it has zero legitimate callers. Re-export it (index.ts) in the same change that ships the UI, and remove this entry.",
+      "addedOn": "2026-11-21"
     },
     {
       "name": "paymentWebhook",
-      "reason": "Public provider callback. Inert while paymentProvider is 'none' and has no caller until Grow is wired; deploys with the Grow step (with its GROW_* secrets).",
-      "addedOn": "2026-10-31"
+      "reason": "Public provider callback. Deleted from production 2026-11-21 and withheld from functions/src/payments/index.ts so a full deploy cannot ship it: nothing calls it (paymentProvider is grow_link, which settles through paymentLinkConfirm; getWebhookProvider returns null for it). Re-export it in payments/index.ts with the Grow webhook step (with its GROW_* secrets), and remove this entry.",
+      "addedOn": "2026-11-21"
     }
   ]
 }

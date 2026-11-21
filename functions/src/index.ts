@@ -1,7 +1,10 @@
 export * from './auth';
 export * from './bookings';
 export * from './notifications';
-export * from './claude';
+// NOT exported: callClaude (./claude). Withheld on purpose, see scripts/deploy-drift-allowlist.json.
+// Firebase deploys exactly what this file exports, so leaving it out is what stops a full
+// `firebase deploy --only functions` from redeploying it. functions/src/__tests__/withheldFunctions.test.ts
+// fails if a withheld function is exported from here again.
 export * from './video';
 export * from './moderation';
 export * from './moderation/lookup';
@@ -29,9 +32,13 @@ export * from './lifecycle/closingTrigger';
 export * from './lifecycle/feeOverdue';
 export * from './lifecycle/disputeResolution';
 
-// Community invites (europe-west1). resolveCommunityInvite is exported but NOT
-// deployed until the web landing task; deploy the others by name.
-export * from './communities/invites';
+// Community invites (europe-west1). resolveCommunityInvite is deliberately NOT re-exported
+// here (withheld until the web landing task; see scripts/deploy-drift-allowlist.json), so a
+// full deploy cannot ship it. Named exports, not `export *`, for exactly that reason.
+export {
+  createCommunityInvite, getCommunityInvite, revokeCommunityInvite,
+  onCommunityInviteJoinRequest, onCommunityDeleted,
+} from './communities/invites';
 export * from './communities/adminDelete';
 export * from './communities/adminActions';
 export * from './communities/ownerTransfer';

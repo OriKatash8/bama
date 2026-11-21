@@ -211,16 +211,6 @@
       "recordedOn": "2026-11-21",
       "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
     },
-    "callClaude": {
-      "region": "us-central1",
-      "generation": 2,
-      "updateTime": "2026-11-21T05:19:42.703854965Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
-      "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
-    },
     "cancelOwnershipTransfer": {
       "region": "europe-west1",
       "generation": 2,
@@ -384,12 +374,12 @@
     "disputeCompletion": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:42.428273563Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-21T05:29:25.601385498Z",
+      "treeSha": "ba7d4eef304a13e4f20765409b2b00eaaa77eaca",
+      "commit": "582f75c9",
       "how": "deploy",
       "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "note": "disputeCompletion marks endRejected (582f75c9)"
     },
     "disputeFeeByPro": {
       "region": "us-central1",
@@ -751,16 +741,6 @@
       "recordedOn": "2026-11-21",
       "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
     },
-    "paymentWebhook": {
-      "region": "europe-west1",
-      "generation": 2,
-      "updateTime": "2026-11-21T05:20:56.845993698Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
-      "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
-    },
     "refreshUsageStats": {
       "region": "europe-west1",
       "generation": 2,
@@ -825,16 +805,6 @@
       "region": "europe-west1",
       "generation": 2,
       "updateTime": "2026-11-21T05:20:57.172077565Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
-      "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
-    },
-    "resolveCommunityInvite": {
-      "region": "europe-west1",
-      "generation": 2,
-      "updateTime": "2026-11-21T05:20:56.638383057Z",
       "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
       "commit": "9d7c88bb",
       "how": "deploy",
