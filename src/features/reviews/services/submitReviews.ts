@@ -28,19 +28,21 @@ export async function submitReviews(args: {
 }): Promise<{ written: string[]; failed: string[] }> {
   const { projectId, clientId, clientDisplayName, reviews } = args;
   const results = await Promise.allSettled(
-    reviews.map((r) =>
-      setDoc(doc(db, 'reviews', reviewDocId(projectId, r.professionalId)), {
+    reviews.map((r) => {
+      // The comment is optional; whitespace-only becomes an empty string.
+      const text = (r.text ?? '').trim();
+      return setDoc(doc(db, 'reviews', reviewDocId(projectId, r.professionalId)), {
         projectId,
         professionalId: r.professionalId,
         reviewerId: clientId,
         authorId: clientId,
         authorName: clientDisplayName,
         rating: r.rating,
-        text: r.text,
-        body: r.text,
+        text,
+        body: text,
         createdAt: serverTimestamp(),
-      }),
-    ),
+      });
+    }),
   );
   const written: string[] = [];
   const failed: string[] = [];

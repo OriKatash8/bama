@@ -87,7 +87,8 @@ export function ReviewFlow({
   const current = professionals[currentIndex];
   const draft = drafts[currentIndex] ?? { rating: 0, text: '' };
   const isLast = currentIndex === professionals.length - 1;
-  const canProceed = draft.rating >= 1 && draft.text.trim().length >= 10;
+  // The comment is optional: a star rating is all a review needs.
+  const canProceed = draft.rating >= 1;
 
   function updateDraft(updates: Partial<ReviewDraft>) {
     setDrafts((prev) => {
@@ -171,6 +172,7 @@ export function ReviewFlow({
               {[1, 2, 3, 4, 5].map((star) => (
                 <TouchableOpacity
                   key={star}
+                  testID={`review-star-${star}`}
                   onPress={() => updateDraft({ rating: star })}
                   activeOpacity={0.7}
                   hitSlop={6}
@@ -199,20 +201,11 @@ export function ReviewFlow({
               multiline
               value={draft.text}
               onChangeText={(v) => updateDraft({ text: v })}
+              maxLength={1000}
               placeholder={t('review.placeholder')}
               placeholderTextColor="rgba(0,74,173,0.4)"
             />
 
-            {draft.text.trim().length > 0 && draft.text.trim().length < 10 && (
-              <Text
-                style={[
-                  styles.hint,
-                  { ...font.regular, textAlign: rtl ? 'right' : 'left' },
-                ]}
-              >
-                {t('review.required_text')}
-              </Text>
-            )}
           </View>
 
           <TouchableOpacity

@@ -1582,11 +1582,10 @@
   "review": {
     "title": "דרג את הצוות שלך",
     "progress": "{{current}} מתוך {{total}}",
-    "placeholder": "שתף את חוויית העבודה שלך עם איש המקצוע...",
+    "placeholder": "רוצה להוסיף כמה מילים? (לא חובה)",
     "next": "הבא",
     "submit": "שלח והשלם",
-    "required_stars": "אנא בחר דירוג",
-    "required_text": "אנא כתוב לפחות 10 תווים"
+    "required_stars": "אנא בחר דירוג"
   },
   "community_invite": {
     "share_label": "שיתוף הקהילה",

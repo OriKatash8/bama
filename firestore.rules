@@ -1496,10 +1496,22 @@ service cloud.firestore {
           && (!('professionalIds' in get(projectPath).data)
               || request.resource.data.professionalId in get(projectPath).data.professionalIds);
       }
+      // What the review says. Nothing checked it before, so a rating of 0, 6, 3.5
+      // or a string, and text of any size, could be written through the SDK and
+      // would count toward the professional's public average. The comment is
+      // optional (an empty string is fine); `body` is the field profiles render,
+      // `text` its twin — both are bounded.
+      function reviewContentOk() {
+        let d = request.resource.data;
+        return d.get('rating', null) is int && d.rating >= 1 && d.rating <= 5
+          && d.get('text', '') is string && d.get('text', '').size() <= 1000
+          && d.get('body', '') is string && d.get('body', '').size() <= 1000;
+      }
       allow create: if isAuth() && verified() &&
         request.resource.data.reviewerId == request.auth.uid &&
         request.resource.data.professionalId != request.auth.uid &&
         !request.resource.data.keys().hasAny(['published', 'visibleAt']) &&
+        reviewContentOk() &&
         reviewedEngagementOk() &&
         // Demo isolation: a review stays on the reviewer's side.
         oneSide([request.resource.data.professionalId]);

@@ -53,3 +53,15 @@ it('a failed "reviewed" write does not throw into the UI', async () => {
   mockUpdateDoc.mockRejectedValue(new Error('offline'));
   await expect(submitReviews({ ...base, reviews })).resolves.toEqual({ written: ['a', 'b'], failed: [] });
 });
+
+// The comment is optional: stars alone make a review, and whitespace never reaches Firestore.
+it('trims the comment, and a blank one is saved as an empty string', async () => {
+  mockSetDoc.mockResolvedValue(undefined);
+  mockUpdateDoc.mockResolvedValue(undefined);
+  await submitReviews({ ...base, reviews: [
+    { professionalId: 'a', rating: 5, text: '   ' },
+    { professionalId: 'b', rating: 4, text: '  Nice edit \n' },
+  ] });
+  expect(mockSetDoc.mock.calls[0][1]).toMatchObject({ rating: 5, text: '', body: '' });
+  expect(mockSetDoc.mock.calls[1][1]).toMatchObject({ rating: 4, text: 'Nice edit', body: 'Nice edit' });
+});

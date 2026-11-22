@@ -88,8 +88,10 @@ export function ReviewsList({ reviews: allReviews }: ReviewsListProps) {
         {/* Stars */}
         <Text style={[styles.stars, { textAlign: align }]}>{stars}</Text>
 
-        {/* Body */}
-        <AppText style={[styles.body, { textAlign: align }]}>{review.body}</AppText>
+        {/* Body — the comment is optional, so a stars-only review shows no text row. */}
+        {review.body?.trim() ? (
+          <AppText testID="review-body" style={[styles.body, { textAlign: align }]}>{review.body}</AppText>
+        ) : null}
       </TouchableOpacity>
 
       {/* Report this review (not your own). */}

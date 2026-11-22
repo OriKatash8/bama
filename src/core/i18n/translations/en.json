@@ -1582,11 +1582,10 @@
   "review": {
     "title": "Rate your crew",
     "progress": "{{current}} of {{total}}",
-    "placeholder": "Share your experience working with this person...",
+    "placeholder": "Want to add a few words? (optional)",
     "next": "Next",
     "submit": "Submit & Complete",
-    "required_stars": "Please select a rating",
-    "required_text": "Please write at least 10 characters"
+    "required_stars": "Please select a rating"
   },
   "community_invite": {
     "share_label": "Share community",
