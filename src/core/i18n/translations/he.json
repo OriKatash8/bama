@@ -141,6 +141,8 @@
     "view_profile": "צפה בפרופיל"
   },
   "chats": {
+    "leave_locked_until": "ניתן להסיר את הצ׳אט החל מ-{{date}}",
+    "leave_locked_dispute": "לא ניתן להסיר את הצ׳אט בזמן בירור פתוח",
     "status_open": "פתוח",
     "status_in_progress": "בתהליך",
     "status_completed": "הושלם",

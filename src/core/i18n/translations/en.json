@@ -141,6 +141,8 @@
     "view_profile": "View Profile"
   },
   "chats": {
+    "leave_locked_until": "You can remove this chat from {{date}}",
+    "leave_locked_dispute": "You can't remove this chat while a dispute is open",
     "status_open": "Open",
     "status_in_progress": "In Progress",
     "status_completed": "Completed",

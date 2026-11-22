@@ -5,13 +5,14 @@ import { Image } from 'expo-image';
 import { getDoc, doc } from 'firebase/firestore';
 import { useRouter, useSegments, useFocusEffect } from 'expo-router';
 import { CLIENT_TAB_ACTIVE, PRO_TAB_ACTIVE } from '@core/navigation/floatingTabBar';
-import { Users, Package, Trash2 } from 'lucide-react-native';
+import { Users, Package, Trash2, Lock } from 'lucide-react-native';
 import { AppText } from '@components/ui/AppText';
 import { useAuthStore } from '@core/stores/authStore';
 import { auth, db } from '@core/firebase/config';
 import { removeMemberFromGroup } from '../services/chatService';
 import { confirmDialog } from '@utils/confirmDialog';
 import { useSettingsStore } from '@core/stores/settingsStore';
+import { useUiStore } from '@core/stores/uiStore';
 import { useAppFont } from '@core/hooks/useAppFont';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
@@ -25,6 +26,7 @@ import { useNotifPermissionPrompt } from '@features/notifications/hooks/useNotif
 import { NotifPermissionBanner } from '@features/notifications/components/NotifPermissionBanner';
 import { usePendingMentions } from '../hooks/usePendingMentions';
 import { localizedSystemPreview } from '../utils/systemMessages';
+import { chatLeaveLock, type ChatLeaveLock } from '../utils/chatLeaveLock';
 
 type ProjectStatus = ProjectRequest['status'];
 type ProjectRoleInfo = {
@@ -40,6 +42,10 @@ type ProjectRoleInfo = {
    * ask for a review the gate refuses to open.
    */
   reviewsCompleted?: boolean;
+  /** Latest still-open dispute window (derived on the project); null/absent = none. */
+  disputeWindowEndsAt?: ProjectRequest['disputeWindowEndsAt'] | null;
+  /** A dispute on the project is under admin review. */
+  adminReviewPending?: boolean;
 };
 type Translations = typeof en;
 
@@ -166,6 +172,8 @@ export function ChatsScreen({
   const [purchaseTypes, setPurchaseTypes] = useState<Record<string, MarketplaceListingType>>({});
   const fetchedUserIdsRef = useRef<Set<string>>(new Set());
   const fetchedChatProjectIdsRef = useRef<Set<string>>(new Set());
+  /** Chats re-read once because their project completed after the first fetch. */
+  const staleRefetchedRef = useRef<Set<string>>(new Set());
   const fetchedPurchaseChatIdsRef = useRef<Set<string>>(new Set());
   const [chatFilter, setChatFilter] = useState<ChatFilter>('all');
   const notifPrompt = useNotifPermissionPrompt();
@@ -217,6 +225,19 @@ export function ChatsScreen({
   }, [user?.id]);
 
   useEffect(() => {
+    // A project that completed while this list was mounted: the live chat doc says
+    // so (readOnlyReason), but the cached fetch predates it and has no dispute
+    // window. Re-read it once, so the row can decide between the lock and the trash.
+    for (const c of chats) {
+      if (
+        c.type === 'group' && c.readOnly === true && c.readOnlyReason === 'completed'
+        && projectInfoRef.current[c.id] && projectInfoRef.current[c.id].status !== 'completed'
+        && !staleRefetchedRef.current.has(c.id)
+      ) {
+        staleRefetchedRef.current.add(c.id);
+        fetchedChatProjectIdsRef.current.delete(c.id);
+      }
+    }
     const toFetch = chats.filter(
       (c) => c.type === 'group' && c.projectId != null && !fetchedChatProjectIdsRef.current.has(c.id),
     );
@@ -229,12 +250,17 @@ export function ChatsScreen({
         // The whole document is already read — Pick<> narrowed the type, it did
         // not project fields — so carrying clientId and professionalIds costs
         // nothing extra.
-        const d = snap.data() as Pick<ProjectRequest, 'status' | 'clientId' | 'professionalIds' | 'reviewsCompleted'>;
+        const d = snap.data() as Pick<
+          ProjectRequest,
+          'status' | 'clientId' | 'professionalIds' | 'reviewsCompleted' | 'disputeWindowEndsAt' | 'adminReviewPending'
+        >;
         return [c.id, {
           status: d.status,
           clientId: d.clientId,
           professionalIds: d.professionalIds ?? [],
           reviewsCompleted: d.reviewsCompleted,
+          disputeWindowEndsAt: d.disputeWindowEndsAt ?? null,
+          adminReviewPending: d.adminReviewPending,
         }] as const;
       }),
     ).then((entries) => {
@@ -312,6 +338,16 @@ export function ChatsScreen({
     );
     if (!confirmed || !user) return;
     await removeMemberFromGroup(chatId, user.id);
+  }
+
+  // A locked project chat explains itself in a toast — never mentions fees.
+  function explainLeaveLock(lock: ChatLeaveLock) {
+    const msg = lock.kind === 'dispute'
+      ? t('chats.leave_locked_dispute')
+      : lock.kind === 'until'
+      ? t('chats.leave_locked_until', { date: lock.date.toLocaleDateString(rtl ? 'he-IL' : 'en-GB') })
+      : null;
+    if (msg) useUiStore.getState().showToast(msg, 'info');
   }
 
   function renderAvatar(item: Chat) {
@@ -528,9 +564,20 @@ export function ChatsScreen({
       ? { label: role === 'client' ? t('chats.role_client') : t('chats.role_creator'), ...ROLE_CONFIG[role] }
       : null;
     const isUnread = unread > 0;
+    // Project chats: leaving waits for completion + the end of the dispute window
+    // + no open dispute (chatLeaveLock; firestore.rules enforces the same). Until
+    // the project is fetched there is nothing to decide on, so neither icon shows.
+    // The chat doc saying 'completed' while the cached fetch is older still counts
+    // as completed — but with no window known it must not offer the trash, so it
+    // waits for the refetch instead (see the stale-completion effect above).
+    const staleCompletion = isCompletedProject && status !== 'completed';
+    const leaveLock: ChatLeaveLock | null = item.type === 'group' && info && !staleCompletion
+      ? chatLeaveLock(info, myFee ?? null)
+      : null;
     const showTrash =
-      (item.type === 'group' && (status === 'completed' || status === 'cancelled' || isCompletedProject))
+      (item.type === 'group' && leaveLock?.kind === 'open')
       || (item.type === 'purchase' && !!item.archived);
+    const showLock = item.type === 'group' && (leaveLock?.kind === 'until' || leaveLock?.kind === 'dispute');
     return (
       <Fragment key={item.id}>
         {/* Line between rows, from the avatar's far edge to the badge column's
@@ -633,12 +680,24 @@ export function ChatsScreen({
                   <Text style={[styles.mentionBadgeText, { color: accent, ...font.bold }]}>@</Text>
                 </View>
               )}
-              {showTrash ? (
+              {showLock && leaveLock ? (
+                <TouchableOpacity
+                  onPress={(e) => { e.stopPropagation(); explainLeaveLock(leaveLock); }}
+                  hitSlop={12}
+                  activeOpacity={0.7}
+                  style={styles.trashBtn}
+                  testID={`chat-lock-${item.id}`}
+                  accessibilityRole="button"
+                >
+                  <Lock size={15} color="#9ca3af" strokeWidth={2} />
+                </TouchableOpacity>
+              ) : showTrash ? (
                 <TouchableOpacity
                   onPress={(e) => { e.stopPropagation(); handleLeaveChat(item.id); }}
                   hitSlop={12}
                   activeOpacity={0.7}
                   style={styles.trashBtn}
+                  testID={`chat-trash-${item.id}`}
                 >
                   <Trash2 size={15} color="#ef4444" strokeWidth={2} />
                 </TouchableOpacity>
