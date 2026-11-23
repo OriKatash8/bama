@@ -15,9 +15,11 @@ import i18n from '@core/i18n';
 import { syncUser } from '@features/auth/utils/syncUser';
 import { usePendingSignupStore } from '@features/auth/stores/pendingSignupStore';
 import { recordConsent } from '@features/auth/utils/consent';
+import { isGoogleNativeLinked } from '@features/auth/utils/googleNative';
 
+// iOS client of bundle com.bamaapp.bama (CLIENT_ID in GoogleService-Info.plist).
 const IOS_CLIENT_ID =
-  '165833515213-ukgt1joohvdo27n9lt9cr5anmediqq6r.apps.googleusercontent.com';
+  '165833515213-vnjr63akeo6tlrpr2a3i0q2ua742nj8f.apps.googleusercontent.com';
 
 // Get this from Firebase Console → Authentication → Sign-in method → Google → Web SDK configuration → Web client ID
 const WEB_CLIENT_ID =
@@ -27,12 +29,12 @@ type GoogleSigninModule = typeof import('@react-native-google-signin/google-sign
 let googleSigninModule: GoogleSigninModule | null = null;
 
 /**
- * The native module, loaded and configured on first use rather than at import.
- * With GOOGLE_SIGNIN_ENABLED off, its native code is not linked into the build
- * (react-native.config.js), and importing it at module load would crash the
- * app at launch just because this file is imported.
+ * The native module, loaded and configured on first use rather than at import,
+ * so the web bundle (which has no native module) never touches it.
  */
 function googleSignin(): GoogleSigninModule {
+  // A build without the native module must never reach the require below.
+  if (!isGoogleNativeLinked()) throw new Error('RNGoogleSignin native module is not in this build');
   if (!googleSigninModule) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     googleSigninModule = require('@react-native-google-signin/google-signin') as GoogleSigninModule;
@@ -114,7 +116,7 @@ export function useGoogleSignIn(): GoogleSignInState {
       ) {
         // user dismissed — no error shown
       } else if (code === 'auth/account-exists-with-different-credential') {
-        const msg = i18n.t('auth.err_google_email_exists');
+        const msg = i18n.t('auth.err_email_other_provider');
         setError(msg);
         showToast(msg, 'error');
       } else {
@@ -126,7 +128,17 @@ export function useGoogleSignIn(): GoogleSignInState {
   }
 
   async function signInWithNative(consented: boolean) {
-    const { GoogleSignin, statusCodes } = googleSignin();
+    let signinModule: GoogleSigninModule;
+    try {
+      signinModule = googleSignin();
+    } catch {
+      // Old build without the native module (the button is hidden there, this is a backstop).
+      const msg = i18n.t('auth.err_google_failed');
+      setError(msg);
+      showToast(msg, 'error');
+      return;
+    }
+    const { GoogleSignin, statusCodes } = signinModule;
     try {
       await GoogleSignin.hasPlayServices();
       const signInResult = await GoogleSignin.signIn();
@@ -151,7 +163,11 @@ export function useGoogleSignIn(): GoogleSignInState {
       console.log('[GoogleSignIn] error code:', error.code);
       console.log('[GoogleSignIn] error message:', error.message);
       if (error.code === statusCodes.SIGN_IN_CANCELLED) return;
-      const msg = i18n.t('auth.err_google_failed');
+      const msg = i18n.t(
+        error.code === 'auth/account-exists-with-different-credential'
+          ? 'auth.err_email_other_provider'
+          : 'auth.err_google_failed',
+      );
       setError(msg);
       showToast(msg, 'error');
     }

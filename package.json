@@ -89,12 +89,5 @@
     "legal:deploy": "node scripts/export-app-links.mjs --project bama-af0a0 --optional && npm run legal:build && firebase deploy --only hosting",
     "postinstall": "patch-package"
   },
-  "private": true,
-  "expo": {
-    "autolinking": {
-      "exclude": [
-        "@react-native-google-signin/google-signin"
-      ]
-    }
-  }
+  "private": true
 }

@@ -8,6 +8,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import en from '@core/i18n/translations/en.json';
 import he from '@core/i18n/translations/he.json';
 import { shadow } from '@core/theme/shadow';
+import { isGoogleSignInAvailable } from '@features/auth/utils/googleNative';
 
 type Translations = typeof en;
 
@@ -34,6 +35,9 @@ export function GoogleSignInButton({ style, showDivider = true, onBeforeSignIn, 
   const language = useSettingsStore((s) => s.language);
   const t = makeT(language === 'he' ? he : en);
   const rtl = language === 'he';
+
+  // A build without the native module (older dev/store build) hides the button.
+  if (!isGoogleSignInAvailable()) return null;
 
   return (
     <View style={style}>

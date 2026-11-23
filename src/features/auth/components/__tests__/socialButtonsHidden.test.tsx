@@ -4,16 +4,16 @@ import { render } from '@testing-library/react-native';
 import en from '@core/i18n/translations/en.json';
 
 /**
- * GOOGLE SIGN-IN IS OFF FOR V1, AND NOTHING IS LEFT BEHIND.
+ * GOOGLE SIGN-IN IS ON (iOS, Android, web); APPLE STAYS iOS-ONLY.
  *
- * Login and register show no Google button while GOOGLE_SIGNIN_ENABLED is
- * false. The "or" divider and the social row appear only when a button will
- * actually show under them (Apple, on iOS) — never a lone divider over an
- * empty row. The row still mirrors in Hebrew.
+ * Login and register show the Google button everywhere, with Apple beside it
+ * on iOS. The "or" divider and the social row always have a button under them.
+ * The row still mirrors in Hebrew. With the flag off, Google disappears and a
+ * lone divider is never left over an empty row.
  */
 
 let mockLang = 'en';
-let mockGoogleEnabled = false;
+let mockGoogleEnabled = true;
 
 jest.mock('../GoogleSignInButton', () => {
   const { Text } = jest.requireActual('react-native');
@@ -24,7 +24,13 @@ jest.mock('../AppleSignInButton', () => {
   return { AppleSignInButton: () => <Text testID="apple-button">A</Text> };
 });
 jest.mock('../AuthSettingsButton', () => ({ AuthSettingsButton: () => null }));
-jest.mock('@core/constants/auth', () => ({ get GOOGLE_SIGNIN_ENABLED() { return mockGoogleEnabled; } }));
+let mockNativeLinked = true;
+jest.mock('@features/auth/utils/googleNative', () => ({
+  isGoogleSignInAvailable: () => {
+    const { Platform: P } = jest.requireActual('react-native');
+    return mockGoogleEnabled && (P.OS === 'web' || mockNativeLinked);
+  },
+}));
 jest.mock('@features/auth/hooks/useLogin', () => ({ useLogin: () => ({ isLoading: false, error: null, login: jest.fn() }) }));
 jest.mock('@features/auth/hooks/useRegister', () => ({ useRegister: () => ({ isLoading: false, error: null, register: jest.fn() }) }));
 jest.mock('expo-image', () => ({ Image: 'Image' }));
@@ -41,32 +47,29 @@ const { RegisterForm } = require('../RegisterForm');
 const setOS = (os: 'ios' | 'android' | 'web') => Object.defineProperty(Platform, 'OS', { get: () => os, configurable: true });
 const realOS = Platform.OS;
 
-beforeEach(() => { mockLang = 'en'; mockGoogleEnabled = false; setOS('ios'); });
+beforeEach(() => { mockLang = 'en'; mockGoogleEnabled = true; mockNativeLinked = true; setOS('ios'); });
 afterAll(() => setOS(realOS as 'ios'));
 
 describe.each([
   ['login', LoginForm],
   ['register', RegisterForm],
 ])('the %s screen', (_name, Form) => {
-  it('shows no Google button', () => {
-    const r = render(<Form />);
-    expect(r.queryByTestId('google-button')).toBeNull();
-  });
-
-  it('on iPhone: the divider, then Apple alone in the row', () => {
+  it('on iPhone: the divider, then Google and Apple side by side', () => {
     const r = render(<Form />);
     expect(r.getByTestId('social-divider')).toBeTruthy();
     expect(r.getByText(en.auth.or)).toBeTruthy();
+    expect(r.getByTestId('google-button')).toBeTruthy();
     expect(r.getByTestId('apple-button')).toBeTruthy();
-    expect(r.getByTestId('social-row').children).toHaveLength(1);
+    expect(r.getByTestId('social-row').children).toHaveLength(2);
   });
 
-  it.each(['android', 'web'] as const)('on %s (no Apple): no divider and no empty row', (os) => {
+  it.each(['android', 'web'] as const)('on %s: Google alone, no Apple', (os) => {
     setOS(os);
     const r = render(<Form />);
-    expect(r.queryByTestId('social-divider')).toBeNull();
-    expect(r.queryByTestId('social-row')).toBeNull();
-    expect(r.queryByText(en.auth.or)).toBeNull();
+    expect(r.getByTestId('social-divider')).toBeTruthy();
+    expect(r.getByTestId('google-button')).toBeTruthy();
+    expect(r.queryByTestId('apple-button')).toBeNull();
+    expect(r.getByTestId('social-row').children).toHaveLength(1);
   });
 
   it('in Hebrew the row still mirrors', () => {
@@ -76,11 +79,26 @@ describe.each([
     expect(StyleSheet.flatten(r.getByTestId('social-divider').props.style).flexDirection).toBe('row-reverse');
   });
 
-  it('turning the flag back on brings Google back beside Apple', () => {
-    mockGoogleEnabled = true;
+  it('an older build without the native module: no Google button, Apple alone (iOS); web unaffected', () => {
+    mockNativeLinked = false;
     const r = render(<Form />);
-    expect(r.getByTestId('google-button')).toBeTruthy();
-    expect(r.getByTestId('social-row').children).toHaveLength(2);
+    expect(r.queryByTestId('google-button')).toBeNull();
+    expect(r.getByTestId('apple-button')).toBeTruthy();
+    expect(r.getByTestId('social-row').children).toHaveLength(1);
+    setOS('android');
+    const a = render(<Form />);
+    expect(a.queryByTestId('social-divider')).toBeNull();
+    setOS('web');
+    expect(render(<Form />).getByTestId('google-button')).toBeTruthy();
+  });
+
+  it('with the flag off Google is gone; on android/web no divider over an empty row', () => {
+    mockGoogleEnabled = false;
+    setOS('android');
+    const r = render(<Form />);
+    expect(r.queryByTestId('google-button')).toBeNull();
+    expect(r.queryByTestId('social-divider')).toBeNull();
+    expect(r.queryByTestId('social-row')).toBeNull();
   });
 });
 

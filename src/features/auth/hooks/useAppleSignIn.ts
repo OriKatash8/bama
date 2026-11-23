@@ -101,7 +101,11 @@ export function useAppleSignIn(): AppleSignInState {
       console.log('[AppleSignIn] message:', e?.message);
       const code = (e as { code?: string }).code ?? '';
       if (code === 'ERR_REQUEST_CANCELED') return;
-      const msg = i18n.t('auth.err_apple_failed');
+      const msg = i18n.t(
+        code === 'auth/account-exists-with-different-credential'
+          ? 'auth.err_email_other_provider'
+          : 'auth.err_apple_failed',
+      );
       setError(msg);
       showToast(msg, 'error');
     } finally {

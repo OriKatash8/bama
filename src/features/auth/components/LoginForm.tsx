@@ -9,7 +9,7 @@ import { Input } from '@components/ui/Input';
 import { Button } from '@components/ui/Button';
 import { useLogin } from '@features/auth/hooks/useLogin';
 import { GoogleSignInButton } from './GoogleSignInButton';
-import { GOOGLE_SIGNIN_ENABLED } from '@core/constants/auth';
+import { isGoogleSignInAvailable } from '@features/auth/utils/googleNative';
 import { AppleSignInButton } from './AppleSignInButton';
 import { AuthSettingsButton } from './AuthSettingsButton';
 import { useTheme } from '@core/hooks/useTheme';
@@ -45,7 +45,9 @@ export function LoginForm() {
   const rtl = language === 'he';
   // Apple renders on iOS only (AppleSignInButton returns null elsewhere).
   const showApple = Platform.OS === 'ios';
-  const hasSocial = GOOGLE_SIGNIN_ENABLED || showApple;
+  // Google needs the native module on iOS/Android: an older build without it hides the button.
+  const showGoogle = isGoogleSignInAvailable();
+  const hasSocial = showGoogle || showApple;
   const textAlign = rtl ? 'right' : 'left' as const;
 
   function validate(): boolean {
@@ -127,7 +129,7 @@ export function LoginForm() {
               <View style={styles.dividerLine} />
             </View>
             <View testID="social-row" style={[styles.socialRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
-              {GOOGLE_SIGNIN_ENABLED && <GoogleSignInButton style={{ flex: 1 }} showDivider={false} />}
+              {showGoogle && <GoogleSignInButton style={{ flex: 1 }} showDivider={false} />}
               {showApple && <AppleSignInButton style={{ flex: 1 }} />}
             </View>
           </>

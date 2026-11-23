@@ -15,7 +15,7 @@ import { useRegister } from '@features/auth/hooks/useRegister';
 import { useUiStore } from '@core/stores/uiStore';
 import { validatePassword } from '@features/auth/utils/validatePassword';
 import { GoogleSignInButton } from './GoogleSignInButton';
-import { GOOGLE_SIGNIN_ENABLED } from '@core/constants/auth';
+import { isGoogleSignInAvailable } from '@features/auth/utils/googleNative';
 import { AppleSignInButton } from './AppleSignInButton';
 import { AuthSettingsButton } from './AuthSettingsButton';
 import { useTheme } from '@core/hooks/useTheme';
@@ -65,7 +65,9 @@ export function RegisterForm() {
   const rtl = language === 'he';
   // Apple renders on iOS only (AppleSignInButton returns null elsewhere).
   const showApple = Platform.OS === 'ios';
-  const hasSocial = GOOGLE_SIGNIN_ENABLED || showApple;
+  // Google needs the native module on iOS/Android: an older build without it hides the button.
+  const showGoogle = isGoogleSignInAvailable();
+  const hasSocial = showGoogle || showApple;
   const font = useAppFont();
   const textAlign = rtl ? 'right' : 'left' as const;
 
@@ -264,7 +266,7 @@ export function RegisterForm() {
             <View testID="social-row" style={[styles.socialRow, { flexDirection: rtl ? 'row-reverse' : 'row' }]}>
               {/* Both boxes ticked above: that is the consent, so the consent
                   screen is not shown again after the provider sheet. */}
-              {GOOGLE_SIGNIN_ENABLED && <GoogleSignInButton style={{ flex: 1 }} showDivider={false} consented={termsAccepted && ageConfirmed} />}
+              {showGoogle && <GoogleSignInButton style={{ flex: 1 }} showDivider={false} consented={termsAccepted && ageConfirmed} />}
               {showApple && <AppleSignInButton style={{ flex: 1 }} consented={termsAccepted && ageConfirmed} />}
             </View>
           </>
