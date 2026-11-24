@@ -1,0 +1,115 @@
+{
+  "_readme": "Review/edit me. Nothing here is in Firestore. scripts/publishSeedProjects.mjs --prod --commit publishes each as status 'open' (real pros get notified). role/specialization ids must exist in src/features/crew/data/categories.ts; specialization null = general. exec = first day, deadline = last day (YYYY-MM-DD). createdAt is set to publish time by the script.",
+  "projects": [
+    {
+      "clientEmail": "bama.test1@gmail.com",
+      "type": "חתונה",
+      "title": "צילום חתונה (וידאו + סטילס) במודיעין",
+      "description": "אנחנו מתחתנים בינואר באולם בחוץ במודיעין, בערך 220 אורחים.\nמחפשים צלם וידאו וצלם סטילס שיעבדו ביחד מההכנות של הכלה ועד הריקודים.\nמקווים לסרט קצר של 5-7 דקות וגלריה ערוכה של כ-400 תמונות.",
+      "location": "מודיעין",
+      "exec": "2027-01-14",
+      "deadline": "2027-01-14",
+      "slots": [
+        {
+          "role": "videographer",
+          "specialization": "events",
+          "quantity": 1
+        },
+        {
+          "role": "photographer",
+          "specialization": "events_parties",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "clientEmail": "bama.test2@gmail.com",
+      "type": "תוכן לרשתות לבית קפה",
+      "title": "תוכן לאינסטגרם לבית קפה חדש בפלורנטין",
+      "description": "פותחים בית קפה קטן בפלורנטין ורוצים יומיים של צילום רילס וסטוריז לפני הפתיחה, אווירה חמה ולא מבוימת.\nצריך גם מישהו שיערוך לנו את החומר לרילס מוכנים לפרסום.",
+      "location": "תל אביב",
+      "exec": "2026-12-10",
+      "deadline": "2026-12-11",
+      "slots": [
+        {
+          "role": "social_media",
+          "specialization": "content_creator",
+          "quantity": 1
+        },
+        {
+          "role": "editor",
+          "specialization": "social",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "clientEmail": "bama.test3@gmail.com",
+      "type": "קליפ",
+      "title": "קליפ לסינגל חדש, צילום ותאורה",
+      "description": "אני זמרת ויוצרת ויש לי סינגל חדש שיוצא בפברואר, מחפשת צלם ואיש תאורה לצילום קליפ בן יומיים בחיפה.\nסגנון קולנועי וחם.",
+      "location": "חיפה",
+      "exec": "2027-02-03",
+      "deadline": "2027-02-04",
+      "slots": [
+        {
+          "role": "videographer",
+          "specialization": "music_video",
+          "quantity": 1
+        },
+        {
+          "role": "lighting",
+          "specialization": "studio",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "clientEmail": "bama.test4@gmail.com",
+      "type": "כנס חברה",
+      "title": "כנס שנתי של החברה בבאר שבע, תיעוד מלא ליומיים",
+      "description": "אנחנו חברת הייטק בבאר שבע ומארגנים כנס שנתי של יומיים עם כ-300 משתתפים, הרצאות במה ראשית וסדנאות בחדרים צדדיים.\nמחפשים צוות שיתעד הכול: סטילס של האורחים והדוברים, וידאו של ההרצאות והאווירה, והגברה ברמה גבוהה.\nבסוף הכנס אנחנו צריכים סרט סיכום של 3 דקות ותמונות ערוכות תוך שבוע.",
+      "location": "באר שבע",
+      "exec": "2027-03-09",
+      "deadline": "2027-03-10",
+      "slots": [
+        {
+          "role": "photographer",
+          "specialization": "corporate",
+          "quantity": 1
+        },
+        {
+          "role": "videographer",
+          "specialization": null,
+          "quantity": 1
+        },
+        {
+          "role": "sound",
+          "specialization": "live_pa",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "clientEmail": "bama.test5@gmail.com",
+      "type": "פודקאסט",
+      "title": "הקלטת פיילוט לפודקאסט בהרצליה",
+      "description": "יום הקלטה אחד לפיילוט של הפודקאסט שלי, צריך סטודיו ואיש סאונד, עד 3,000 ₪.",
+      "location": "הרצליה",
+      "exec": "2026-12-22",
+      "deadline": "2026-12-22",
+      "slots": [
+        {
+          "role": "sound",
+          "specialization": null,
+          "quantity": 1
+        },
+        {
+          "role": "studio_audio",
+          "specialization": null,
+          "quantity": 1
+        }
+      ]
+    }
+  ]
+}

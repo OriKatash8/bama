@@ -78,3 +78,8 @@ legal-site/static/app-links.json
 
 # Firebase emulator import/export data (firebase emulators:start --import/--export-on-exit)
 .emulator-data/
+
+# Firebase Admin service-account keys: never commit (scripts use ADC; if a key is needed, keep it outside the repo)
+serviceAccount*.json
+*-firebase-adminsdk-*.json
+service-account*.json
