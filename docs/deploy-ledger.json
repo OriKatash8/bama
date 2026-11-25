@@ -4,912 +4,912 @@
     "acknowledgeCandidacy": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:42.619536776Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:41.924986473Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminAcknowledgeChargeIssue": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:56.363887598Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:30.054028754Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminCommunityAction": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:56.094774289Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:43.917081745Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminDeleteCommunity": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:54.658671079Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:42.078304227Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminDetectRentalPlatform": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:57.396043275Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:28.272340386Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminFindUser": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:42.691281015Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:35.229247950Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminListArrears": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:55.576415760Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:43.059061476Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminListChargeIssues": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:56.225581452Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:27.029584941Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminListFlaggedProjects": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:54.731526158Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:42.391114042Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminListLargeEngagements": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:54.318662069Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:42.687291620Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminListPaymentLinks": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:55.631786442Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:28.914021132Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminListUsers": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:42.921433124Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:45.669507562Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminRemoveRentalCompany": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:21:07.460170633Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:27.432269840Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminRemoveRentalItem": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:55.745481642Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:28.840824777Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminSaveRentalCompany": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:21:02.063418136Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:24.953844984Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminSaveRentalItem": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:21:01.707991956Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:29.398065059Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminSetRentalCategoryMap": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:57.037818974Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:27.815658032Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminSetRentalCompanyActive": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:55.569007015Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:27.937779886Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminSetRentalItemCategories": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:21:02.185203210Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:29.212350573Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminSyncRentalCompany": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:21:01.098879399Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:27.619060856Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "adminUserActivity": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T12:10:58.218617709Z",
-      "treeSha": "ca0763f125746d08593aec58884fe648f08fceca",
-      "commit": "062601bb",
+      "updateTime": "2026-11-25T17:35:30.098081673Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "adminUserActivity: admin-only user activity sections (062601bb)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "blockUser": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:44.169217582Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:41.850048620Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "cancelOwnershipTransfer": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:57.589241267Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:27.448488178Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "cancelProject": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:43.890373476Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:42.688337083Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "cancelVideoJob": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:47.659052786Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:30.187658210Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "collectUsageStats": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:21:00.393870134Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:24.527127437Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "completeAllEngagements": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:44.684525059Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:42.437501733Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "compressVideo": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:21:02.284117453Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:24.838969461Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "confirmCandidate": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:42.240625021Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:40.989912998Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "confirmCompletion": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:42.805733164Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:41.846413882Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "contestEngagement": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T11:43:05.906272746Z",
-      "treeSha": "7a826919506e5e91cfb76813b9302040cf8db7cb",
-      "commit": "16ccc18e",
+      "updateTime": "2026-11-25T17:36:42.823226050Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "contest requires a completed engagement (not-completed) (16ccc18e)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "createCardSaveSession": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:56.580370143Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:30.744133854Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "createCommunityInvite": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:21:03.659318878Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:24.673979059Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "createPaymentRequest": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:44.992151377Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:43.912437755Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "declineCandidacy": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:44.583583346Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:42.172472153Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "deleteMyAccount": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:42.253739122Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:43.654580821Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "deleteProject": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:42.692179444Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:42.642007663Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "discardUnconsentedSignup": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:42.613600197Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:41.453249112Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "disputeCompletion": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:29:25.601385498Z",
-      "treeSha": "ba7d4eef304a13e4f20765409b2b00eaaa77eaca",
-      "commit": "582f75c9",
+      "updateTime": "2026-11-25T17:36:41.980090505Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "disputeCompletion marks endRejected (582f75c9)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "disputeFeeByPro": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T11:43:00.801581186Z",
-      "treeSha": "7a826919506e5e91cfb76813b9302040cf8db7cb",
-      "commit": "16ccc18e",
+      "updateTime": "2026-11-25T17:36:41.715548857Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "contest requires a completed engagement (not-completed) (16ccc18e)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "fakeCompleteCardSave": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:56.818284351Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:28.543916865Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "feeChargeCron": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:57.038840063Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:27.366783085Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "feeOverdueCron": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:55.340066403Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:45.335611983Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "freeSlot": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:55.847842195Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:41.946661824Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "getAccountDeletionStatus": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:42.817493345Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:42.449729531Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "getAdminStatus": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-21T05:19:59.886Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:38.349Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "getCommunityInvite": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:55.478265492Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:27.401386459Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "getContactPhone": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:55.127838316Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:44.814718946Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "getMyPaymentMethod": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:56.613420710Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:28.891307282Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "hireProfessional": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:43.922259805Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:42.107183944Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "lifecycleCron": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:55.083708279Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:44.084977715Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "markDemandSent": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:43.952846840Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:42.738516601Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "markEngagementComplete": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:52.912480257Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:42.866220933Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "markFeePaid": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:43.844183802Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:43.628965887Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "moderateUser": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-21T05:19:52.751Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:50.016Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onBookingCreate": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-21T05:19:54.580Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:59.756Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onCommunityDeleted": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:57.394687240Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:29.500199548Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onCommunityInviteJoinRequest": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:56.439808531Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:30.147439815Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onFeeWrittenRecomputeBlock": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:56.568631038Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:30.538072776Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onMarketplacePurchase": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-21T05:19:56.299Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:50.040Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onMeetingCreate": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-21T05:19:55.025Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:54.572Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onMissionCreate": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-21T05:20:01.884Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:51.529Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onNewChatMessage": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-21T05:20:00.788Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:45.319Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onNewCommunityMessage": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-21T05:19:57.768Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:49.976Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onNewPriceOffer": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-21T05:19:56.272Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:57.272Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onNotificationCreate": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-21T05:20:05.217Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:48.370Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onPriceOfferAccepted": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-21T05:19:57.751Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:49.598Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onProjectClosed": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:56.992886248Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:28.300417686Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onProjectCreate": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-21T05:19:55.255Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:59.357Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onProjectEndDateChange": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:56.432875481Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:28.651436728Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onRemovalRequest": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-21T05:19:54.656Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:57.375Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onReportCreate": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:55.759534552Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:28.647504136Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onReviewCreate": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T12:22:27.319622603Z",
-      "treeSha": "fbbcd3bec7415ed5c878e6bcea7e8bbc024eda03",
-      "commit": "76bf1a46",
+      "updateTime": "2026-11-25T17:35:28.477824102Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "onReviewCreate only updates (never recreates a deleted review) (76bf1a46)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "onUserCreate": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-21T05:19:54.002Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:41.232Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "paymentLinkConfirm": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:56.854565450Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:28.190995029Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "refreshUsageStats": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:21:05.929773599Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:30.091136234Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "rejectCandidate": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:44.396205772Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:44.151070417Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "removeMyPaymentMethod": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:55.834950724Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:27.428853241Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "requestCompletion": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:46.403843994Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:41.986529150Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "requestEngagementEnd": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:42.809689520Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:45.453335917Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "requestMyPaymentLinkNow": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:55.297721745Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:28.215636040Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "requestOwnershipTransfer": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:57.172077565Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:29.228187657Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "resolveFeeDispute": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:56.544111332Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:43.981478435Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "respondOwnershipTransfer": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:56.289760842Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:30.705477475Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "respondToEngagementEnd": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:44.630345448Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:41.087911296Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "respondToPaymentRequest": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:42.766114437Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:41.840454249Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "revokeCommunityInvite": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:57.664639867Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:29.247795076Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "sendSystemMessage": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-21T05:19:56.457Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:52.470Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "setSubscription": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:19:54.317433631Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:36:43.532513390Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "syncAllRentalCompanies": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:59.805064786Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:27.405012141Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     },
     "trackRentalClick": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-21T05:20:56.316884970Z",
-      "treeSha": "bd1f1ffb757f7652977c0b5948102201e28445e1",
-      "commit": "9d7c88bb",
+      "updateTime": "2026-11-25T17:35:28.179831132Z",
+      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
+      "commit": "5fd20d27",
       "how": "deploy",
-      "recordedOn": "2026-11-21",
-      "note": "full functions deploy from clean commit 9d7c88bb (disputes: stays completed, re-hire reset, review hold, resolvedAt guard, endRejected marker)"
+      "recordedOn": "2026-11-25",
+      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
     }
   }
 }
