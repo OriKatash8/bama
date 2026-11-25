@@ -5,7 +5,13 @@ import { db, FieldValue, Timestamp, notify, type FeeDoc } from './helpers';
 import { readConfig, type PricingConfig } from './config';
 import {
   TIMEZONE, effectiveOverdueAt, earliestOverdueAt, feeIsOverdue, DEFAULT_FEE_REMINDER_LEAD_DAYS,
+  DEFAULT_REMINDER_HOUR_IL,
 } from '../pricing';
+import { ADMIN_UIDS } from '../moderation/reportAlert';
+import {
+  addBusinessDays, feeTimeline, firstNoticeAtOrAfter, formatEndOfDayHe, instantAt,
+  previousBusinessDay, ymdOf, type DayRules,
+} from './businessDays';
 
 /**
  * The overdue-fee block (config/pricing.feeOverdueBlockDays, behind the
@@ -51,22 +57,46 @@ export function feeBlockRef(proId: string) {
  * resolved as completed) at `fromMs`. Empty while the switch is off — the reason
  * turning it on can never block anyone for a fee completed while it was off.
  *
+ * `overdueAt` IS THE BLOCK TIME, and `chargeDueAt` (stamped next to it by the
+ * caller) IS THE END OF THE DISPUTE WINDOW. Both are Israeli-business-day
+ * deadlines (businessDays.ts), computed once here and never again:
+ *   - at completion: the block is `disputeWindowBusinessDays + blockGraceBusinessDays`
+ *     business days after the completion day;
+ *   - at a dispute resolution ('resolution'): the window is long closed, so the
+ *     clock restarts with just the grace period.
+ * A stamp also writes `feeTimingVersion: 2` and a fresh `reminders` map, which is
+ * what opts the fee into the v2 notice sequence. (The legacy sweep ignores v2.)
+ *
  * `keepEarlier`: a professional re-hired onto a project whose fee is still unpaid
  * keeps the clock that was already running on that debt; completing the second
- * role must not push the first one's deadline back.
+ * role must not push the first one's deadline back. In that case only
+ * `overdueAt` is returned — the debt's own version and reminders stay as they were.
  */
 export function overdueStampFields(
-  config: Pick<PricingConfig, 'feeOverdueBlockEnabled' | 'feeOverdueBlockDays'>,
+  config: Pick<PricingConfig,
+    'feeOverdueBlockEnabled' | 'disputeWindowBusinessDays' | 'blockGraceBusinessDays'
+    | 'extraNonBusinessDays'>,
   fromMs: number,
   existing?: Pick<FeeDoc, 'overdueAt' | 'feePaid' | 'status'>,
+  kind: 'completion' | 'resolution' = 'completion',
 ): Update {
   if (!config.feeOverdueBlockEnabled) return {};
-  const fresh = fromMs + config.feeOverdueBlockDays * 86400_000;
+  const fresh = kind === 'completion'
+    ? feeTimeline(config, fromMs).blockAt
+    : addBusinessDays(fromMs, config.blockGraceBusinessDays, config);
   const prior = existing?.overdueAt?.toMillis?.();
   const unpaid = existing && existing.feePaid !== true && existing.status !== 'paid'
     && existing.status !== 'not_owed';
-  const at = unpaid && typeof prior === 'number' && prior < fresh ? prior : fresh;
-  return { overdueAt: Timestamp.fromMillis(at) };
+  if (unpaid && typeof prior === 'number' && prior < fresh) {
+    return { overdueAt: Timestamp.fromMillis(prior) };
+  }
+  return {
+    overdueAt: Timestamp.fromMillis(fresh),
+    feeTimingVersion: 2,
+    // A resolution is its own "window closed" notice (sent by the resolver), so
+    // the window-end stage starts already done.
+    reminders: kind === 'resolution' ? { windowEnd: Timestamp.fromMillis(fromMs) } : {},
+  };
 }
 
 /**
@@ -254,6 +284,10 @@ const DUE_LOOKBACK_MS = 2 * DAY;
 /** How far back the block query looks. A fee whose block began longer ago than
  *  this has long since had its notice. */
 const BLOCK_LOOKBACK_MS = 30 * DAY;
+/** v2 sweep: how far past a block its notice can still be pending (weekend + chag),
+ *  and how far ahead of one the window-end notice can go out. */
+const V2_LOOKBACK_MS = 10 * DAY;
+const V2_LOOKAHEAD_MS = 14 * DAY;
 
 type Doc = admin.firestore.QueryDocumentSnapshot;
 
@@ -274,6 +308,9 @@ async function paginate(query: admin.firestore.Query, handler: (doc: Doc) => Pro
 export function overdueNoticeFor(
   fee: FeeDoc, now: number, leadDays: number = DEFAULT_FEE_REMINDER_LEAD_DAYS,
 ): 'fee_overdue_soon' | 'fee_overdue' | null {
+  // v2 fees have their own sequence (feeNoticeFor); the legacy sweep must not
+  // double-send to them.
+  if (fee.feeTimingVersion === 2) return null;
   const at = effectiveOverdueAt(fee);
   if (at === undefined) return null;
   if (now >= at) return fee.overdueBlockNotifiedAt ? null : 'fee_overdue';
@@ -285,14 +322,182 @@ export function overdueNoticeFor(
  *  contest window), and only for fees the overdue rule actually covers. */
 export function dueNoticeOwed(fee: FeeDoc, now: number): boolean {
   if (fee.dueNotifiedAt) return false;
+  if (fee.feeTimingVersion === 2) return false;
   // Undefined also for a fee with no overdueAt — completed while the switch was off.
   if (effectiveOverdueAt(fee) === undefined) return false;
   const due = fee.chargeDueAt?.toMillis?.();
   return typeof due === 'number' && due <= now;
 }
 
+// ── Fee timing v2: the business-day notice sequence ──────────────────────────
+//
+//   A  window closed   — the first notice day at `hour`:00 after chargeDueAt
+//   B  day before      — `hour`:00 on the business day before the block
+//   C  block day       — `hour`:00 on the block's day
+//   D  blocked         — the first notice day at `hour`:00 after overdueAt
+//
+// A "notice day" is any day but Saturday, a chag or Yom HaAtzmaut (Friday is fine).
+// When A and B fall on the same Israeli calendar day they go out as ONE message.
+// The block itself takes effect at overdueAt exactly; D only TELLS the professional.
+// Nothing is sent for a fee that is paid, disputed or cancelled — effectiveOverdueAt
+// is undefined for all of those, so they never reach here.
+
+export type V2Kind =
+  | 'window_end' | 'window_end_day_before' | 'day_before' | 'block_day' | 'blocked';
+export type ReminderStage = 'windowEnd' | 'dayBefore' | 'blockDay' | 'blocked';
+export type V2Plan = { kind: V2Kind; mark: ReminderStage[] };
+export type V2Timing = { hour: number; extraNonBusinessDays: readonly string[] };
+
+/** When each stage of the sequence is due for a fee. Pure. */
+export function v2Schedule(windowEnd: number, blockAt: number, timing: V2Timing) {
+  const rules: DayRules = { extraNonBusinessDays: timing.extraNonBusinessDays };
+  const blockYmd = ymdOf(blockAt);
+  const dayBeforeYmd = previousBusinessDay(blockYmd, rules);
+  return {
+    windowEnd: firstNoticeAtOrAfter(windowEnd, timing.hour, rules),
+    dayBefore: instantAt(dayBeforeYmd, timing.hour),
+    blockDay: instantAt(blockYmd, timing.hour),
+    blocked: firstNoticeAtOrAfter(blockAt, timing.hour, rules),
+    dayBeforeYmd,
+  };
+}
+
+/**
+ * Which notice, if any, a v2 fee is owed at `now`. Pure — the whole decision.
+ *
+ * At most one message per run: if several stages are due (the cron was down), only
+ * the latest goes out and the earlier ones are marked done with it, so a recovered
+ * cron never sends a stale "tomorrow" after the day has passed. After blockAt only
+ * D remains.
+ */
+export function feeNoticeFor(fee: FeeDoc, now: number, timing: V2Timing): V2Plan | null {
+  if (fee.feeTimingVersion !== 2) return null;
+  const blockAt = effectiveOverdueAt(fee);
+  const windowEnd = fee.chargeDueAt?.toMillis?.();
+  if (blockAt === undefined || typeof windowEnd !== 'number') return null;
+  const done = fee.reminders ?? {};
+  const t = v2Schedule(windowEnd, blockAt, timing);
+
+  if (now >= blockAt) {
+    return now >= t.blocked && !done.blocked ? { kind: 'blocked', mark: ['blocked'] } : null;
+  }
+  const open = (stages: ReminderStage[]) => stages.filter((st) => !done[st]);
+
+  if (now >= t.blockDay && !done.blockDay) {
+    return { kind: 'block_day', mark: open(['windowEnd', 'dayBefore', 'blockDay']) };
+  }
+  // B only makes sense after the window has closed and A had its turn (t.dayBefore
+  // >= t.windowEnd). Same-day with A -> one merged message.
+  if (now >= t.dayBefore && t.dayBefore >= t.windowEnd && !done.dayBefore) {
+    return done.windowEnd
+      ? { kind: 'day_before', mark: ['dayBefore'] }
+      : { kind: 'window_end_day_before', mark: ['windowEnd', 'dayBefore'] };
+  }
+  if (now >= t.windowEnd && !done.windowEnd) {
+    return { kind: 'window_end', mark: ['windowEnd'] };
+  }
+  return null;
+}
+
+type V2Ctx = { amount: number; project: string; date: string };
+
+const V2_TEXT: Record<V2Kind, Record<Lang, (c: V2Ctx) => string>> = {
+  window_end: {
+    he: (c) => `תקופת ההשגה על הפרויקט ${c.project} הסתיימה. עמלת התיווך בסך ₪${c.amount} לתשלום. יש לשלם עד ${c.date} כדי להמשיך לקבל פרויקטים חדשים.`,
+    en: (c) => `The dispute window for ${c.project} has closed. Your ₪${c.amount} brokerage fee is due. Pay by ${c.date} to keep receiving new projects.`,
+  },
+  window_end_day_before: {
+    he: (c) => `תקופת ההשגה על הפרויקט ${c.project} הסתיימה. עמלת התיווך בסך ₪${c.amount} לתשלום. יש לשלם עד מחר בסוף היום (${c.date}) כדי להמשיך לקבל פרויקטים חדשים.`,
+    en: (c) => `The dispute window for ${c.project} has closed. Your ₪${c.amount} brokerage fee is due. Pay by the end of tomorrow (${c.date}) to keep receiving new projects.`,
+  },
+  day_before: {
+    he: (c) => `תזכורת: מחר בסוף היום תיחסם האפשרות לקבל פרויקטים חדשים אם עמלת התיווך בסך ₪${c.amount} לפרויקט ${c.project} לא תשולם.`,
+    en: (c) => `Reminder: tomorrow at the end of the day new projects will be blocked unless your ₪${c.amount} brokerage fee for ${c.project} is paid.`,
+  },
+  block_day: {
+    he: (c) => `תזכורת: היום בסוף היום תיחסם האפשרות לקבל פרויקטים חדשים אם עמלת התיווך בסך ₪${c.amount} לפרויקט ${c.project} לא תשולם.`,
+    en: (c) => `Reminder: today at the end of the day new projects will be blocked unless your ₪${c.amount} brokerage fee for ${c.project} is paid.`,
+  },
+  blocked: {
+    he: (c) => `עמלת התיווך בסך ₪${c.amount} לפרויקט ${c.project} לא שולמה, ולכן לא ניתן כרגע לקבל פרויקטים חדשים או לשלוח הצעות. החסימה תוסר מיד עם התשלום. הפרויקטים הקיימים שלך ממשיכים כרגיל.`,
+    en: (c) => `Your ₪${c.amount} brokerage fee for ${c.project} is unpaid, so you can't be hired for new projects or send offers right now. The block lifts the moment you pay. Your current projects continue as normal.`,
+  },
+};
+
+/** Where to pay — appended to the DM only; the push itself opens the payment screen. */
+const PAY_HINT: Record<Lang, string> = {
+  he: ' לתשלום: באפליקציה, בהגדרות, תחת תשלום.',
+  en: ' To pay: in the app, in Settings, under Payment.',
+};
+
+/** The push type each v2 notice is delivered as — existing, routed, essential. */
+const V2_PUSH_TYPE: Record<V2Kind, 'fee_due' | 'fee_overdue_soon' | 'fee_overdue'> = {
+  window_end: 'fee_due',
+  window_end_day_before: 'fee_due',
+  day_before: 'fee_overdue_soon',
+  block_day: 'fee_overdue_soon',
+  blocked: 'fee_overdue',
+};
+
+export const __V2_TEXT = V2_TEXT;
+
+/**
+ * Push + BAMA System DM to the professional. Deliberately NOTHING in the project's
+ * group chat: the client must never learn that a professional owes BAMA money.
+ * The DM raises no push of its own (the push above already opens the payment
+ * screen), and a failed DM never loses the push.
+ */
+export async function sendV2Notice(
+  kind: V2Kind, proId: string, projectId: string, amount: number, blockAtMs: number,
+): Promise<void> {
+  const lang = await langOf(proId);
+  const text = V2_TEXT[kind][lang]({
+    amount,
+    project: await projectLabel(projectId, lang),
+    date: formatEndOfDayHe(blockAtMs),
+  });
+  await notify({
+    userId: proId, title: 'BAMA', message: text, data: { type: V2_PUSH_TYPE[kind], projectId },
+  });
+  try {
+    // Loaded here, not at the top: ../system pulls in firebase-functions v1, which
+    // nothing else in this module needs and which every importer would pay for.
+    const { sendBamaSystemDM } = await import('../system');
+    await sendBamaSystemDM(db, proId, text + PAY_HINT[lang], { push: false });
+  } catch (err) {
+    console.error('[feeOverdue] BAMA DM failed', kind, proId, err);
+  }
+}
+
+/** The admin push for a fresh block. Never throws. */
+export async function notifyAdminsOfBlock(
+  proId: string, projectId: string, amount: number,
+): Promise<void> {
+  try {
+    const uids = ADMIN_UIDS.value().filter(Boolean);
+    if (uids.length === 0) {
+      console.warn('[feeOverdue] ADMIN_UIDS is empty — no admin told of the block on', projectId);
+      return;
+    }
+    const [pro, proj] = await Promise.all([
+      db.doc(`users/${proId}`).get(), db.doc(`projects/${projectId}`).get(),
+    ]);
+    const name = (pro.data()?.displayName as string | undefined) || '—';
+    const title = (proj.data()?.title as string | undefined) || '';
+    await Promise.all(uids.map((userId) => notify({
+      userId,
+      title: 'BAMA',
+      message: `נחסם: ${name} — עמלת תיווך ₪${amount}${title ? ` (${title})` : ''}`,
+      data: { type: 'admin_fee_blocked', projectId, proId },
+    })));
+  } catch (err) {
+    console.error('[feeOverdue] failed to alert admins of the block on', projectId, err);
+  }
+}
+
 export async function runFeeOverdueSweep(
   now: number, leadDays: number = DEFAULT_FEE_REMINDER_LEAD_DAYS,
+  timing: V2Timing = { hour: DEFAULT_REMINDER_HOUR_IL, extraNonBusinessDays: [] },
 ): Promise<void> {
   // 1) Fee is now due — the contest window just closed. Uses the existing
   //    (engagementStatus, chargeDueAt) collection-group index.
@@ -344,6 +549,37 @@ export async function runFeeOverdueSweep(
       }
     },
   );
+
+  // 3) Fee timing v2 — the business-day sequence (see feeNoticeFor). Same
+  //    overdueAt window as above, but wider on both sides: a block can sit behind
+  //    a weekend plus a chag before its notice day, and A goes out up to a week
+  //    before the block.
+  await paginate(
+    db.collectionGroup('fees')
+      .where('overdueAt', '>', Timestamp.fromMillis(now - V2_LOOKBACK_MS))
+      .where('overdueAt', '<=', Timestamp.fromMillis(now + V2_LOOKAHEAD_MS))
+      .orderBy('overdueAt'),
+    async (doc) => {
+      const fee = doc.data() as FeeDoc;
+      const projectId = doc.ref.parent.parent?.id;
+      if (!projectId || fee.feeTimingVersion !== 2) return;
+      const blockAt = effectiveOverdueAt(fee);
+      if (blockAt === undefined) return;
+      // The block starts at blockAt on its own (the rule compares request.time);
+      // recompute anyway, once it has passed, so feeBlocks heals if a trigger was lost.
+      if (now >= blockAt && !fee.reminders?.blocked) await recomputeFeeBlockSafely(doc.id);
+
+      const plan = feeNoticeFor(fee, now, timing);
+      if (!plan) return;
+      // Markers first: a crash between the two loses a notice, never doubles one.
+      const marks: Record<string, unknown> = {};
+      for (const st of plan.mark) marks[`reminders.${st}`] = FieldValue.serverTimestamp();
+      await doc.ref.update(marks);
+      const amount = Math.max(0, fee.feeDue ?? 0);
+      await sendV2Notice(plan.kind, doc.id, projectId, amount, blockAt);
+      if (plan.kind === 'blocked') await notifyAdminsOfBlock(doc.id, projectId, amount);
+    },
+  );
 }
 
 /**
@@ -355,6 +591,8 @@ export const feeOverdueCron = onSchedule(
   async () => {
     const config = await readConfig();
     if (!config.feeOverdueBlockEnabled) return;
-    await runFeeOverdueSweep(Date.now(), config.feeReminderLeadDays);
+    await runFeeOverdueSweep(Date.now(), config.feeReminderLeadDays, {
+      hour: config.reminderHourIL, extraNonBusinessDays: config.extraNonBusinessDays,
+    });
   },
 );

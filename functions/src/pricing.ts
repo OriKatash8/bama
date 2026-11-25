@@ -42,6 +42,14 @@ export const DEFAULT_FEE_OVERDUE_BLOCK_DAYS = 7;
 /** Days before the block starts at which the "still unpaid" reminder goes out.
  *  Live value: `config/pricing.feeReminderLeadDays`. */
 export const DEFAULT_FEE_REMINDER_LEAD_DAYS = 2;
+/** The professional's dispute window, in ISRAELI BUSINESS DAYS after completion
+ *  (lifecycle/businessDays.ts). The window is `fees.chargeDueAt`. */
+export const DEFAULT_DISPUTE_WINDOW_BUSINESS_DAYS = 2;
+/** Business days between the end of the dispute window and the block on new
+ *  hires. The block is `fees.overdueAt`. */
+export const DEFAULT_BLOCK_GRACE_BUSINESS_DAYS = 2;
+/** Israel-time hour at which fee reminders go out. */
+export const DEFAULT_REMINDER_HOUR_IL = 10;
 /** Kill switch for the overdue-fee block. OFF unless config says exactly `true`. */
 export const DEFAULT_FEE_OVERDUE_BLOCK_ENABLED = false;
 /** Which payment provider charges brokerage fees. 'none' = today's stub. */
@@ -206,6 +214,18 @@ export type PricingConfig = {
   feeOverdueBlockDays: number;
   /** Days before the block starts at which the reminder push is sent. */
   feeReminderLeadDays: number;
+  /** Dispute window, in Israeli business days after completion (Sun–Thu, no chag,
+   *  no Yom HaAtzmaut, no `extraNonBusinessDays`; the completion day never counts).
+   *  Stamped at completion as `fees.chargeDueAt` = the END OF THE DISPUTE WINDOW,
+   *  23:59:59 Israel time. */
+  disputeWindowBusinessDays: number;
+  /** Business days after the window ends until new hires are blocked. Stamped at
+   *  completion as `fees.overdueAt` = THE BLOCK TIME, 23:59:59 Israel time. */
+  blockGraceBusinessDays: number;
+  /** Israel-time hour (0–23) at which fee notices are sent. */
+  reminderHourIL: number;
+  /** Extra non-business dates, 'YYYY-MM-DD' (e.g. a bridge day or a strike). */
+  extraNonBusinessDays: string[];
   /** Kill switch for the whole overdue-fee block. Off: nothing is stamped, the
    *  hire gate and the offer rule skip it, and no overdue notices go out. The
    *  rules read this same field directly (feeOverdueBlocks in firestore.rules). */
@@ -231,6 +251,10 @@ export const CONFIG_DEFAULTS: PricingConfig = {
   chargeWindowDays: DEFAULT_CHARGE_WINDOW_DAYS,
   feeOverdueBlockDays: DEFAULT_FEE_OVERDUE_BLOCK_DAYS,
   feeReminderLeadDays: DEFAULT_FEE_REMINDER_LEAD_DAYS,
+  disputeWindowBusinessDays: DEFAULT_DISPUTE_WINDOW_BUSINESS_DAYS,
+  blockGraceBusinessDays: DEFAULT_BLOCK_GRACE_BUSINESS_DAYS,
+  reminderHourIL: DEFAULT_REMINDER_HOUR_IL,
+  extraNonBusinessDays: [],
   feeOverdueBlockEnabled: DEFAULT_FEE_OVERDUE_BLOCK_ENABLED,
   paymentProvider: DEFAULT_PAYMENT_PROVIDER,
   chargeMaxAttempts: DEFAULT_CHARGE_MAX_ATTEMPTS,
@@ -265,6 +289,22 @@ export function resolveConfig(raw: unknown): PricingConfig {
   if (!(typeof cw === 'number' && Number.isFinite(cw) && cw > 0)) {
     out.chargeWindowDays = out.disputeWindowDays;
   }
+  // The hour is an integer 0–23; anything else keeps the default (a 25 must not
+  // silently mean "never send").
+  const hour = data.reminderHourIL;
+  out.reminderHourIL = typeof hour === 'number' && Number.isInteger(hour) && hour >= 0 && hour <= 23
+    ? hour
+    : DEFAULT_REMINDER_HOUR_IL;
+  // Business-day counts are whole numbers.
+  out.disputeWindowBusinessDays = Math.floor(out.disputeWindowBusinessDays);
+  out.blockGraceBusinessDays = Math.floor(out.blockGraceBusinessDays);
+  // Only well-formed 'YYYY-MM-DD' strings survive; a malformed entry is dropped,
+  // not guessed at.
+  out.extraNonBusinessDays = Array.isArray(data.extraNonBusinessDays)
+    ? (data.extraNonBusinessDays as unknown[]).filter(
+      (d): d is string => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d),
+    )
+    : [];
   // Only a real boolean `true` switches the block on. A string "true", a 1, a
   // missing key or a failed read all leave it off — the failure mode of a kill
   // switch must be the safe one.

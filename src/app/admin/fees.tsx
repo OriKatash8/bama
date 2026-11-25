@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Linking } from 'react-native';
 import { TextInput } from '@components/ui/Text';
 import { useRouter } from 'expo-router';
 import { AlertTriangle, Receipt } from 'lucide-react-native';
@@ -13,6 +13,7 @@ import {
 } from '@features/admin/ui';
 import { PersonLine, UserMoreButton, personName } from '@features/admin/people';
 import { HeldReviewNote, type HeldReview } from '@features/admin/disputes/HeldReviewNote';
+import { whatsappLink } from '@features/admin/utils/whatsapp';
 
 type ArrearsProject = {
   projectId: string; title: string; owed: number; demandSentAt: number | null;
@@ -37,8 +38,15 @@ type FlaggedRow = {
   disputes?: DisputeRow[];
 };
 
+/** A professional whose block notice went out in the last 30 days and who still owes. */
+type RecentBlockRow = {
+  professionalId: string; displayName: string; phone: string | null; email: string | null;
+  amount: number; projectId: string; title: string; blockedAt: number;
+};
 const listArrears = callFunction<
-  Record<string, never>, { rows: ArrearsRow[]; graceDays: number }
+  Record<string, never>,
+  // `recentBlocks` is absent from a server that predates fee timing v2.
+  { rows: ArrearsRow[]; graceDays: number; recentBlocks?: RecentBlockRow[] }
 >('adminListArrears');
 /** A fee whose automatic card charge needs a person (see adminListChargeIssues). */
 type ChargeIssueRow = {
@@ -136,6 +144,7 @@ export default function AdminFeesScreen() {
   const [tab, setTab] = useState<Tab>('arrears');
   const [arrears, setArrears] = useState<ArrearsRow[]>([]);
   const [graceDays, setGraceDays] = useState(0);
+  const [recentBlocks, setRecentBlocks] = useState<RecentBlockRow[]>([]);
   const [flagged, setFlagged] = useState<FlaggedRow[]>([]);
   const [charges, setCharges] = useState<ChargeIssueRow[]>([]);
   /** Its own state: a failure here must not blank the two lists that loaded, and must
@@ -181,6 +190,7 @@ export default function AdminFeesScreen() {
       ([a, f]) => {
         setArrears(a.rows);
         setGraceDays(a.graceDays);
+        setRecentBlocks(a.recentBlocks ?? []);
         setFlagged(f.rows);
         setState('ok');
       },
@@ -304,6 +314,49 @@ export default function AdminFeesScreen() {
           </View>
         </Card>
       ) : tab === 'arrears' ? (
+        <>
+        <Card testID="recent-blocks-card">
+          <CardHead title={t('recent_blocks')} sub={t('recent_blocks_sub')} />
+          {recentBlocks.length === 0 ? (
+            <EmptyState text={t('recent_blocks_empty')} testID="recent-blocks-empty" />
+          ) : (
+            recentBlocks.map((r) => {
+              const name = personName(r.displayName, unknownUser, r.professionalId);
+              const message = t('whatsapp_message', {
+                name, amount: r.amount.toLocaleString(), project: r.title || untitled,
+              });
+              const link = whatsappLink(r.phone, message);
+              const contact = r.phone || r.email || t('no_contact');
+              return (
+                <View
+                  key={`${r.projectId}:${r.professionalId}`}
+                  testID={`recent-block-${r.projectId}-${r.professionalId}`}
+                  style={[styles.section, { borderTopColor: p.border }]}
+                >
+                  <View style={[styles.sectionHead, { flexDirection: rowDir }]}>
+                    <InitialsAvatar name={name} />
+                    <WhoBlock name={name} meta={contact} textAlign={textAlign} />
+                  </View>
+                  <AdminText weight="semiBold" tabular numberOfLines={3} style={[TYPE.rowName, { textAlign }]}>
+                    {r.title || untitled} · ₪{r.amount.toLocaleString()}
+                  </AdminText>
+                  <AdminText style={[TYPE.rowMeta, { color: p.text3, textAlign }]}>
+                    {t('blocked_on', { date: formatDate(r.blockedAt, rtl) })}
+                  </AdminText>
+                  {link ? (
+                    <PillButton
+                      block={isPhone}
+                      variant="primary"
+                      label={t('whatsapp')}
+                      testID={`whatsapp-${r.projectId}-${r.professionalId}`}
+                      onPress={() => void Linking.openURL(link)}
+                    />
+                  ) : null}
+                </View>
+              );
+            })
+          )}
+        </Card>
         <Card testID="arrears-card">
           <CardHead
             title={t('tab_arrears')}
@@ -426,6 +479,7 @@ export default function AdminFeesScreen() {
             })
           )}
         </Card>
+        </>
       ) : tab === 'links' ? (
         <Card testID="links-card">
           <CardHead title={t('tab_links')} sub={t('links_sub')} />

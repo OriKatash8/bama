@@ -35,6 +35,7 @@ export const REHIRE_RESET_FIELDS = [
   'agreedAmount', 'resolvedAt', 'resolvedOutcome', 'endRejected',
   // overdue and demand
   'overdueAt', 'dueNotifiedAt', 'overdueWarnedAt', 'overdueBlockNotifiedAt',
+  'feeTimingVersion', 'reminders',
   'demandSentAt', 'endDatePromptedAt',
   // charge and link bookkeeping (not the money trail)
   'chargeState', 'chargeClaimId', 'chargeClaimedAt', 'chargeAttempts', 'nextChargeAt',
@@ -123,6 +124,8 @@ export function buildHireFeeUpdate(args: {
     feeUpdate.overdueAt = FieldValue.delete();
     feeUpdate.dueNotifiedAt = FieldValue.delete();
     feeUpdate.overdueWarnedAt = FieldValue.delete();
+    feeUpdate.feeTimingVersion = FieldValue.delete();
+    feeUpdate.reminders = FieldValue.delete();
     feeUpdate.overdueBlockNotifiedAt = FieldValue.delete();
   }
   return feeUpdate;

@@ -18,7 +18,7 @@ jest.mock('@core/stores/settingsStore', () => ({
   useSettingsStore: (s: (x: { language: string }) => unknown) => s({ language: mockLanguage }),
 }));
 jest.mock('@features/pricing/hooks/usePricingConfig', () => ({
-  usePricingConfig: () => ({ chargeWindowDays: 14, feeRate: 0.03, minFee: 6 }),
+  usePricingConfig: () => ({ disputeWindowBusinessDays: 14, feeRate: 0.03, minFee: 6 }),
 }));
 
 const base = {

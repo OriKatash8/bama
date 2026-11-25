@@ -257,8 +257,20 @@ export type FeeDoc = {
     note?: string;
   };
   endDatePromptedAt?: admin.firestore.Timestamp;
-  /** When this unpaid fee starts blocking new work: completion (or dispute
-   *  resolution) + `feeOverdueBlockDays`. Stamped only while
+  /**
+   * TIMELINE (fee timing v2, `feeTimingVersion === 2`). Two timestamps, both
+   * stamped ONCE at completion from the Israeli business-day calendar
+   * (lifecycle/businessDays.ts) and never recomputed:
+   *   - `chargeDueAt` = the END OF THE DISPUTE WINDOW (completion + 2 business
+   *     days, 23:59:59 Israel time);
+   *   - `overdueAt`   = the BLOCK TIME for new hires (window end + 2 more business
+   *     days, 23:59:59 Israel time).
+   * Every check, rule and reminder reads these stored values. Fees completed
+   * before v2 carry calendar-day values and no `feeTimingVersion`: they keep them.
+   * (`disputeWindowEndsAt` on a fee is deprecated — do not write it.)
+   *
+   * When this unpaid fee starts blocking new work: completion (or dispute
+   *  resolution) + the grace above (legacy: `feeOverdueBlockDays`). Stamped only while
    *  `feeOverdueBlockEnabled` is on — absence means never. Read it through
    *  `effectiveOverdueAt()` (pricing.ts), never directly. */
   overdueAt?: admin.firestore.Timestamp;
@@ -266,6 +278,17 @@ export type FeeDoc = {
   dueNotifiedAt?: admin.firestore.Timestamp;
   overdueWarnedAt?: admin.firestore.Timestamp;
   overdueBlockNotifiedAt?: admin.firestore.Timestamp;
+  /** 2 on a fee stamped with business-day timing. Absent = legacy calendar days;
+   *  the legacy notice sweep handles those, the v2 sweep only these. */
+  feeTimingVersion?: number;
+  /** Idempotency stamps for the v2 notice sequence (feeOverdue.ts). `windowEnd`
+   *  and `dayBefore` are both set when the two are sent as one merged message. */
+  reminders?: {
+    windowEnd?: admin.firestore.Timestamp;
+    dayBefore?: admin.firestore.Timestamp;
+    blockDay?: admin.firestore.Timestamp;
+    blocked?: admin.firestore.Timestamp;
+  };
   /** The fee as it stood the moment the professional contested it, so a dispute
    *  resolved as 'completed' can put back what `didnt_happen` zeroed. */
   preDispute?: { feeDue: number; status: FeeSettlementStatus | null; baseAmount: number };

@@ -8,7 +8,10 @@
     "sourceMap": true,
     "strict": true,
     "target": "es2020",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    // @hebcal/core bundles Temporal typings that need newer lib definitions than
+    // this target has; our own code is still fully checked.
+    "skipLibCheck": true
   },
   "compileOnSave": true,
   // Tests are run by the ROOT jest (they import the pure modules directly);

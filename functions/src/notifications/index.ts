@@ -36,6 +36,8 @@ const ESSENTIAL = [
   'admin_report',
   // A professional raised a dispute: an admin must see it.
   'admin_dispute',
+  // A professional was just blocked for an unpaid fee: the admin follows up.
+  'admin_fee_blocked',
   // A community ownership offer, and its answer: a decision someone is waiting on.
   'community_ownership_offer', 'community_ownership_result',
 ];

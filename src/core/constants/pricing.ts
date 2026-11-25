@@ -23,6 +23,10 @@ export const DEFAULT_FEE_PERCENT = 3;
 export const DEFAULT_MAX_OPEN_PROJECTS = 2;
 /** The professional's window to dispute a client-confirmed completion. */
 export const DEFAULT_DISPUTE_WINDOW_DAYS = 4;
+/** The professional's dispute window, in Israeli business days after completion
+ *  (Sun–Thu, no chag). FALLBACK ONLY — the live value is
+ *  `config/pricing.disputeWindowBusinessDays`. */
+export const DEFAULT_DISPUTE_WINDOW_BUSINESS_DAYS = 2;
 /** After the deadline -> first reminder. */
 export const DEFAULT_AUTO_CLOSE_REMINDER_DAYS = 3;
 /** After the reminder -> final prompt. */

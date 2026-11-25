@@ -1,8 +1,8 @@
 # BAMA — Terms of Use
 
-Version: 1.7
+Version: 1.8
 
-Last updated: 12/11/2026
+Last updated: 24/11/2026
 
 This is an English translation of the BAMA Terms of Use. The Hebrew version is the binding version. In case of any conflict between the Hebrew version and this translation, the Hebrew version prevails (see section 1.7).
 
@@ -42,9 +42,11 @@ In these Terms, the following terms have the meanings set out next to them:
 
 "Engagement Completion" — marking of the Engagement as "Completed" by the Professional, marking of the Project as "Completed" by the Client, or its automatic completion, as set out in section 8.6.
 
-"Dispute Period" — 4 days from the date of Engagement Completion, as set out in section 8.6.5.
+"Business Days" — Sunday to Thursday, excluding Israeli holidays and festivals (yom tov according to the calendar in Israel, and Independence Day) and any further days the Operator has set as non-business days. The day of Engagement Completion itself is not counted; counting starts on the next Business Day. Every period measured in Business Days ends at 23:59:59 (Israel time) on its last Business Day.
 
-"Payment Period" — 7 days from the date of Engagement Completion, as set out in section 12.8.1.
+"Dispute Period" — 2 Business Days from the date of Engagement Completion, as set out in section 8.6.5.
+
+"Payment Period" — a further 2 Business Days after the Dispute Period, i.e. 4 Business Days from the date of Engagement Completion, as set out in section 12.8.1.
 
 "Brokerage Fee" — the consideration the Operator charges the Professional for using the Platform's services, as set out in chapter 12.
 
@@ -200,7 +202,7 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 8.6.4. Cancellation and withdrawal. An Engagement that was cancelled, or from which the Professional withdrew, before the end date will be marked as such in the App and will not be completed automatically.
 
-8.6.5. Dispute Period. Within 4 days of Engagement Completion — whether marked by the Professional, marked by the Client or completed automatically — the Professional may notify in the App that the Engagement did not take place, or dispute the amount on which the fee is calculated. A dispute will be referred to the Operator for review under chapter 16, and the fee charge will be suspended until a decision is made. If no dispute is submitted within the Dispute Period, the completion and the amount become final for the purpose of the fee charge.
+8.6.5. Dispute Period. Within 2 Business Days of Engagement Completion — whether marked by the Professional, marked by the Client or completed automatically — the Professional may notify in the App that the Engagement did not take place, or dispute the amount on which the fee is calculated. A dispute will be referred to the Operator for review under chapter 16, and the fee charge will be suspended until a decision is made. If no dispute is submitted within the Dispute Period, the completion and the amount become final for the purpose of the fee charge.
 
 8.6.6. Engagement Completion triggers the rating mechanism under chapter 10 and the disclosure of contact details under section 8.7, and creates the Professional's liability for the Brokerage Fee under chapter 12.
 
@@ -316,7 +318,7 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 12.8. Non-payment.
 
-12.8.1. Automatic restriction. If a charge is not settled within 7 days of the Engagement Completion it arose from (the "Payment Period"), the Operator may restrict the Professional so that they cannot submit new Offers or be hired for new Projects, from the end of the Payment Period until all overdue charges are settled in full. The Operator may apply the restriction automatically, without an individual decision, and may stop or suspend its automatic application at any time. Timeline: the first notice is sent when the charge is created. The restriction, where applied, begins 7 days after the Engagement Completion (the 4-day dispute period is included in those 7 days), provided no dispute was filed, and a reminder is sent two days before it begins.
+12.8.1. Automatic restriction. If a charge is not settled within a further 2 Business Days after the end of the Dispute Period, i.e. 4 Business Days from the Engagement Completion it arose from (the "Payment Period"), the Operator may restrict the Professional so that they cannot submit new Offers or be hired for new Projects, from the end of the Payment Period until all overdue charges are settled in full. The Operator may apply the restriction automatically, without an individual decision, and may stop or suspend its automatic application at any time. Timeline: the first notice is sent when the charge is created. The restriction, where applied, begins at the end of the Payment Period (the 2-Business-Day Dispute Period is included in it), provided no dispute was filed, and a reminder is sent on the Business Day before it begins and on the day it begins.
 
 12.8.2. Existing Engagements. The restriction does not apply to Engagements for which the Professional was already hired, and they continue as usual.
 
@@ -626,4 +628,4 @@ For questions, requests, reports, content removal requests, suspension appeals o
 
 We will try to respond within a reasonable time.
 
-BAMA — Build A Media Alliance · Version 1.7 · 12.11.2026
+BAMA — Build A Media Alliance · Version 1.8 · 24.11.2026

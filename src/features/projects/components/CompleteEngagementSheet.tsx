@@ -103,13 +103,13 @@ export function CompleteEngagementSheet({
                     : t('engagement.complete_fee_rate', { percent: String(feePercent(fee)) })}
                 </AppText>
                 <AppText weight="regular" style={[styles.feeNote, { color: colors.textMuted, textAlign: align }]}>
-                  {t('engagement.complete_charge_when', { days: pricing.chargeWindowDays })}
+                  {t('engagement.complete_charge_when', { days: pricing.disputeWindowBusinessDays })}
                 </AppText>
               </View>
             )}
 
             <AppText weight="regular" style={[styles.howBody, { color: colors.textMuted, textAlign: align }]}>
-              {t('engagement.complete_contest_note', { days: pricing.chargeWindowDays })}
+              {t('engagement.complete_contest_note', { days: pricing.disputeWindowBusinessDays })}
             </AppText>
 
             <TouchableOpacity

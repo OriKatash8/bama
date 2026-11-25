@@ -22,6 +22,8 @@ import { resolvedFee } from './disputeResolution';
 /** Cap on documents scanned per call. The platform is small; a hard bound keeps a
  *  future data set from turning an admin screen into a full-collection scan. */
 const SCAN_LIMIT = 500;
+/** How long a fee stays on the "recently blocked" list. */
+const RECENT_BLOCK_MS = 30 * 86400_000;
 
 type ArrearsRow = {
   professionalId: string;
@@ -69,6 +71,9 @@ export const adminListArrears = onCall(async (request) => {
 
   const byPro = new Map<string, ArrearsRow>();
   const projectIds = new Set<string>();
+  /** Fees whose block notice (reminders.blocked) went out in the last 30 days and
+   *  that are still unpaid — the "recently blocked" list. */
+  const recent: { proId: string; projectId: string; owed: number; blockedAt: number }[] = [];
 
   for (const d of feesSnap.docs) {
     const fee = d.data() as FeeDoc;
@@ -83,6 +88,10 @@ export const adminListArrears = onCall(async (request) => {
     const proId = fee.professionalId ?? d.id;
     const projectId = fee.projectId ?? d.ref.parent.parent?.id ?? '';
     projectIds.add(projectId);
+    const blockedAt = millis(fee.reminders?.blocked);
+    if (blockedAt !== null && owed > 0 && blocks && now - blockedAt <= RECENT_BLOCK_MS) {
+      recent.push({ proId, projectId, owed, blockedAt });
+    }
 
     const sentAt = millis(fee.demandSentAt);
     const dueAt = millis(fee.hiredAt) ?? millis(fee.createdAt);
@@ -116,6 +125,21 @@ export const adminListArrears = onCall(async (request) => {
     Promise.all([...projectIds].filter(Boolean).map((id) => db.doc(`projects/${id}`).get())),
   ]);
   const nameOf = new Map(users.map((u) => [u.id, (u.data()?.displayName as string) ?? '']));
+  // Contact details for the "recently blocked" rows only: the phone lives in the
+  // private contact doc, the email on the user doc. Admin-only, like the screen.
+  const recentIds = [...new Set(recent.map((r) => r.proId))];
+  const contacts = new Map<string, { phone: string | null; email: string | null }>();
+  await Promise.all(recentIds.map(async (id) => {
+    const [contact, user] = await Promise.all([
+      db.doc(`users/${id}/private/contact`).get(), db.doc(`users/${id}`).get(),
+    ]);
+    const phone = contact.data()?.phone;
+    const email = user.data()?.email;
+    contacts.set(id, {
+      phone: typeof phone === 'string' && phone.trim() ? phone.trim() : null,
+      email: typeof email === 'string' && email.trim() ? email.trim() : null,
+    });
+  }));
   const titleOf = new Map(projects.map((p) => [p.id, (p.data()?.title as string) ?? '']));
 
   // Reliability is derived per row rather than stored — see withdrawalCount.
@@ -136,7 +160,19 @@ export const adminListArrears = onCall(async (request) => {
   // Blocked first, then by size of debt: the rows needing action at the top.
   rows.sort((a, b) => Number(b.blocked) - Number(a.blocked) || b.totalOwed - a.totalOwed);
 
-  return { rows, graceDays: config.paymentFailureGraceDays, scanned: feesSnap.size };
+  recent.sort((a, b) => b.blockedAt - a.blockedAt);
+  const recentBlocks = recent.map((r) => ({
+    professionalId: r.proId,
+    displayName: nameOf.get(r.proId) ?? '',
+    phone: contacts.get(r.proId)?.phone ?? null,
+    email: contacts.get(r.proId)?.email ?? null,
+    amount: r.owed,
+    projectId: r.projectId,
+    title: titleOf.get(r.projectId) ?? '',
+    blockedAt: r.blockedAt,
+  }));
+
+  return { rows, recentBlocks, graceDays: config.paymentFailureGraceDays, scanned: feesSnap.size };
 });
 
 /**

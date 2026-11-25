@@ -22,6 +22,7 @@ describe('resolvePricingConfig', () => {
       feePercent: 5,
       maxOpenProjects: 4,
       disputeWindowDays: 10,
+      disputeWindowBusinessDays: 3,
       autoCloseReminderDays: 2,
       autoCloseFinalDays: 5,
       autoCloseDays: 20,

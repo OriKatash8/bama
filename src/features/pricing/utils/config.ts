@@ -4,6 +4,7 @@ import {
   DEFAULT_AUTO_CLOSE_DAYS, DEFAULT_PAYMENT_FAILURE_GRACE_DAYS,
   DEFAULT_MIN_FEE_AMOUNT, DEFAULT_CHARGE_WINDOW_DAYS,
   DEFAULT_FEE_OVERDUE_BLOCK_DAYS, DEFAULT_FEE_OVERDUE_BLOCK_ENABLED,
+  DEFAULT_DISPUTE_WINDOW_BUSINESS_DAYS,
 } from '@core/constants/pricing';
 
 /**
@@ -21,6 +22,8 @@ export type PricingConfig = {
   feePercent: number;
   maxOpenProjects: number;
   disputeWindowDays: number;
+  /** Dispute window in Israeli business days — what the app shows. */
+  disputeWindowBusinessDays: number;
   autoCloseReminderDays: number;
   autoCloseFinalDays: number;
   autoCloseDays: number;
@@ -43,6 +46,7 @@ export const PRICING_CONFIG_DEFAULTS: PricingConfig = {
   feePercent: DEFAULT_FEE_PERCENT,
   maxOpenProjects: DEFAULT_MAX_OPEN_PROJECTS,
   disputeWindowDays: DEFAULT_DISPUTE_WINDOW_DAYS,
+  disputeWindowBusinessDays: DEFAULT_DISPUTE_WINDOW_BUSINESS_DAYS,
   autoCloseReminderDays: DEFAULT_AUTO_CLOSE_REMINDER_DAYS,
   autoCloseFinalDays: DEFAULT_AUTO_CLOSE_FINAL_DAYS,
   autoCloseDays: DEFAULT_AUTO_CLOSE_DAYS,

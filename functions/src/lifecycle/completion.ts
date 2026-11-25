@@ -13,6 +13,7 @@ import { releaseEngagement } from './removal';
 import { warnIfCompletedUnderReview } from './review';
 import { deletePendingOffers } from './offerCleanup';
 import { addChatCloseWrites } from './chatClose';
+import { feeTimeline } from './businessDays';
 import { overdueStampFields, recomputeFeeBlockSafely, blockAtOf, notifyFeeCreated } from './feeOverdue';
 import { notifyAdminsOfDispute } from './disputeAlert';
 import { holdReviewsForDispute } from './reviewHold';
@@ -151,9 +152,10 @@ export async function confirmCompletionInternal(
   // contestWindowEndsAt for why that pair was dangerous rather than merely
   // redundant.
   const config = await readConfig();
-  const { chargeWindowDays } = config;
   const completedAtMs = Date.now();
-  const chargeDueAt = Timestamp.fromMillis(completedAtMs + chargeWindowDays * 86400_000);
+  // chargeDueAt = the END OF THE DISPUTE WINDOW: Israeli business days after
+  // completion, 23:59:59 Israel time (businessDays.ts). Stamped once, here.
+  const chargeDueAt = Timestamp.fromMillis(feeTimeline(config, completedAtMs).windowEndsAt);
 
   const batch = db.batch();
   const owedByPro = new Map<string, number>();
@@ -941,9 +943,10 @@ export async function completeEngagementInternal(
   }
 
   const config = await readConfig();
-  const { chargeWindowDays } = config;
   const completedAtMs = Date.now();
-  const chargeDueAt = Timestamp.fromMillis(completedAtMs + chargeWindowDays * 86400_000);
+  // chargeDueAt = the END OF THE DISPUTE WINDOW: Israeli business days after
+  // completion, 23:59:59 Israel time (businessDays.ts). Stamped once, here.
+  const chargeDueAt = Timestamp.fromMillis(feeTimeline(config, completedAtMs).windowEndsAt);
 
   // The fee is priced HERE, from the accepted offers as they stand, exactly as
   // the old confirmation path priced it. The floor and rate come off the

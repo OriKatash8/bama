@@ -43,6 +43,9 @@ export async function sendBamaSystemDM(
   db: admin.firestore.Firestore,
   targetUid: string,
   text: string,
+  /** `push: false` writes the message without raising its own notification, for a
+   *  caller that already sent a push (and wants it to route somewhere specific). */
+  opts: { push?: boolean } = {},
 ): Promise<string> {
   await ensureSystemUser(db);
 
@@ -73,6 +76,8 @@ export async function sendBamaSystemDM(
     },
     [`unreadCount.${targetUid}`]: FieldValue.increment(1),
   });
+
+  if (opts.push === false) return chatId;
 
   await db.collection('notifications').add({
     userId: targetUid,

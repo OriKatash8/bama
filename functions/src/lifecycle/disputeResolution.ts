@@ -97,6 +97,10 @@ export const resolveFeeDispute = onCall(async (request) => {
       slotActive: false,
       overdueWarnedAt: FieldValue.delete(),
       overdueBlockNotifiedAt: FieldValue.delete(),
+      // Fee timing v2: a restamp below brings back a fresh map; anything else
+      // must not leave the old sequence's stamps behind.
+      reminders: FieldValue.delete(),
+      feeTimingVersion: FieldValue.delete(),
     };
 
     if (outcome === 'cancelled') {
@@ -116,7 +120,7 @@ export const resolveFeeDispute = onCall(async (request) => {
     // The clock restarts from the resolution. With the switch off nothing is
     // stamped — and a stale overdueAt from before the dispute is removed, so
     // turning the switch on later cannot resurrect it.
-    const stamp = priced.feeDue > 0 ? overdueStampFields(config, now) : {};
+    const stamp = priced.feeDue > 0 ? overdueStampFields(config, now, undefined, 'resolution') : {};
     const stamped = 'overdueAt' in stamp;
     tx.update(ref, {
       ...common,

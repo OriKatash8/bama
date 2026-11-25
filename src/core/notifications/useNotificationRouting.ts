@@ -222,6 +222,11 @@ export function useNotificationRouting(): void {
         await navigate(null, '/admin/reports?tab=disputes');
         return;
       }
+      // A professional was blocked for an unpaid fee: the "recently blocked" list.
+      case 'admin_fee_blocked': {
+        await navigate(null, '/admin/fees');
+        return;
+      }
       case 'project': {
         // The noticeboard lives on the dashboard tab (no standalone route).
         await navigate('professional', '/(professional)/(tabs)/dashboard');

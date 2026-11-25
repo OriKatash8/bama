@@ -25,11 +25,11 @@ export async function autoCloseEngagement(projectId: string, proId: string): Pro
   const res = await completeEngagementInternal(projectId, proId, 'auto');
   if (!res.completed) return;
 
-  const { chargeWindowDays } = await readConfig();
+  const { disputeWindowBusinessDays } = await readConfig();
   await notify({
     userId: proId,
     title: 'BAMA',
-    message: `הפרויקט הסתיים. עמלת התיווך תיגבה בעוד ${chargeWindowDays} ימים — אם העבודה לא בוצעה, סמנו זאת עכשיו.`,
+    message: `הפרויקט הסתיים. עמלת התיווך תיגבה בעוד ${disputeWindowBusinessDays} ימי עסקים — אם העבודה לא בוצעה, סמנו זאת עכשיו.`,
     data: { type: 'engagement_completed', projectId },
   });
 

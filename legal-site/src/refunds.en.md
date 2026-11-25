@@ -59,7 +59,7 @@ This is an English translation of the BAMA Cancellation and Refund Policy. The H
 
 ## 4. Brokerage Fee — Cancellation and Refunds
 
-4.1. When the charge is created. The Brokerage Fee charge is created at the end of the Dispute Period — 4 days from Engagement Completion, whether the Engagement was completed by the Professional's marking, by the Client's marking or automatically (sections 8.6 and 12.5 of the Terms). If a dispute is submitted in time, the charge is suspended until a decision is made.
+4.1. When the charge is created. The Brokerage Fee charge is created at the end of the Dispute Period — 2 Business Days from Engagement Completion, whether the Engagement was completed by the Professional's marking, by the Client's marking or automatically (sections 8.6 and 12.5 of the Terms). If a dispute is submitted in time, the charge is suspended until a decision is made.
 
 4.1.1. A dispute is the main route. If the Engagement did not take place, or the amount on which the fee is calculated is wrong, submit a dispute in the App within the Dispute Period. The charge will then not be created until a decision is made, and no later refund request is needed.
 

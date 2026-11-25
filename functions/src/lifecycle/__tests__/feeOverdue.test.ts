@@ -5,6 +5,7 @@ import {
 } from '../feeOverdue';
 import { resolvedFee } from '../disputeResolution';
 import { computeFee } from '../helpers';
+import { instantAt } from '../businessDays';
 
 /**
  * The overdue-fee block: the stamp, the three notices, dispute pricing, and the
@@ -15,15 +16,37 @@ import { computeFee } from '../helpers';
 const ts = (ms: number) => ({ toMillis: () => ms }) as never;
 const T = Date.UTC(2026, 9, 2);
 const DAY = 86400_000;
-const ON = { feeOverdueBlockEnabled: true, feeOverdueBlockDays: 7 };
-const OFF = { feeOverdueBlockEnabled: false, feeOverdueBlockDays: 7 };
+const BIZ = { disputeWindowBusinessDays: 2, blockGraceBusinessDays: 2, extraNonBusinessDays: [] as string[] };
+const ON = { feeOverdueBlockEnabled: true, ...BIZ };
+const OFF = { feeOverdueBlockEnabled: false, ...BIZ };
+// Friday 2 Oct 2026: Sat 3 Oct is Shmini Atzeret (a chag); Sun 4, Mon 5, Tue 6, Wed 7 are
+// business days — so the 4th business day after completion is the end of Wed 7 Oct.
+const BLOCK_AT = instantAt('2026-10-07', 23, 59, 59);
 
 describe('overdueStampFields — the clock set at completion', () => {
-  it('stamps completion + feeOverdueBlockDays', () => {
-    const out = overdueStampFields(ON, T) as { overdueAt: { toMillis(): number } };
-    expect(out.overdueAt.toMillis()).toBe(T + 7 * DAY);
-    const ten = overdueStampFields({ ...ON, feeOverdueBlockDays: 10 }, T) as typeof out;
-    expect(ten.overdueAt.toMillis()).toBe(T + 10 * DAY);
+  it('stamps the block at the end of the 4th business day, and opts the fee into v2', () => {
+    const out = overdueStampFields(ON, T) as {
+      overdueAt: { toMillis(): number }; feeTimingVersion: number; reminders: object;
+    };
+    expect(out.overdueAt.toMillis()).toBe(BLOCK_AT);
+    expect(out.feeTimingVersion).toBe(2);
+    expect(out.reminders).toEqual({});
+  });
+
+  it('follows the configured business-day counts', () => {
+    const out = overdueStampFields({ ...ON, blockGraceBusinessDays: 3 }, T) as {
+      overdueAt: { toMillis(): number };
+    };
+    expect(out.overdueAt.toMillis()).toBe(instantAt('2026-10-08', 23, 59, 59));
+  });
+
+  it('a dispute resolution restarts with the grace only, and counts the window notice as sent', () => {
+    const out = overdueStampFields(ON, T, undefined, 'resolution') as {
+      overdueAt: { toMillis(): number }; reminders: { windowEnd: { toMillis(): number } };
+    };
+    // Sun 4 + Mon 5 business days after Friday 2 Oct.
+    expect(out.overdueAt.toMillis()).toBe(instantAt('2026-10-05', 23, 59, 59));
+    expect(out.reminders.windowEnd.toMillis()).toBe(T);
   });
 
   it('stamps NOTHING while the switch is off — why turning it on blocks no old fee', () => {
@@ -31,17 +54,17 @@ describe('overdueStampFields — the clock set at completion', () => {
   });
 
   it('keeps an earlier clock still running on an unpaid fee (a re-hire\'s second completion)', () => {
-    const out = overdueStampFields(ON, T, { overdueAt: ts(T - DAY), feePaid: false, status: 'pending' }) as {
-      overdueAt: { toMillis(): number };
-    };
-    expect(out.overdueAt.toMillis()).toBe(T - DAY);
+    const out = overdueStampFields(ON, T, { overdueAt: ts(T - DAY), feePaid: false, status: 'pending' });
+    // Only overdueAt: the debt keeps its own version and reminders.
+    expect(Object.keys(out)).toEqual(['overdueAt']);
+    expect((out.overdueAt as { toMillis(): number }).toMillis()).toBe(T - DAY);
   });
 
   it('starts fresh when the earlier debt was settled', () => {
     const out = overdueStampFields(ON, T, { overdueAt: ts(T - DAY), feePaid: true, status: 'paid' }) as {
       overdueAt: { toMillis(): number };
     };
-    expect(out.overdueAt.toMillis()).toBe(T + 7 * DAY);
+    expect(out.overdueAt.toMillis()).toBe(BLOCK_AT);
   });
 });
 
@@ -86,14 +109,14 @@ describe('the notices', () => {
 describe('fee_created push — amount, project, pay-by date', () => {
   it('blockAtOf is the stamped overdueAt, never inside the contest window', () => {
     const stamp = overdueStampFields(ON, T);
-    expect(blockAtOf(stamp, ts(T + 4 * DAY))).toBe(T + 7 * DAY);
-    // a block shorter than the contest window waits for it, like effectiveOverdueAt
-    const short = overdueStampFields({ ...ON, feeOverdueBlockDays: 3 }, T);
-    expect(blockAtOf(short, ts(T + 4 * DAY))).toBe(T + 4 * DAY);
+    const windowEnd = instantAt('2026-10-05', 23, 59, 59);
+    expect(blockAtOf(stamp, ts(windowEnd))).toBe(BLOCK_AT);
+    // a block before the contest window ends waits for it, like effectiveOverdueAt
+    expect(blockAtOf(stamp, ts(BLOCK_AT + DAY))).toBe(BLOCK_AT + DAY);
   });
 
   it('blockAtOf is undefined while the switch is off — the push is then sent WITHOUT a date', () => {
-    expect(blockAtOf(overdueStampFields(OFF, T), ts(T + 4 * DAY))).toBeUndefined();
+    expect(blockAtOf(overdueStampFields(OFF, T), ts(T + 2 * DAY))).toBeUndefined();
     // (what is sent in that case is tested in feeCreatedNotice.test.ts)
   });
 
@@ -110,7 +133,7 @@ describe('fee_created push — amount, project, pay-by date', () => {
   it('is sent from both completion paths and the lead time comes from config', () => {
     const src = (f: string) => readFileSync(join(__dirname, '..', f), 'utf8');
     expect(src('completion.ts').match(/notifyFeeCreated\(/g)).toHaveLength(2);
-    expect(src('feeOverdue.ts')).toContain('runFeeOverdueSweep(Date.now(), config.feeReminderLeadDays)');
+    expect(src('feeOverdue.ts')).toContain('runFeeOverdueSweep(Date.now(), config.feeReminderLeadDays, {');
     expect(src('feeOverdue.ts')).not.toMatch(/overdueAt', '<=', Timestamp\.fromMillis\(now \+ DAY\)/);
   });
 });
