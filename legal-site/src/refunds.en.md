@@ -1,8 +1,8 @@
 # BAMA — Cancellation and Refund Policy
 
-Version: 1.4
+Version: 1.5
 
-Last updated: 03/10/2026
+Last updated: 25/11/2026
 
 This is an English translation of the BAMA Cancellation and Refund Policy. The Hebrew version is the binding version. In case of any conflict, the Hebrew version prevails.
 
@@ -95,7 +95,7 @@ This is an English translation of the BAMA Cancellation and Refund Policy. The H
 
 4.4. Cancelling an unsettled charge. Since the Brokerage Fee is settled outside the App (section 12.6 of the Terms), in most cases the charge has not yet been paid when the request is made. In that case, the charge will be cancelled and removed from the Professional's balance, and no refund is needed.
 
-4.5. How refunds are made, if paid. If the fee was actually paid and the refund is approved, it will be made by the same method used for payment (including through the payment provider), or by another method agreed with the Professional, within up to 14 business days of approval. Delays by the bank or payment provider may occur.
+4.5. How refunds are made, if paid. If the fee was actually paid and the refund is approved, it will be made by the same method used for payment (including through the payment provider), or by another method agreed with the Professional, within up to 14 Business Days of approval. Delays by the bank or payment provider may occur.
 
 ## 5. Store (BAMA MARKET / BAMA RENTAL) — Sale and Rental of Equipment
 
@@ -139,7 +139,7 @@ This is an English translation of the BAMA Cancellation and Refund Policy. The H
 
 8.2.5. Any relevant evidence — screenshots, correspondence, payment confirmations.
 
-8.3. Response time. We will respond to a request within 14 business days. If we reject a request, we will state the reasons.
+8.3. Response time. We will respond to a request within 14 Business Days. If we reject a request, we will state the reasons.
 
 8.4. Appeal. A decision on a refund request may be appealed once, by a further request within 14 days of receiving the decision, with new reasons or evidence.
 
@@ -158,4 +158,4 @@ This is an English translation of the BAMA Cancellation and Refund Policy. The H
 - Address: HaHadarim St., Kadima-Zoran, Israel
 - In the App: the "Contact Us" screen in Settings
 
-BAMA — Build A Media Alliance · Version 1.4 · 03.10.2026
+BAMA — Build A Media Alliance · Version 1.5 · 25.11.2026

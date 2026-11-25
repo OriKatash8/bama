@@ -2,7 +2,7 @@
 
 Version: 1.8
 
-Last updated: 24/11/2026
+Last updated: 25/11/2026
 
 This is an English translation of the BAMA Terms of Use. The Hebrew version is the binding version. In case of any conflict between the Hebrew version and this translation, the Hebrew version prevails (see section 1.7).
 
@@ -318,15 +318,15 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 12.8. Non-payment.
 
-12.8.1. Automatic restriction. If a charge is not settled within a further 2 Business Days after the end of the Dispute Period, i.e. 4 Business Days from the Engagement Completion it arose from (the "Payment Period"), the Operator may restrict the Professional so that they cannot submit new Offers or be hired for new Projects, from the end of the Payment Period until all overdue charges are settled in full. The Operator may apply the restriction automatically, without an individual decision, and may stop or suspend its automatic application at any time. Timeline: the first notice is sent when the charge is created. The restriction, where applied, begins at the end of the Payment Period (the 2-Business-Day Dispute Period is included in it), provided no dispute was filed, and a reminder is sent on the Business Day before it begins and on the day it begins.
+12.8.1. Automatic restriction. If a charge is not settled within a further 2 Business Days after the end of the Dispute Period, i.e. 4 Business Days from the Engagement Completion it arose from (the "Payment Period"), the Operator may restrict the Professional so that they cannot submit new Offers or be hired for new Projects, from the end of the Payment Period until all overdue charges are settled in full. The Operator may apply the restriction automatically, without an individual decision, and may stop or suspend its automatic application at any time. Timeline: the first notice is sent at Engagement Completion, when the fee is created and appears in the App; the charge itself falls due at the end of the Dispute Period. The restriction, where applied, begins at the end of the Payment Period (the 2-Business-Day Dispute Period is included in it), provided no dispute was filed, and a reminder is sent on the Business Day before it begins and on the day it begins.
 
 12.8.2. Existing Engagements. The restriction does not apply to Engagements for which the Professional was already hired, and they continue as usual.
 
 12.8.3. Lifting the restriction. The restriction is lifted once the Operator confirms that all overdue charges have been settled.
 
-12.8.4. Pending dispute. A charge that is the subject of a dispute under section 8.6.5 is not an overdue charge while the dispute is undecided. If the Operator decides that the fee applies, the Payment Period starts again from the date of the decision.
+12.8.4. Pending dispute. A charge that is the subject of a dispute under section 8.6.5 is not an overdue charge while the dispute is undecided. If the Operator decides that the fee applies, the Professional will have 2 Business Days from the date of the decision to settle the charge, and only after them will the restriction apply.
 
-12.8.5. Reminders. The Operator will send the Professional a notice when the charge is created, and a reminder in the days before the restriction begins, as set in the App. Failure to receive a notice, including because of device settings, does not prevent the restriction from applying.
+12.8.5. Reminders. The Operator will send the Professional a notice when the fee is created (at Engagement Completion), a further notice at the end of the Dispute Period, and a reminder in the days before the restriction begins, as set in the App. Failure to receive a notice, including because of device settings, does not prevent the restriction from applying.
 
 12.8.6. Length of the Payment Period. The Operator may update the length of the Payment Period with prior notice under section 23.2. An update will not apply to a charge created before it takes effect.
 
@@ -566,7 +566,7 @@ This chapter is the core of the Terms. Please read it with particular care.
 
 22.2. Marketing messages. Advertising will be sent in accordance with section 30A of the Communications (Telecommunications and Broadcasting) Law, 5742‑1982, and subject to your consent. You may unsubscribe at any time using the unsubscribe mechanism in the message or by contacting us.
 
-22.3. Notices from you to the Operator. Notices to us should be sent to the address in chapter 27 and will be deemed received within 3 business days of sending, unless confirmation of receipt was received earlier.
+22.3. Notices from you to the Operator. Notices to us should be sent to the address in chapter 27 and will be deemed received within 3 Business Days of sending, unless confirmation of receipt was received earlier.
 
 22.4. Up-to-date contact details. You must keep an up-to-date email address in your account, and an up-to-date phone number if you provided one. A notice sent to the up-to-date details in the account will be deemed duly delivered.
 
@@ -628,4 +628,4 @@ For questions, requests, reports, content removal requests, suspension appeals o
 
 We will try to respond within a reasonable time.
 
-BAMA — Build A Media Alliance · Version 1.8 · 24.11.2026
+BAMA — Build A Media Alliance · Version 1.8 · 25.11.2026
