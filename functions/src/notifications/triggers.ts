@@ -11,7 +11,7 @@ import { SYSTEM_USER_ID } from '../system';
 import { fanOutMessage, needMuteCheck } from './fanOut';
 import { bumpMemberStats } from '../communities/memberStats';
 import { communityUnreadUpdate } from './communityUnread';
-import { chatMessageUpdate } from './chatCounters';
+import { chatMessageUpdate, previewText } from './chatCounters';
 import { readDemoConfig, sameSide } from '../demo';
 import { ADMIN_UIDS } from '../moderation/reportAlert';
 
@@ -111,8 +111,8 @@ export const onNewChatMessage = functions.firestore
 export const onNewChatMessageCounters = functions.firestore
   .document('chats/{chatId}/messages/{messageId}')
   .onCreate(async (snap, context) => {
-    const message = snap.data() as { senderId?: string; text?: string; system?: boolean; timestamp?: unknown };
-    if (!message.senderId) return;
+    const message = snap.data() as { senderId?: string; text?: unknown; system?: boolean };
+    if (typeof message.senderId !== 'string' || !message.senderId) return;
     if (message.system || message.senderId === 'system' || message.senderId === SYSTEM_USER_ID) return;
 
     const chatRef = admin.firestore().collection('chats').doc(context.params.chatId);
@@ -123,11 +123,11 @@ export const onNewChatMessageCounters = functions.firestore
     if (chatDoc.data()?.type === 'community') return;
 
     const members: string[] = (chatDoc.data()?.members as string[] | undefined) ?? [];
-    // The message's own server timestamp, so the preview time is the message's
-    // time and not whenever this trigger ran.
-    await chatRef.update(
-      chatMessageUpdate(members, message.senderId, message.text ?? '', message.timestamp ?? FieldValue.serverTimestamp()),
-    );
+    // The preview time is the document's createTime, which the server sets — never
+    // the message's own `timestamp` field, which the sender writes and the rules do
+    // not pin. Copying that onto the chat doc would let a modified client put junk
+    // where every member's list sorts and formats from.
+    await chatRef.update(chatMessageUpdate(members, message.senderId, previewText(message.text), snap.createTime));
   });
 
 /**

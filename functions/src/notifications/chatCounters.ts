@@ -33,3 +33,15 @@ export function chatMessageUpdate(
   }
   return update;
 }
+
+/** The most of a message the chat-list preview keeps. The list shows one line. */
+export const PREVIEW_MAX = 500;
+
+/**
+ * The preview text, from a field the SENDER wrote. The create rule does not pin
+ * `text`'s type or size, and this value is copied onto the chat doc every member
+ * reads — so a non-string or a megabyte of text must not reach it.
+ */
+export function previewText(raw: unknown): string {
+  return typeof raw === 'string' ? raw.slice(0, PREVIEW_MAX) : '';
+}

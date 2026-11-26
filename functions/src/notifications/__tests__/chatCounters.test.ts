@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { chatMessageUpdate } from '../chatCounters';
+import { chatMessageUpdate, previewText, PREVIEW_MAX } from '../chatCounters';
 
 /**
  * lastMessage and the recipients' unread count for dm / group / purchase chats
@@ -32,6 +32,14 @@ it('ignores duplicate member ids', () => {
   expect(Object.keys(chatMessageUpdate(['a', 'a', 'b'], 'b', 'x', 'TS'))).toEqual(['lastMessage', 'unreadCount.a']);
 });
 
+describe('previewText (the sender wrote the field; the rules do not pin it)', () => {
+  it('passes a normal string through', () => expect(previewText('hello')).toBe('hello'));
+  it('turns a non-string into an empty preview', () => {
+    for (const bad of [undefined, null, 5, { a: 1 }, ['x']]) expect(previewText(bad)).toBe('');
+  });
+  it('caps the length', () => expect(previewText('x'.repeat(PREVIEW_MAX + 900))).toHaveLength(PREVIEW_MAX));
+});
+
 describe('onNewChatMessageCounters', () => {
   const src = readFileSync(join(__dirname, '..', 'triggers.ts'), 'utf8');
   const trigger = src.slice(src.indexOf('export const onNewChatMessageCounters'), src.indexOf('export const onNewCommunityMessage'));
@@ -42,6 +50,11 @@ describe('onNewChatMessageCounters', () => {
 
   it('does not touch communities', () => {
     expect(trigger).toMatch(/type === 'community'\) return/);
+  });
+
+  it('takes the preview time from the server (createTime), never the sender-written timestamp field', () => {
+    expect(trigger).toMatch(/snap\.createTime/);
+    expect(trigger).not.toMatch(/message\.timestamp/);
   });
 
   it('writes the update to the chat doc', () => {
