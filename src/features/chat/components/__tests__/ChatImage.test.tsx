@@ -43,3 +43,15 @@ it('remembers the shape, so scrolling back does not jump', () => {
   const r = render(<ChatImage uri="https://x/portrait.jpg" />);
   expect(ratioOf(r.getByTestId('chat-image'))).toBe(0.75);
 });
+
+it('a photo that carries its size starts at its FINAL shape, so loading it changes nothing', () => {
+  const r = render(<ChatImage uri="https://x/known.jpg" width={3024} height={4032} />);
+  expect(ratioOf(r.getByTestId('chat-image'))).toBe(0.75);
+  fireEvent(r.getByTestId('chat-image'), 'load', { nativeEvent: { source: { width: 3024, height: 4032 } } });
+  expect(ratioOf(r.getByTestId('chat-image'))).toBe(0.75);
+});
+
+it('a photo with no size on the message (sent before this existed) still starts square and sizes on load', () => {
+  const r = render(<ChatImage uri="https://x/old.jpg" />);
+  expect(ratioOf(r.getByTestId('chat-image'))).toBe(1);
+});

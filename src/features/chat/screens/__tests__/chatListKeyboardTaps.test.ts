@@ -12,7 +12,7 @@ const SRC = readFileSync(join(__dirname, '..', 'ChatRoomScreen.tsx'), 'utf8');
 
 // The message list is the FlatList that carries the pinned-scroll handlers.
 const start = SRC.indexOf('<FlatList\n          ref={flatListRef}');
-const LIST = SRC.slice(start, SRC.indexOf('ListFooterComponent={pendingBubble}', start) + 60);
+const LIST = SRC.slice(start, SRC.indexOf('ListHeaderComponent={pendingBubble}', start) + 60);
 
 it('finds the message list', () => {
   expect(start).toBeGreaterThan(-1);

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useMarkChatRead } from '../hooks/useMarkChatRead';
+import { chatListPlatformProps } from '../components/ColumnReverseScrollView';
+import { arrivalsSince, isNearNewest, SHOW_JUMP_PX, webRowId } from '../utils/chatListScroll';
 import { completionRequestName } from '../utils/systemMessages';
 import { SYSTEM_USER_ID } from '@core/constants/system';
 import { isolate } from '@utils/formatters';
@@ -702,7 +704,10 @@ export function ChatRoomScreen({ chatId }: Props) {
       }
       result.push(msg);
     }
-    return result;
+    // NEWEST FIRST. The list is inverted (native) or column-reverse (web), so index 0 is the
+    // newest message and it draws at the bottom. Built oldest-first above so each separator is
+    // pushed before the message it introduces; reversed, that puts it just ABOVE that message.
+    return result.reverse();
   }, [messages, language, unreadBanner, chatId, blocked]);
 
   const hiddenBlockedSenders = useMemo(() => hiddenSenders(messages, blocked), [messages, blocked]);
@@ -722,17 +727,24 @@ export function ChatRoomScreen({ chatId }: Props) {
   // the view pinned to the newest message (initial open + new messages while at
   // the bottom) without yanking the user down when they've scrolled up.
   const isAtBottomRef = useRef(true);
+  /** The list's offset: distance from the newest message (0 = at the bottom). */
+  const offsetRef = useRef(0);
+  const contentHeightRef = useRef(0);
+  /** Newest visible message of the previous snapshot: what "a new message arrived" is measured from. */
+  const lastNewestIdRef = useRef<string | null>(null);
+  /** Messages from others that arrived while the reader was scrolled up. */
+  const [newBelow, setNewBelow] = useState(0);
+  /** Set when a message lands while scrolled up: the next content growth is that message. */
+  const shiftPendingRef = useRef(false);
   /**
-   * Where the list is pinned while opening, until the user drags.
+   * Where the list is pinned while jumping to a message (a mention, the unread divider, a quote,
+   * a search hit), until the user takes hold of the list.
    *
-   * Was a boolean meaning "pin to bottom". It has to be a TARGET because
-   * jump-to-mention cannot win against it otherwise: onLayout and every
-   * onContentSizeChange re-scroll while pinned, and rows remeasure late as
-   * images and listing cards land, so a one-off scrollToIndex is overridden a
-   * frame later. isAtBottomRef alone is not enough for the same reason — the
-   * first scrollToEnd lands short and the last message sits below the fold.
+   * It has to be a TARGET, held, because rows remeasure late as images and listing cards land, so
+   * a one-off jump is overridden a frame later. There is no 'bottom' pin any more: the list is
+   * inverted, so it OPENS at the newest message without being scrolled there.
    */
-  const pinTargetRef = useRef<{ kind: 'bottom' } | { kind: 'message'; id: string } | null>({ kind: 'bottom' });
+  const pinTargetRef = useRef<{ kind: 'message'; id: string } | null>(null);
   const [chatName, setChatName] = useState<string>('');
   const [chatType, setChatType] = useState<Chat['type'] | null>(null);
   const [liveUnread, setLiveUnread] = useState<{ total: number; channels: Record<string, number> }>({ total: 0, channels: {} });
@@ -772,6 +784,30 @@ export function ChatRoomScreen({ chatId }: Props) {
   const inputRef = useRef<TextInput>(null);
   /** Flashes the message a quote jumped to, so the landing is visible. */
   const [highlightId, setHighlightId] = useState<string | null>(null);
+
+  /**
+   * Called with every snapshot of the open chat/channel, before the list re-renders.
+   *   - I sent one: go to the newest message, wherever I was reading.
+   *   - someone else did, and I am at the bottom: nothing — offset 0 stays the newest.
+   *   - someone else did, and I am scrolled up: do NOT move; count it for the "↓ N new messages" pill.
+   * Not an effect on `messages`: it sets state, and a snapshot callback is where that belongs.
+   */
+  const noteArrivals = useCallback((msgs: Message[]) => {
+    const blockedNow = useBlockStore.getState().blocked;
+    const a = arrivalsSince(msgs, lastNewestIdRef.current, currentUserId, (m) => isHiddenByBlock(m as Message, blockedNow));
+    lastNewestIdRef.current = a.newestId;
+    if (a.reset) return;
+    if (a.mine) {
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      setNewBelow(0);
+      return;
+    }
+    if (a.fromOthers > 0 && !isAtBottomRef.current) {
+      setNewBelow((n) => n + a.fromOthers);
+      shiftPendingRef.current = true;
+    }
+  }, [currentUserId]);
+
   const [chatOwnerId, setChatOwnerId] = useState<string>('');
   const [chatPhotoURL, setChatPhotoURL] = useState<string | null>(null);
   const [chatPhotoModalOpen, setChatPhotoModalOpen] = useState(false);
@@ -1289,12 +1325,13 @@ export function ChatRoomScreen({ chatId }: Props) {
     return listenToMessages(chatId, (msgs) => {
       messagesRef.current = msgs;
       messagesChannelRef.current = '';
+      noteArrivals(msgs);
       setMessages(msgs);
       setUnreadBanner((prev) => (prev && prev.chatId === chatId && !prev.firstId
         ? { ...prev, firstId: firstUnreadMessageId(msgs, currentUserId, prev.count) }
         : prev));
     });
-  }, [chatId, chatType, currentUserId]);
+  }, [chatId, chatType, currentUserId, noteArrivals]);
 
   // Community: listen to channels subcollection; ensure General + Market exist.
   useEffect(() => {
@@ -1373,11 +1410,37 @@ export function ChatRoomScreen({ chatId }: Props) {
   const applyPin = useCallback(() => {
     const target = pinTargetRef.current;
     if (!target) return;
-    if (target.kind === 'bottom') { flatListRef.current?.scrollToEnd({ animated: false }); return; }
     const index = listItems.findIndex((it) => it.id === target.id);
     if (index < 0) return;
-    flatListRef.current?.scrollToIndex({ index, animated: false, viewPosition: 0.3 });
+    if (Platform.OS === 'web') {
+      // scrollToIndex is unreliable on a long web list (rows beyond the measured ones); the row
+      // is in the DOM, so ask the browser to bring it into view.
+      document.getElementById(webRowId(target.id))?.scrollIntoView({ block: 'center' });
+      return;
+    }
+    // viewPosition 0.5: centred, which means the same in an inverted list as in a normal one.
+    flatListRef.current?.scrollToIndex({ index, animated: false, viewPosition: 0.5 });
   }, [listItems]);
+
+  /**
+   * Web: give each row a DOM id so a jump can scrollIntoView it. Native rows are untouched.
+   * (A plain wrapper View: no style, so layout is unchanged.)
+   */
+  function rowWithId(id: string, row: React.ReactElement | null): React.ReactElement | null {
+    return Platform.OS === 'web' && row ? <View nativeID={webRowId(id)}>{row}</View> : row;
+  }
+
+  // Web: wheel, touch, keys and scrollbar do not fire onScrollBeginDrag, so without this a jump's
+  // pin would keep re-centring the row while the reader scrolls away. Any input releases it.
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const node = (flatListRef.current as unknown as { getScrollableNode?: () => HTMLElement } | null)?.getScrollableNode?.();
+    if (!node) return;
+    const release = () => { pinTargetRef.current = null; };
+    const events = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const;
+    events.forEach((ev) => node.addEventListener(ev, release, { passive: true }));
+    return () => events.forEach((ev) => node.removeEventListener(ev, release));
+  }, [chatId]);
 
   /**
    * Jump to the message a quote points at.
@@ -1421,12 +1484,18 @@ export function ChatRoomScreen({ chatId }: Props) {
   const jumpedRef = useRef('');
   const mentionChannelId = chatType === 'community' ? activeChannelId || null : null;
 
-  // Entering a chat — or switching channel — opens on the last message.
+  // Entering a chat — or switching channel — opens on the newest message. The list is inverted,
+  // so that is offset 0 and nothing needs scrolling on open; this only brings a REUSED list
+  // (a channel switch keeps the same FlatList) back to it, and forgets the old chat's arrivals.
   useEffect(() => {
-    pinTargetRef.current = { kind: 'bottom' };
+    pinTargetRef.current = null;
     isAtBottomRef.current = true;
+    offsetRef.current = 0;
+    lastNewestIdRef.current = null;
+    shiftPendingRef.current = false;
     setShowScrollDown(false);
-    flatListRef.current?.scrollToEnd({ animated: false });
+    setNewBelow(0);
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
   }, [chatId, activeChannelId]);
 
   // ...unless a mention is waiting here, in which case open on the OLDEST one
@@ -1489,6 +1558,7 @@ export function ChatRoomScreen({ chatId }: Props) {
       const msgs = snap.docs.map((d) => channelDocToMessage(d.id, d.data()));
       messagesRef.current = msgs;
       messagesChannelRef.current = activeChannelId;
+      noteArrivals(msgs);
       setMessages(msgs);
       // Place this channel's divider on the first snapshot that can, as the
       // non-community listener does.
@@ -1496,7 +1566,7 @@ export function ChatRoomScreen({ chatId }: Props) {
         ? { ...prev, firstId: firstUnreadMessageId(msgs, currentUserId, prev.count) }
         : prev));
     });
-  }, [chatId, chatType, activeChannelId, currentUserId]);
+  }, [chatId, chatType, activeChannelId, currentUserId, noteArrivals]);
 
   // Community unread, 1/3 — open on the channel with something new: General
   // when it has unread messages or nothing does, else the first such channel.
@@ -2270,20 +2340,35 @@ export function ChatRoomScreen({ chatId }: Props) {
           // ('interactive', and a horizontal swipe cannot trigger it); Android
           // closes on the first vertical drag.
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-          ListFooterComponent={pendingBubble}
+          // Inverted: the header is at the BOTTOM, where the in-flight media bubble belongs.
+          ListHeaderComponent={pendingBubble}
+          // `inverted` on native; column-reverse with every row rendered on web.
+          {...chatListPlatformProps(listItems.length)}
           scrollEventThrottle={16}
           onScroll={(e) => {
-            const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-            const distanceFromBottom = contentSize.height - (contentOffset.y + layoutMeasurement.height);
-            isAtBottomRef.current = distanceFromBottom <= 80;
-            setShowScrollDown(distanceFromBottom > 200);
+            // Distance from the NEWEST message, the same number on both platforms.
+            const y = e.nativeEvent.contentOffset.y;
+            offsetRef.current = y;
+            const near = isNearNewest(y);
+            isAtBottomRef.current = near;
+            setShowScrollDown(y > SHOW_JUMP_PX);
+            if (near) setNewBelow((n) => (n === 0 ? n : 0));
           }}
-          // The user taking hold of the list releases the open-at-bottom pin.
+          // The user taking hold of the list releases a jump's pin.
           onScrollBeginDrag={() => { pinTargetRef.current = null; }}
           onLayout={() => applyPin()}
-          onContentSizeChange={() => {
+          onContentSizeChange={(_w, h) => {
+            const grew = h - contentHeightRef.current;
+            const was = contentHeightRef.current;
+            contentHeightRef.current = h;
             if (pinTargetRef.current) { applyPin(); return; }
-            if (isAtBottomRef.current) flatListRef.current?.scrollToEnd({ animated: false });
+            // Native only: a message inserted at the newest end pushes everything the reader is
+            // looking at away from them by its height. Add it to the offset, so they stay put.
+            // (The browser does this itself on web.)
+            if (shiftPendingRef.current && Platform.OS !== 'web') {
+              shiftPendingRef.current = false;
+              if (was > 0 && grew > 0) flatListRef.current?.scrollToOffset({ offset: offsetRef.current + grew, animated: false });
+            }
           }}
           // No getItemLayout on these variable-height rows, so scrollToIndex
           // WILL fail until they are measured. Nudge toward the estimate and
@@ -2294,7 +2379,7 @@ export function ChatRoomScreen({ chatId }: Props) {
               animated: false,
             });
           }}
-          renderItem={({ item }) => {
+          renderItem={({ item }) => rowWithId(item.id, (() => {
             if ('type' in item && item.type === 'date-separator') {
               return <DateSeparator label={(item as { label: string }).label} />;
             }
@@ -2418,7 +2503,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                     {senderLabel(msg.senderId, isOwn, true)}
                     {quote && <View style={styles.bubbleQuote}>{quote}</View>}
                     <TouchableOpacity onPress={() => setViewingMedia({ url: msg.videoUrl!, type: 'video' })} activeOpacity={0.9}>
-                      <ChatVideo uri={msg.videoUrl} />
+                      <ChatVideo uri={msg.videoUrl} width={msg.mediaWidth} height={msg.mediaHeight} />
                     </TouchableOpacity>
                     {!!msg.text && (
                       <AppText weight="regular" style={[styles.messageText, { color: isOwn ? '#fff' : colors.text, paddingHorizontal: 10, paddingTop: 6, textAlign: rtl ? 'right' : 'left' }]}>
@@ -2432,7 +2517,7 @@ export function ChatRoomScreen({ chatId }: Props) {
                     {senderLabel(msg.senderId, isOwn, true)}
                     {quote && <View style={styles.bubbleQuote}>{quote}</View>}
                     <TouchableOpacity onPress={() => setViewingMedia({ url: msg.imageURL!, type: 'image' })} activeOpacity={0.9}>
-                      <ChatImage uri={msg.imageURL} />
+                      <ChatImage uri={msg.imageURL} width={msg.mediaWidth} height={msg.mediaHeight} />
                     </TouchableOpacity>
                     {!!msg.text && (
                       <AppText weight="regular" style={[styles.messageText, { color: isOwn ? '#fff' : colors.text, paddingHorizontal: 10, paddingTop: 6, textAlign: rtl ? 'right' : 'left' }]}>
@@ -2474,16 +2559,31 @@ export function ChatRoomScreen({ chatId }: Props) {
                 {!isOwn && rtl && senderAvatar(msg.senderId)}
               </SwipeableMessageRow>
             );
-          }}
+          })())}
         />
-        {showScrollDown && (
+        {(showScrollDown || newBelow > 0) && (
           <TouchableOpacity
-            style={[styles.scrollDownBtn, rtl ? { left: 16 } : { right: 16 }]}
-            onPress={() => { flatListRef.current?.scrollToEnd({ animated: true }); setShowScrollDown(false); }}
+            style={[
+              styles.scrollDownBtn,
+              newBelow > 0 && styles.newMessagesPill,
+              rtl ? { left: 16 } : { right: 16 },
+            ]}
+            onPress={() => {
+              // Offset 0 is the newest message, on both platforms.
+              flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+              setShowScrollDown(false);
+              setNewBelow(0);
+            }}
             activeOpacity={0.85}
             accessibilityRole="button"
+            testID="jump-to-latest"
           >
             <ChevronDown size={22} color={modeAccent} strokeWidth={2.5} />
+            {newBelow > 0 && (
+              <AppText style={[styles.newMessagesPillText, { color: modeAccent }]}>
+                {newBelow === 1 ? t('chats.unread_banner_one') : t('chats.unread_banner', { count: String(newBelow) })}
+              </AppText>
+            )}
           </TouchableOpacity>
         )}
       </View>
@@ -3306,6 +3406,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...shadow({ color: '#1e4fa3', opacity: 0.18, radius: 6, offsetX: 0, offsetY: 2, elevation: 4 }),
   },
+  // The "↓ N new messages" pill: the same button, widened to hold its label.
+  newMessagesPill: {
+    width: undefined,
+    minWidth: 40,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  newMessagesPillText: { fontSize: 13, fontWeight: '700' },
   listingImage: { width: '100%', height: 150, backgroundColor: '#eef0fa' },
   listingImagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
   listingRibbon: {

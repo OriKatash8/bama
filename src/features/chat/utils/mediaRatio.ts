@@ -14,17 +14,40 @@ export function clampRatio(ratio: number): number {
   return Math.min(MAX_RATIO, Math.max(MIN_RATIO, ratio));
 }
 
+/**
+ * The ratio for a size the message itself carries (mediaWidth/mediaHeight, written when it was
+ * sent), or undefined when it carries none. This is what stops the list jumping: a bubble that
+ * starts at its final height never changes height when the file loads.
+ */
+export function ratioFromSize(width?: number, height?: number): number | undefined {
+  if (typeof width !== 'number' || typeof height !== 'number') return undefined;
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return undefined;
+  return clampRatio(width / height);
+}
+
+/** A usable pixel size: two positive finite numbers, rounded. Anything else is dropped, never written. */
+export function validMediaSize(width?: number, height?: number): { width: number; height: number } | null {
+  if (typeof width !== 'number' || typeof height !== 'number') return null;
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return null;
+  if (width > 20000 || height > 20000) return null;
+  return { width: Math.round(width), height: Math.round(height) };
+}
+
 // Per URL, for the life of the app: a bubble scrolled away and back (or
 // re-rendered by a new message) starts at its real shape, not the placeholder.
 const ratioCache = new Map<string, number>();
 
 /**
- * A chat photo's or video's own shape. Messages carry no size, so the bubble
- * starts at `initial` and takes the real (capped) ratio once the media reports
- * it — which also fixes media sent before this existed.
+ * A chat photo's or video's own shape. New messages carry their size (`known`) and start at their
+ * final shape. Older ones start at `initial` and take the real (capped) ratio once the media
+ * reports it.
  */
-export function useMediaRatio(uri: string, initial: number): [number, (width: number, height: number) => void] {
-  const [ratio, setRatio] = useState(() => ratioCache.get(uri) ?? initial);
+export function useMediaRatio(
+  uri: string,
+  initial: number,
+  known?: { width?: number; height?: number },
+): [number, (width: number, height: number) => void] {
+  const [ratio, setRatio] = useState(() => ratioCache.get(uri) ?? ratioFromSize(known?.width, known?.height) ?? initial);
   function setSize(width: number, height: number) {
     const next = clampRatio(width / height);
     ratioCache.set(uri, next);

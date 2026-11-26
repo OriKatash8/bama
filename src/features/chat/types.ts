@@ -28,6 +28,10 @@ export interface Message {
   text: string;
   imageURL?: string;
   videoUrl?: string;
+  /** The photo's or video's pixel size, written at send time so its bubble is the right height
+   *  before it loads. Absent on media sent before this existed (the bubble then sizes on load). */
+  mediaWidth?: number;
+  mediaHeight?: number;
   audioUrl?: string;
   audioDuration?: number;
   timestamp: Timestamp;

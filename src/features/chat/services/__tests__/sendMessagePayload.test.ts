@@ -263,3 +263,27 @@ describe('the chat doc is the server\'s to update', () => {
     await expect(sendMessage('c1', 'me', 'hello')).resolves.toBeUndefined();
   });
 });
+
+describe('media size rides along so the bubble has its final height', () => {
+  it('writes mediaWidth/mediaHeight with a photo or video', async () => {
+    await sendMessage('c1', 'me', '', { imageURL: 'u', mediaWidth: 3024, mediaHeight: 4032 });
+    expect(sent().mediaWidth).toBe(3024);
+    expect(sent().mediaHeight).toBe(4032);
+    mockAddDoc.mockClear();
+    await sendMessage('c1', 'me', '', { videoUrl: 'v', mediaWidth: 1080, mediaHeight: 1920 });
+    expect(sent().mediaWidth).toBe(1080);
+  });
+  it('rounds, and drops anything that is not a real size (never writes junk)', async () => {
+    await sendMessage('c1', 'me', '', { imageURL: 'u', mediaWidth: 100.6, mediaHeight: 50.2 });
+    expect([sent().mediaWidth, sent().mediaHeight]).toEqual([101, 50]);
+    for (const bad of [[0, 10], [-5, 10], [NaN, 10], [10, Infinity], [30000, 10], [undefined, 10]]) {
+      mockAddDoc.mockClear();
+      await sendMessage('c1', 'me', '', { imageURL: 'u', mediaWidth: bad[0], mediaHeight: bad[1] });
+      expect('mediaWidth' in sent()).toBe(false);
+    }
+  });
+  it('is not written on a text or voice message', async () => {
+    await sendMessage('c1', 'me', 'hi', { mediaWidth: 10, mediaHeight: 10 });
+    expect('mediaWidth' in sent()).toBe(false);
+  });
+});

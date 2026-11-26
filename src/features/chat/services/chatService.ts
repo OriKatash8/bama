@@ -19,6 +19,7 @@ import {
 import { db } from '../../../core/firebase/config';
 import type { Chat, Message } from '../types';
 import { logOwnerJoin, withEvents } from './communityMembership';
+import { validMediaSize } from '../utils/mediaRatio';
 import { normalizeCommunityCategories } from '@features/crew/data/categories';
 
 function docToMessage(doc: QueryDocumentSnapshot<DocumentData>): Message {
@@ -29,6 +30,8 @@ function docToMessage(doc: QueryDocumentSnapshot<DocumentData>): Message {
     text: data.text,
     imageURL: data.imageURL,
     videoUrl: data.videoUrl,
+    mediaWidth: data.mediaWidth,
+    mediaHeight: data.mediaHeight,
     audioUrl: data.audioUrl,
     audioDuration: data.audioDuration,
     timestamp: data.timestamp,
@@ -66,6 +69,8 @@ export function channelDocToMessage(id: string, data: DocumentData): Message {
     readBy: (data.readBy as string[]) ?? [],
     imageURL: data.imageURL as string | undefined,
     videoUrl: data.videoUrl as string | undefined,
+    mediaWidth: data.mediaWidth as number | undefined,
+    mediaHeight: data.mediaHeight as number | undefined,
     audioUrl: data.audioUrl as string | undefined,
     audioDuration: data.audioDuration as number | undefined,
     mentions: data.mentions as string[] | undefined,
@@ -314,6 +319,8 @@ export async function sendMessage(
   text: string,
   opts?: {
     videoUrl?: string; imageURL?: string; audioUrl?: string; audioDuration?: number;
+    /** The media's pixel size, so the bubble has its final height before the file loads. */
+    mediaWidth?: number; mediaHeight?: number;
     /** Flat userIds; the create rule checks each against the chat's members. */
     mentions?: string[];
     /** The denormalized quote, from buildReplyTo. Four keys exactly — the
@@ -338,6 +345,8 @@ export async function sendMessage(
   if (opts?.replyTo) messageData.replyTo = opts.replyTo;
   if (opts?.videoUrl) messageData.videoUrl = opts.videoUrl;
   if (opts?.imageURL) messageData.imageURL = opts.imageURL;
+  const size = validMediaSize(opts?.mediaWidth, opts?.mediaHeight);
+  if (size && (opts?.imageURL || opts?.videoUrl)) { messageData.mediaWidth = size.width; messageData.mediaHeight = size.height; }
   if (opts?.audioUrl) messageData.audioUrl = opts.audioUrl;
   if (opts?.audioDuration !== undefined) messageData.audioDuration = opts.audioDuration;
 

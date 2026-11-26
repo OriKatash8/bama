@@ -8,6 +8,7 @@ import { CHAT_VIDEO } from '@core/constants/video';
 import { prepareImageForUpload, CHAT_IMAGE } from '@core/media/prepareImageForUpload';
 import { useUiStore } from '@core/stores/uiStore';
 import { sendMessage } from '../services/chatService';
+import { validMediaSize } from '../utils/mediaRatio';
 
 /** What the bubble shows. Video stages come from useVideoUpload; images have two of their own. */
 export type PendingStage = 'preparing' | 'uploading' | VideoUploadStage;
@@ -109,10 +110,16 @@ export function useChatMediaSend({ chatId, chatType, activeChannelId, currentUse
         if (!live()) return;
       }
       setPending((p) => (p ? { ...p, finalUrl: url } : p));
-      const field = item.type === 'video' ? { videoUrl: url } : { imageURL: url };
+      // The size rides along, so the bubble is its final height before the file loads.
+      const size = { mediaWidth: item.asset.width, mediaHeight: item.asset.height };
+      const field = item.type === 'video' ? { videoUrl: url, ...size } : { imageURL: url, ...size };
       if (chatType === 'community' && item.channelId) {
         await addDoc(collection(db, 'chats', item.chatId, 'channels', item.channelId, 'messages'), {
-          senderId: currentUserId, text: item.caption, timestamp: serverTimestamp(), readBy: [currentUserId], ...field,
+          senderId: currentUserId, text: item.caption, timestamp: serverTimestamp(), readBy: [currentUserId],
+          ...(validMediaSize(size.mediaWidth, size.mediaHeight)
+            ? { mediaWidth: Math.round(size.mediaWidth), mediaHeight: Math.round(size.mediaHeight) }
+            : {}),
+          ...(item.type === 'video' ? { videoUrl: url } : { imageURL: url }),
         });
       } else {
         await sendMessage(item.chatId, currentUserId, item.caption, field);

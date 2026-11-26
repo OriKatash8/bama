@@ -8,8 +8,8 @@ export { clampRatio } from '../utils/mediaRatio';
  * vertical photo was cut to a landscape strip. The size is read from the image
  * when it loads (useMediaRatio).
  */
-export function ChatImage({ uri }: { uri: string }) {
-  const [ratio, setSize] = useMediaRatio(uri, 1);
+export function ChatImage({ uri, width, height }: { uri: string; width?: number; height?: number }) {
+  const [ratio, setSize] = useMediaRatio(uri, 1, { width, height });
 
   function onLoad(e: NativeSyntheticEvent<ImageLoadEventData>) {
     const { width, height } = e.nativeEvent.source;

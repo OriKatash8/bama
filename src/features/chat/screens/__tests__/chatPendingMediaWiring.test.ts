@@ -19,8 +19,9 @@ it('guards leaving while a send is in flight, and cancels on Leave', () => {
   expect(SRC).toMatch(/mediaSend\.cancel,\n\s*\);/);
 });
 
-it('renders the bubble as the list footer, for its own chat and channel only', () => {
-  expect(SRC).toMatch(/ListFooterComponent=\{pendingBubble\}/);
+it('renders the bubble as the list HEADER (the list is inverted, so the header is the bottom), for its own chat and channel only', () => {
+  expect(SRC).toMatch(/ListHeaderComponent=\{pendingBubble\}/);
+  expect(SRC).not.toMatch(/ListFooterComponent=\{pendingBubble\}/);
   expect(SRC).toMatch(/p\.chatId !== chatId/);
   expect(SRC).toMatch(/p\.channelId !== \(chatType === 'community' \? activeChannelId : ''\)/);
   expect(SRC).toMatch(/pendingHasLanded\(p, messages\)/);

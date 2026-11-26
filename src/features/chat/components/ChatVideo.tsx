@@ -11,8 +11,8 @@ import { useMediaRatio } from '../utils/mediaRatio';
  * re-encoded copy (compressVideo; ffmpeg applies the rotation), so a vertical
  * video's frame is vertical.
  */
-export function ChatVideo({ uri }: { uri: string }) {
-  const [ratio, setSize] = useMediaRatio(uri, 16 / 9);
+export function ChatVideo({ uri, width, height }: { uri: string; width?: number; height?: number }) {
+  const [ratio, setSize] = useMediaRatio(uri, 16 / 9, { width, height });
   return (
     <VideoPlayer
       uri={uri}
