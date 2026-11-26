@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import { View, PanResponder, Dimensions, Platform } from 'react-native';
 import { Tabs, usePathname, useRouter } from 'expo-router';
 import { Search, Home, MessageCircle, FolderKanban } from 'lucide-react-native';
@@ -8,7 +8,7 @@ import { useSettingsStore } from '@core/stores/settingsStore';
 import { useAuthStore } from '@core/stores/authStore';
 import { useOffersSeenStore, unseenOfferCount } from '@core/stores/offersSeenStore';
 import { useAppFont } from '@core/hooks/useAppFont';
-import { listenToUserChats } from '@features/chat/services/chatService';
+import { useUserChats } from '@features/chat/hooks/useUserChats';
 import { tabUnreadTotal } from '@features/chat/utils/tabUnreadTotal';
 import { usePriceOffers } from '@features/offers/hooks/usePriceOffers';
 import { useBundleOffers } from '@features/offers/hooks/useBundleOffers';
@@ -39,7 +39,9 @@ function makeT(translations: Translations) {
 const CLIENT_TABS = ['home', 'browse', 'chats', 'projects'] as const;
 
 export default function ClientTabsLayout() {
-  const [totalUnread, setTotalUnread] = useState(0);
+  // The SAME hook the Chats list uses, so the badge and the list cannot disagree
+  // (blocked users' DMs are dropped in the hook, and counted by neither).
+  const { chats: tabChats } = useUserChats();
   const insets = useSafeAreaInsets();
   const isDark = useUiStore((s) => s.isDark);
   const language = useSettingsStore((s) => s.language);
@@ -47,13 +49,8 @@ export default function ClientTabsLayout() {
   const userId = useAuthStore((s) => s.user?.id);
   const font = useAppFont();
 
-  useEffect(() => {
-    if (!userId) { setTotalUnread(0); return; }
-    return listenToUserChats(userId, (chats) => {
-      // Communities stay out: they have their own badge, on their own strip.
-      setTotalUnread(tabUnreadTotal(chats, userId));
-    });
-  }, [userId]);
+  // Communities stay out: they have their own badge, on their own strip.
+  const totalUnread = useMemo(() => (userId ? tabUnreadTotal(tabChats, userId) : 0), [tabChats, userId]);
 
   const pathname = usePathname();
   // The project review screen is a focused wizard step with its own pinned

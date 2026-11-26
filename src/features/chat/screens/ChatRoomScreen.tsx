@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useMarkChatRead } from '../hooks/useMarkChatRead';
 import { completionRequestName } from '../utils/systemMessages';
 import { SYSTEM_USER_ID } from '@core/constants/system';
 import { isolate } from '@utils/formatters';
@@ -734,6 +735,7 @@ export function ChatRoomScreen({ chatId }: Props) {
   const pinTargetRef = useRef<{ kind: 'bottom' } | { kind: 'message'; id: string } | null>({ kind: 'bottom' });
   const [chatName, setChatName] = useState<string>('');
   const [chatType, setChatType] = useState<Chat['type'] | null>(null);
+  const [liveUnread, setLiveUnread] = useState<{ total: number; channels: Record<string, number> }>({ total: 0, channels: {} });
   const [chatArchived, setChatArchived] = useState(false);
   const [chatReadOnly, setChatReadOnly] = useState(false);
   const [chatReadOnlyReason, setChatReadOnlyReason] = useState<string | null>(null);
@@ -1157,6 +1159,11 @@ export function ChatRoomScreen({ chatId }: Props) {
       if (!snap.exists()) { router.back(); return; }
       const data = snap.data() as Omit<Chat, 'id'>;
 
+      // My live counters, for useMarkChatRead (the server bumps them as messages arrive).
+      setLiveUnread({
+        total: (currentUserId && data.unreadCount?.[currentUserId]) || 0,
+        channels: (currentUserId && data.channelUnread?.[currentUserId]) || {},
+      });
       setChatType(data.type);
       setChatArchived(data.archived ?? false);
       setChatReadOnly(data.readOnly ?? false);
@@ -1233,11 +1240,16 @@ export function ChatRoomScreen({ chatId }: Props) {
     return unsub;
   }, [chatId]);
 
-  // Clear unread count — after reading it: the count at open decides where the
-  // chat opens and what the "N new messages" divider says. Cleared first, it
-  // would always read 0. A community's count spans all its channels, so its
-  // divider comes from the per-channel counts instead (captured here, used
-  // and cleared channel by channel — see "Community unread" below).
+  // Capture the unread count at open — it decides where the chat opens and what
+  // the "N new messages" divider says, so it must be read BEFORE anything clears
+  // it (useMarkChatRead waits for `unreadCaptured`). A community's count spans
+  // its channels, so its divider comes from the per-channel counts instead
+  // (captured here, used channel by channel — see "Community unread" below).
+  //
+  // This used to also write `unreadCount.<me> = 0`, once, here. That is the badge
+  // bug: anything that arrived while the room stayed open was never cleared.
+  // Tagged with its chat, so opening another chat is "not captured yet" without a reset.
+  const [unreadCapturedFor, setUnreadCapturedFor] = useState('');
   useEffect(() => {
     if (!currentUserId) return;
     let cancelled = false;
@@ -1256,12 +1268,19 @@ export function ChatRoomScreen({ chatId }: Props) {
       if (!cancelled && count > 0) {
         setUnreadBanner({ chatId, channelId: null, count, firstId: firstUnreadMessageId(messagesRef.current, currentUserId, count) });
       }
-      await updateDoc(doc(db, 'chats', chatId), {
-        [`unreadCount.${currentUserId}`]: 0,
-      });
-    })().catch(() => {});
+      if (!cancelled) setUnreadCapturedFor(chatId);
+    })().catch(() => { if (!cancelled) setUnreadCapturedFor(chatId); });
     return () => { cancelled = true; };
   }, [chatId, currentUserId]);
+
+  useMarkChatRead({
+    chatId,
+    userId: currentUserId,
+    chatType,
+    channelId: chatType === 'community' ? activeChannelId || null : null,
+    unread: chatType === 'community' ? (activeChannelId ? liveUnread.channels[activeChannelId] ?? 0 : 0) : liveUnread.total,
+    ready: unreadCapturedFor === chatId,
+  });
 
   // Non-community messages listener. Also places the "N new messages" divider
   // on the first snapshot that can — once, so later arrivals do not move it.
@@ -1492,8 +1511,8 @@ export function ChatRoomScreen({ chatId }: Props) {
   }, [chatId, chatType, channelUnreadAtOpen, activeChannelId, channels]);
 
   // Community unread, 2/3 — entering a channel with unread messages shows its
-  // "N new messages" divider (once: the count is used up), then clears my count
-  // for it. The open-on-unread pin above does the scrolling.
+  // "N new messages" divider (once: the count is used up). useMarkChatRead clears
+  // my count for the channel. The open-on-unread pin above does the scrolling.
   useEffect(() => {
     if (chatType !== 'community' || !channelUnreadAtOpen || !activeChannelId || !currentUserId) return;
     if (channelUnreadUsedRef.current.has(activeChannelId)) return;
@@ -1507,7 +1526,6 @@ export function ChatRoomScreen({ chatId }: Props) {
       count,
       firstId: loaded.length ? firstUnreadMessageId(loaded, currentUserId, count) : null,
     });
-    updateDoc(doc(db, 'chats', chatId), { [`channelUnread.${currentUserId}.${activeChannelId}`]: 0 }).catch(() => {});
   }, [chatId, chatType, channelUnreadAtOpen, activeChannelId, currentUserId]);
 
   // Community unread, 3/3 — leaving a channel clears my count for it too, so

@@ -783,12 +783,30 @@ service cloud.firestore {
       // Any member: the message hot path, plus the purchase handshake and
       // archival, which marketplaceService writes from the client for BOTH
       // parties (PurchaseBanner -> acceptDeal / cancelPurchase / confirmReceived).
+      //
+      // NOT here: lastMessage / lastMessageAt. The preview is written by the
+      // onNewChatMessageCounters trigger (Admin SDK), so no client may write it —
+      // a member could otherwise forge what the whole chat list previews.
+      // unreadCount / channelUnread are in chatWritableFields below, behind the
+      // own-entry check (clause 9).
       function chatMemberFields() {
         return [
-          'lastMessage', 'lastMessageAt', 'unreadCount', 'channelUnread', 'hiddenFor',
+          'unreadCount', 'channelUnread', 'hiddenFor',
           'sellerAgreed', 'buyerAgreed',
           'archived', 'archiveReason', 'archivedAt'
         ];
+      }
+      // A member may touch ONLY their own entry of a per-user counter map, with
+      // any value (they can only mislead themselves). Counters are incremented
+      // by the server for everyone else, so no client ever needs to write
+      // another member's entry. A dotted write (`unreadCount.<uid>`) reaches the
+      // rules as the whole map, so the maps are diffed rather than inspected key
+      // by key. `.get(f, {})` keeps this working on a doc that has no such map
+      // yet (every new chat starts without one) — a bare field access on a
+      // missing map would make the whole rule error, and a rules error denies.
+      function ownEntriesOnly(f) {
+        return request.resource.data.get(f, {}).diff(resource.data.get(f, {})).affectedKeys()
+          .hasOnly([request.auth.uid]);
       }
       // Identity/branding fields, scoped by chat TYPE rather than by ownership
       // alone — an owner-only rule across the board would deny these on groups,
@@ -911,7 +929,10 @@ service cloud.firestore {
         // 7. Categories: a list of 1+ known role strings mirrored into `category`.
         && categoriesOk()
         // 8. hiddenFor: only the caller's own uid may be added or removed.
-        && (!touchedKeys().hasAny(['hiddenFor']) || hiddenForSelfOnly());
+        && (!touchedKeys().hasAny(['hiddenFor']) || hiddenForSelfOnly())
+        // 9. Unread counters: only my own entry (see ownEntriesOnly).
+        && (!touchedKeys().hasAny(['unreadCount']) || ownEntriesOnly('unreadCount'))
+        && (!touchedKeys().hasAny(['channelUnread']) || ownEntriesOnly('channelUnread'));
 
       // Open communities: a non-member may add THEMSELVES, and only that. Firestore
       // ORs multiple `allow update`s, and the member-gated one above can never

@@ -247,3 +247,19 @@ describe('reading a channel message back', () => {
     expect(m.readBy).toEqual([]);
   });
 });
+
+describe('the chat doc is the server\'s to update', () => {
+  it('writes the message and NOTHING else — no lastMessage, no unread bump, no read of the chat', async () => {
+    // onNewChatMessageCounters owns both. A client write here would be denied by
+    // the rules (and, in the old build, would double the server's +1).
+    await sendMessage('c1', 'me', 'hello', { imageURL: 'u' });
+    expect(mockAddDoc).toHaveBeenCalledTimes(1);
+    expect(updateDoc as jest.Mock).not.toHaveBeenCalled();
+    expect(mockGetDoc).not.toHaveBeenCalled();
+  });
+
+  it('resolves once the message is written, so a rules-denied counter can never fail a send', async () => {
+    (updateDoc as jest.Mock).mockRejectedValue(new Error('permission-denied'));
+    await expect(sendMessage('c1', 'me', 'hello')).resolves.toBeUndefined();
+  });
+});

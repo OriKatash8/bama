@@ -19,6 +19,7 @@ import type { MediaAsset } from '@core/types/media';
 import { communityCategoryLabel, getCommunityCategories, ROLE_CATEGORIES } from '@features/crew/data/categories';
 import { TAB_BAR_CONTENT_GAP, FAB_SIZE, useModeAccent } from '@core/navigation/floatingTabBar';
 import { shadow } from '@core/theme/shadow';
+import { communityUnread } from '../utils/communityUnread';
 
 type Translations = typeof en;
 function makeT(translations: Translations) {
@@ -230,7 +231,7 @@ export function CommunityDiscoveryTab({ onRequestCommunity, pageScrollRef }: Pro
               style={[styles.stripOuter, rtl && { transform: [{ scaleX: -1 }] }]}
             >
               {myCommunities.map((c) => {
-                const unread = c.unreadCount?.[user?.id ?? ''] ?? 0;
+                const unread = communityUnread(c, user?.id ?? '');
                 return (
                   <TouchableOpacity
                     key={c.id}

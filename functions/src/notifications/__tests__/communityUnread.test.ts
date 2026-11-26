@@ -12,9 +12,14 @@ jest.mock('firebase-admin/firestore', () => ({
 
 it('adds one for every member except the sender', () => {
   const u = communityUnreadUpdate(['a', 'b', 'c'], 'b', 'ch1');
-  expect(Object.keys(u).filter((k) => k.startsWith('unreadCount.')).sort()).toEqual(['unreadCount.a', 'unreadCount.c']);
-  expect(inc(u['unreadCount.a'])).toBe(1);
-  expect(inc(u['unreadCount.c'])).toBe(1);
+  expect(Object.keys(u).sort()).toEqual(['channelUnread.a.ch1', 'channelUnread.c.ch1']);
+  expect(inc(u['channelUnread.a.ch1'])).toBe(1);
+  expect(inc(u['channelUnread.c.ch1'])).toBe(1);
+});
+
+it('no longer writes a community-wide unreadCount (the client sums the channels)', () => {
+  const u = communityUnreadUpdate(['a', 'b'], 'b', 'ch1');
+  expect(Object.keys(u).some((k) => k.startsWith('unreadCount'))).toBe(false);
 });
 
 it('also counts the message against its channel, per member', () => {
@@ -31,7 +36,7 @@ it('a message in an empty or one-person community counts for nobody', () => {
 });
 
 it('ignores duplicate member ids', () => {
-  expect(Object.keys(communityUnreadUpdate(['a', 'a', 'b'], 'b', 'ch1'))).toEqual(['unreadCount.a', 'channelUnread.a.ch1']);
+  expect(Object.keys(communityUnreadUpdate(['a', 'a', 'b'], 'b', 'ch1'))).toEqual(['channelUnread.a.ch1']);
 });
 
 it('onNewCommunityMessage writes that update to the community doc', () => {

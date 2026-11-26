@@ -15,11 +15,11 @@ import { GlassTabBarBackground } from '@core/navigation/GlassTabBarBackground';
 import { useAuthStore } from '@core/stores/authStore';
 import { useSettingsStore } from '@core/stores/settingsStore';
 import { useUiStore } from '@core/stores/uiStore';
-import { listenToUserChats } from '@features/chat/services/chatService';
+import { useUserChats } from '@features/chat/hooks/useUserChats';
 import { tabUnreadTotal } from '@features/chat/utils/tabUnreadTotal';
 import { Tabs, usePathname, useRouter } from 'expo-router';
 import { LayoutDashboard, MessageCircle, ShoppingBag, User } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import { Dimensions, PanResponder, Platform, View } from 'react-native';
 import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -36,7 +36,9 @@ function makeT(translations: Translations) {
 
 const PROF_TABS = ['dashboard', 'marketplace', 'chats', 'profile'] as const;
 
-export default function ProfessionalTabsLayout() {   const [totalUnread, setTotalUnread] = useState(0);
+export default function ProfessionalTabsLayout() {   // The SAME hook the Chats list uses, so the badge and the list cannot disagree
+  // (blocked users' DMs are dropped in the hook, and counted by neither).
+  const { chats: tabChats } = useUserChats();
   const insets = useSafeAreaInsets();
   const colors = useTheme();
   const isDark = useUiStore((s) => s.isDark);
@@ -48,13 +50,8 @@ export default function ProfessionalTabsLayout() {   const [totalUnread, setTota
   const userId = useAuthStore((s) => s.user?.id);
   const font = useAppFont();
 
-  useEffect(() => {
-    if (!userId) { setTotalUnread(0); return; }
-    return listenToUserChats(userId, (chats) => {
-      // Communities stay out: they have their own badge, on their own strip.
-      setTotalUnread(tabUnreadTotal(chats, userId));
-    });
-  }, [userId]);
+  // Communities stay out: they have their own badge, on their own strip.
+  const totalUnread = useMemo(() => (userId ? tabUnreadTotal(tabChats, userId) : 0), [tabChats, userId]);
 
   const pathname = usePathname();
   // The chat room lives above the tab navigator now

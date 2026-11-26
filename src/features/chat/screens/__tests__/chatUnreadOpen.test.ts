@@ -11,14 +11,18 @@ import he from '@core/i18n/translations/he.json';
  */
 const SRC = readFileSync(join(__dirname, '..', 'ChatRoomScreen.tsx'), 'utf8');
 
-it('reads the unread count before clearing it', () => {
-  const effect = SRC.slice(SRC.indexOf('// Clear unread count'), SRC.indexOf('// Non-community messages listener'));
-  const read = effect.indexOf("getDoc(doc(db, 'chats', chatId))");
-  const clear = effect.indexOf('[`unreadCount.${currentUserId}`]: 0');
-  expect(read).toBeGreaterThan(-1);
-  expect(clear).toBeGreaterThan(read);
+it('reads the unread count before anything clears it', () => {
+  const effect = SRC.slice(SRC.indexOf('// Capture the unread count at open'), SRC.indexOf('// Non-community messages listener'));
+  expect(effect).toMatch(/getDoc\(doc\(db, 'chats', chatId\)\)/);
+  // The open effect only CAPTURES. The old blind `unreadCount.<me> = 0` write here
+  // is the badge bug: it ran once, so anything arriving while the room was open
+  // was never cleared.
+  expect(effect).not.toMatch(/\]: 0/);
   // Communities count across channels, so no single channel can be placed.
   expect(effect).toMatch(/type !== 'community'/);
+  // The clear waits for the capture, so the divider can never read 0.
+  expect(effect).toMatch(/ready: unreadCapturedFor === chatId/);
+  expect(effect).toMatch(/useMarkChatRead\(\{/);
 });
 
 it('places the divider right above the first unread message', () => {
@@ -41,7 +45,7 @@ describe('in a community', () => {
   const community = SRC.slice(SRC.indexOf('// Community: listen to active channel messages'), SRC.indexOf('// Load the linked project'));
 
   it('captures my per-channel counts before anything clears them', () => {
-    const effect = SRC.slice(SRC.indexOf('// Clear unread count'), SRC.indexOf('// Non-community messages listener'));
+    const effect = SRC.slice(SRC.indexOf('// Capture the unread count at open'), SRC.indexOf('// Non-community messages listener'));
     expect(effect).toMatch(/setChannelUnreadAtOpen\(\{ \.\.\.\(data\.channelUnread\?\.\[currentUserId\] \?\? \{\}\) \}\)/);
   });
 
@@ -50,12 +54,15 @@ describe('in a community', () => {
     expect(community).toMatch(/if \(pick !== activeChannelId\) setActiveChannelId\(pick\)/);
   });
 
-  it('shows the divider in the channel it belongs to, then clears my count there', () => {
+  it('shows the divider in the channel it belongs to; useMarkChatRead clears my count there', () => {
     expect(community).toMatch(/channelId: activeChannelId,\s+count,/);
     expect(community).toMatch(/prev\.channelId === activeChannelId && !prev\.firstId/);
     expect(community).toMatch(/firstUnreadMessageId\(msgs, currentUserId, prev\.count\)/);
     const clears = community.match(/\[`channelUnread\.\$\{currentUserId\}\.\$\{activeChannelId\}`\]: 0/g) ?? [];
-    expect(clears).toHaveLength(2); // on entering, and on leaving
+    // Entering no longer writes inline (useMarkChatRead clears the open channel while
+    // it is on screen, as messages arrive); only the leave-a-channel cleanup remains.
+    expect(clears).toHaveLength(1);
+    expect(SRC).toMatch(/channelId: chatType === 'community' \? activeChannelId \|\| null : null/);
   });
 });
 

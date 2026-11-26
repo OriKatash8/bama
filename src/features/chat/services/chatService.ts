@@ -3,13 +3,11 @@ import {
   query,
   where,
   orderBy,
-  getDoc,
   getDocs,
   addDoc,
   updateDoc,
   arrayUnion,
   arrayRemove,
-  increment,
   doc,
   onSnapshot,
   serverTimestamp,
@@ -102,6 +100,7 @@ function docToChat(doc: QueryDocumentSnapshot<DocumentData>): Chat {
     lastMessage: data.lastMessage ?? null,
     createdAt: data.createdAt,
     unreadCount: data.unreadCount,
+    channelUnread: data.channelUnread,
     joinMode: data.joinMode === 'open' ? 'open' : data.joinMode === 'approval' ? 'approval' : undefined,
     purchaseListingId: data.purchaseListingId,
     buyerName: data.buyerName,
@@ -323,8 +322,6 @@ export async function sendMessage(
   }
 ): Promise<void> {
   const messagesRef = collection(db, 'chats', chatId, 'messages');
-  const chatRef = doc(db, 'chats', chatId);
-
   const messageData: Record<string, unknown> = {
     senderId,
     text,
@@ -344,21 +341,12 @@ export async function sendMessage(
   if (opts?.audioUrl) messageData.audioUrl = opts.audioUrl;
   if (opts?.audioDuration !== undefined) messageData.audioDuration = opts.audioDuration;
 
+  // That is the whole write. `lastMessage` and the recipients' unread counts are
+  // the server's: the onNewChatMessageCounters trigger sets them from this very
+  // message. They were a second client write here, which a dropped connection
+  // between the two could skip (no badge, stale preview), and which forced the
+  // rules to let any member write any member's counter.
   await addDoc(messagesRef, messageData);
-
-  const chatSnap = await getDoc(chatRef);
-  const members: string[] = chatSnap.exists() ? (chatSnap.data().members as string[]) : [];
-
-  const updatePayload: Record<string, unknown> = {
-    lastMessage: { text, senderId, timestamp: serverTimestamp() },
-  };
-  for (const memberId of members) {
-    if (memberId !== senderId) {
-      updatePayload[`unreadCount.${memberId}`] = increment(1);
-    }
-  }
-
-  await updateDoc(chatRef, updatePayload);
 }
 
 

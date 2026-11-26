@@ -15,6 +15,8 @@ module.exports = {
     '^firebase/database$': '<rootDir>/node_modules/firebase/database/dist/index.cjs.js',
     '^firebase/functions$': '<rootDir>/node_modules/firebase/functions/dist/index.cjs.js',
   },
+  // Needs the Firestore emulator — run by `npm run test:rules` (jest.rules.config.js).
+  testPathIgnorePatterns: ['/node_modules/', '\\.emulator\\.test\\.'],
   transformIgnorePatterns: [
     'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|standard-navigation)',
   ],

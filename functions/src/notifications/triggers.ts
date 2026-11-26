@@ -11,6 +11,7 @@ import { SYSTEM_USER_ID } from '../system';
 import { fanOutMessage, needMuteCheck } from './fanOut';
 import { bumpMemberStats } from '../communities/memberStats';
 import { communityUnreadUpdate } from './communityUnread';
+import { chatMessageUpdate } from './chatCounters';
 import { readDemoConfig, sameSide } from '../demo';
 import { ADMIN_UIDS } from '../moderation/reportAlert';
 
@@ -90,6 +91,43 @@ export const onNewChatMessage = functions.firestore
       data: { chatId },
       ref: { chatId, channelId: null, messageId: context.params.messageId },
     });
+  });
+
+/**
+ * Owns `lastMessage` and the recipients' `unreadCount` for dm / group / purchase
+ * chats, for EVERY message a client sends through chatService.sendMessage: text,
+ * photo, video, voice, and the marketplace shares and purchase notices
+ * (marketplaceService), which are ordinary messages from a real user.
+ *
+ * System messages are skipped, on purpose. Every server path that posts one
+ * (lifecycle/*, system/index.ts, announceProjectEvent) writes its own
+ * `lastMessage` and unread bump in the same write as the message, so counting
+ * them here too would show every project notice as 2 unread. Same guard as
+ * onNewChatMessage, for the same reason.
+ *
+ * A separate trigger from onNewChatMessage so a failed push can never cost a
+ * recipient their badge (or the other way round).
+ */
+export const onNewChatMessageCounters = functions.firestore
+  .document('chats/{chatId}/messages/{messageId}')
+  .onCreate(async (snap, context) => {
+    const message = snap.data() as { senderId?: string; text?: string; system?: boolean; timestamp?: unknown };
+    if (!message.senderId) return;
+    if (message.system || message.senderId === 'system' || message.senderId === SYSTEM_USER_ID) return;
+
+    const chatRef = admin.firestore().collection('chats').doc(context.params.chatId);
+    const chatDoc = await chatRef.get();
+    if (!chatDoc.exists) return;
+    // Community messages live under channels/, which this path never matches; the
+    // guard keeps that true if a community ever gets a flat messages collection.
+    if (chatDoc.data()?.type === 'community') return;
+
+    const members: string[] = (chatDoc.data()?.members as string[] | undefined) ?? [];
+    // The message's own server timestamp, so the preview time is the message's
+    // time and not whenever this trigger ran.
+    await chatRef.update(
+      chatMessageUpdate(members, message.senderId, message.text ?? '', message.timestamp ?? FieldValue.serverTimestamp()),
+    );
   });
 
 /**
