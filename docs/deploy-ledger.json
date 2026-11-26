@@ -4,912 +4,922 @@
     "acknowledgeCandidacy": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:41.924986473Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:51.868435969Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminAcknowledgeChargeIssue": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:30.054028754Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:39.265415852Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminCommunityAction": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:43.917081745Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:44.298635714Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminDeleteCommunity": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:42.078304227Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:54.609695086Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminDetectRentalPlatform": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:28.272340386Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:38.873724336Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminFindUser": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:35.229247950Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:52.129819646Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminListArrears": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:43.059061476Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:51.851025109Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminListChargeIssues": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:27.029584941Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:38.538553861Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminListFlaggedProjects": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:42.391114042Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:44.234828003Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminListLargeEngagements": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:42.687291620Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:43.801568698Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminListPaymentLinks": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:28.914021132Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:37.172774983Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminListUsers": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:45.669507562Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:51.910313059Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminRemoveRentalCompany": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:27.432269840Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:39.195098748Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminRemoveRentalItem": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:28.840824777Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:40.526287466Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminSaveRentalCompany": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:24.953844984Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:35.031552158Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminSaveRentalItem": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:29.398065059Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:38.767518736Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminSetRentalCategoryMap": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:27.815658032Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:38.671424837Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminSetRentalCompanyActive": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:27.937779886Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:43.148837553Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminSetRentalItemCategories": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:29.212350573Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:41.082533692Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminSyncRentalCompany": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:27.619060856Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:37.764797972Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "adminUserActivity": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:30.098081673Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:38.956392873Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "blockUser": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:41.850048620Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:54.457351735Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "cancelOwnershipTransfer": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:27.448488178Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:38.761760214Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "cancelProject": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:42.688337083Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:53.143835538Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "cancelVideoJob": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:30.187658210Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:38.387415609Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "collectUsageStats": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:24.527127437Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:34.267910391Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "completeAllEngagements": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:42.437501733Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:43.799681270Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "compressVideo": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:24.838969461Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:32.976541272Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "confirmCandidate": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:40.989912998Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:54.513669588Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "confirmCompletion": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:41.846413882Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:43.475248930Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "contestEngagement": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:42.823226050Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:43.669870216Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "createCardSaveSession": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:30.744133854Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:39.622929315Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "createCommunityInvite": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:24.673979059Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:33.127519971Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "createPaymentRequest": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:43.912437755Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:43.617615089Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "declineCandidacy": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:42.172472153Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:51.821645479Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "deleteMyAccount": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:43.654580821Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:54.868177854Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "deleteProject": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:42.642007663Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:43.885974833Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "discardUnconsentedSignup": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:41.453249112Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:43.461504363Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "disputeCompletion": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:41.980090505Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:51.983297713Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "disputeFeeByPro": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:41.715548857Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:44.528339447Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "fakeCompleteCardSave": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:28.543916865Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:38.956082914Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "feeChargeCron": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:27.366783085Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:39.193265627Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "feeOverdueCron": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:45.335611983Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:51.868790962Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "freeSlot": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:41.946661824Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:43.922798700Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "getAccountDeletionStatus": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:42.449729531Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:52.022694526Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "getAdminStatus": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-25T17:35:38.349Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:54.831Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "getCommunityInvite": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:27.401386459Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:38.507255876Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "getContactPhone": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:44.814718946Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:51.116330163Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "getMyPaymentMethod": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:28.891307282Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:39.262687120Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "hireProfessional": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:42.107183944Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:43.424706056Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "lifecycleCron": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:44.084977715Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:51.841660917Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "markDemandSent": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:42.738516601Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:43.920883390Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "markEngagementComplete": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:42.866220933Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:44.532274835Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "markFeePaid": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:43.628965887Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:43.198806769Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "moderateUser": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-25T17:35:50.016Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:09.668Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onBookingCreate": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-25T17:35:59.756Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:58.805Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onCommunityDeleted": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:29.500199548Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:39.783892008Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onCommunityInviteJoinRequest": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:30.147439815Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:41.296996043Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onFeeWrittenRecomputeBlock": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:30.538072776Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:38.980443669Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onMarketplacePurchase": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-25T17:35:50.040Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:01.455Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onMeetingCreate": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-25T17:35:54.572Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:04.304Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onMissionCreate": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-25T17:35:51.529Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:04.617Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onNewChatMessage": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-25T17:35:45.319Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:55.676Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
+    },
+    "onNewChatMessageCounters": {
+      "region": "us-central1",
+      "generation": 1,
+      "updateTime": "2026-11-26T16:11:56.605160423Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
+      "how": "deploy",
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onNewCommunityMessage": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-25T17:35:49.976Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:00.530Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onNewPriceOffer": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-25T17:35:57.272Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:01.405Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onNotificationCreate": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-25T17:35:48.370Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:58.188Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onPriceOfferAccepted": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-25T17:35:49.598Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:05.582Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onProjectClosed": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:28.300417686Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:40.967024919Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onProjectCreate": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-25T17:35:59.357Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:11.285Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onProjectEndDateChange": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:28.651436728Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:39.306446221Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onRemovalRequest": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-25T17:35:57.375Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:04.471Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onReportCreate": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:28.647504136Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:41.214758651Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onReviewCreate": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:28.477824102Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:39.095748644Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "onUserCreate": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-25T17:35:41.232Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:00.663Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "paymentLinkConfirm": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:28.190995029Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:37.634500755Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "refreshUsageStats": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:30.091136234Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:38.270530346Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "rejectCandidate": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:44.151070417Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:43.879792493Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "removeMyPaymentMethod": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:27.428853241Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:38.748879841Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "requestCompletion": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:41.986529150Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:43.361640160Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "requestEngagementEnd": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:45.453335917Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:44.356432799Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "requestMyPaymentLinkNow": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:28.215636040Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:39.528884119Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "requestOwnershipTransfer": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:29.228187657Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:38.689289734Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "resolveFeeDispute": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:43.981478435Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:54.636276916Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "respondOwnershipTransfer": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:30.705477475Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:42.435775467Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "respondToEngagementEnd": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:41.087911296Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:44.447927665Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "respondToPaymentRequest": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:41.840454249Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:52.022621471Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "revokeCommunityInvite": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:29.247795076Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:39.156787868Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "sendSystemMessage": {
       "region": "us-central1",
       "generation": 1,
-      "updateTime": "2026-11-25T17:35:52.470Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:08.159Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "setSubscription": {
       "region": "us-central1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:36:43.532513390Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:12:43.702758563Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "syncAllRentalCompanies": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:27.405012141Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:38.525172250Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     },
     "trackRentalClick": {
       "region": "europe-west1",
       "generation": 2,
-      "updateTime": "2026-11-25T17:35:28.179831132Z",
-      "treeSha": "08ddbda14cd214f24dc15fb17ca7788df649c317",
-      "commit": "5fd20d27",
+      "updateTime": "2026-11-26T16:11:38.184549480Z",
+      "treeSha": "6d03df17bbab2828aa15cddaa9727a6c14629581",
+      "commit": "4c3be5bb",
       "how": "deploy",
-      "recordedOn": "2026-11-25",
-      "note": "full functions deploy from clean commit 5fd20d27 (fee timing v2: Israeli business days, notice sequence; @hebcal/core 5.10.1)"
+      "recordedOn": "2026-11-26",
+      "note": "full functions deploy from clean commit 4c3be5bb (68ea120a + 4c3be5bb: server-owned chat unread counters, new onNewChatMessageCounters; community-wide unreadCount dropped). Same functions/src as HEAD f827fe86. Shipped with firestore.rules ruleset 006aecb1 (own-entry-only unreadCount/channelUnread; no client lastMessage)"
     }
   }
 }
